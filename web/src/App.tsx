@@ -1,4 +1,4 @@
-import {Database, Download, Search, ShieldCheck} from "lucide-react";
+import {Database, Download, Search} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
 import {HeatmapChart} from "./components/HeatmapChart";
 import {PersonProfile} from "./components/PersonProfile";
@@ -107,8 +107,8 @@ export default function App() {
       </section>
 
       <section className="downloads-section" id="descargas" aria-labelledby="downloads-title">
-        <div className="downloads-intro"><p className="eyebrow">Datos abiertos</p><h2 id="downloads-title">Descargá los registros</h2><p>CSV comprimidos por sede y mes, con procedencia y página de la fuente.</p><div className="trust-points"><span><ShieldCheck aria-hidden="true" />Checksums y procedencia</span><span><Database aria-hidden="true" />Esquema estable</span></div></div>
-        <div className="download-list">{exportsData.data?.length ? exportsData.data.slice(-12).reverse().map((file) => <a className="download-row" key={`${file.location}-${file.year}-${file.month}`} href={new URL(`data/exports/${file.path}`, document.baseURI).href} download><span><strong>{file.location === "casa-rosada" ? "Casa Rosada" : "Olivos"}</strong><small>{monthLabel(file.year, file.month)} · {file.records.toLocaleString("es-AR")} registros</small></span><Download aria-hidden="true" /></a>) : <p className="empty-state">Los CSV aparecerán después de la primera actualización de datos.</p>}</div>
+        <div className="downloads-intro"><p className="eyebrow">Datos abiertos</p><h2 id="downloads-title">Descargá los registros</h2><p>Un CSV comprimido por año con los registros de Olivos y Casa Rosada.</p></div>
+        <div className="download-list">{exportsData.data?.length ? [...exportsData.data].sort((left, right) => right.year - left.year).map((file) => <a className="download-row" key={file.year} href={new URL(`data/exports/${file.path}`, document.baseURI).href} download><span><strong>{file.year}</strong><small>{file.records.toLocaleString("es-AR")} registros</small></span><Download aria-hidden="true" /></a>) : <p className="empty-state">Los CSV aparecerán después de la primera actualización de datos.</p>}</div>
       </section>
     </main>
     <footer><p>Datos publicados por sus fuentes originales. Este proyecto facilita su consulta, no certifica su exactitud.</p><p>Actualización: {meta.data?.generated_at ? formatDate(meta.data.generated_at) : "pendiente"}</p></footer>
@@ -158,4 +158,3 @@ function aggregateEvents(events: AccessEvent[]): Analytics {
 function formatNumber(value?: number) { return value == null ? "—" : Intl.NumberFormat("es-AR", {notation: value >= 100000 ? "compact" : "standard", maximumFractionDigits: 1}).format(value); }
 function formatMetricDate(value?: string | null) { return value ? new Intl.DateTimeFormat("es-AR", {day: "2-digit", month: "short", year: "numeric", timeZone: "UTC"}).format(new Date(value)) : "—"; }
 function formatDate(value: string) { return new Intl.DateTimeFormat("es-AR", {dateStyle: "long"}).format(new Date(value)); }
-function monthLabel(year: number, month: number) { return new Intl.DateTimeFormat("es-AR", {month: "long", year: "numeric", timeZone: "UTC"}).format(new Date(Date.UTC(year, month - 1, 1))); }

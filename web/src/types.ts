@@ -100,10 +100,7 @@ export interface Analytics {
 }
 
 export interface ExportFile {
-  location: Location;
   year: number;
-  month: number;
   records: number;
   path: string;
 }
-

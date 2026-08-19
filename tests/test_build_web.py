@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from pipeline.build_web import build_web_data
@@ -39,4 +40,6 @@ def test_builds_search_events_analytics_and_csv(tmp_path) -> None:
     assert stats["people"] == 1
     assert (output / "search" / "name" / "p.json").exists()
     assert list((output / "events").glob("*.json"))
-    assert (output / "exports" / "olivos" / "2023" / "01.csv.gz").exists()
+    assert (output / "exports" / "2023.csv.gz").exists()
+    exports = json.loads((output / "exports" / "index.json").read_text(encoding="utf-8"))
+    assert exports == [{"year": 2023, "records": 1, "path": "2023.csv.gz"}]

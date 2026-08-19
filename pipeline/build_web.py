@@ -224,30 +224,27 @@ def _build_analytics(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
 def _write_exports(connection: duckdb.DuckDBPyConnection, directory: Path) -> list[dict[str, Any]]:
     groups = connection.execute(
         """
-        SELECT location,
-               year(coalesce(occurred_at, entered_at, exited_at))::INTEGER AS year,
-               month(coalesce(occurred_at, entered_at, exited_at))::INTEGER AS month,
+        SELECT year(coalesce(occurred_at, entered_at, exited_at))::INTEGER AS year,
                count(*)::INTEGER AS records
         FROM records WHERE coalesce(occurred_at, entered_at, exited_at) IS NOT NULL
-        GROUP BY ALL ORDER BY location, year, month
+        GROUP BY ALL ORDER BY year
         """
     ).fetchall()
     exports: list[dict[str, Any]] = []
-    for location, year, month, count in groups:
-        relative = Path(location) / str(year) / f"{month:02d}.csv.gz"
+    for year, count in groups:
+        relative = Path(f"{year}.csv.gz")
         target = directory / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         query = (
-            "SELECT * FROM records WHERE location = ? AND "
-            "year(coalesce(occurred_at, entered_at, exited_at)) = ? AND "
-            "month(coalesce(occurred_at, entered_at, exited_at)) = ? "
+            "SELECT * FROM records WHERE "
+            "year(coalesce(occurred_at, entered_at, exited_at)) = ? "
             "ORDER BY coalesce(occurred_at, entered_at, exited_at)"
         )
         columns = [
             item[0]
-            for item in connection.execute(query + " LIMIT 0", [location, year, month]).description
+            for item in connection.execute(query + " LIMIT 0", [year]).description
         ]
-        cursor = connection.execute(query, [location, year, month])
+        cursor = connection.execute(query, [year])
         with gzip.open(target, "wt", encoding="utf-8", newline="") as handle:
             writer = csv.writer(handle)
             writer.writerow(columns)
@@ -255,9 +252,7 @@ def _write_exports(connection: duckdb.DuckDBPyConnection, directory: Path) -> li
                 writer.writerows(batch)
         exports.append(
             {
-                "location": location,
                 "year": year,
-                "month": month,
                 "records": count,
                 "path": str(relative).replace("\\", "/"),
             }
