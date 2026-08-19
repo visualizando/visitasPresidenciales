@@ -77,7 +77,7 @@ export default function App() {
     </header>
     <main id="main">
       <section className="hero" aria-labelledby="page-title">
-        <div className="hero-copy"><p className="eyebrow">Casa Rosada y Quinta de Olivos</p><h1 id="page-title">Buscador de accesos presidenciales</h1><p>Consultá registros públicos y comprobá cada dato en su fuente original.</p></div>
+        <div className="hero-copy"><p className="eyebrow">Datos públicos</p><h1 id="page-title">Explorador de accesos a Olivos y Casa Rosada</h1><p>Este explorador se basa en datos obtenidos mediante pedidos de acceso a la información que Poder Ciudadano realiza regularmente.</p></div>
         <div className="hero-facts" aria-label="Estado de la base"><div><strong>{formatNumber(meta.data?.record_count)}</strong><span>registros</span></div><div><strong>{formatNumber(meta.data?.people_count)}</strong><span>personas</span></div><div><strong>{formatNumber(meta.data?.source_count)}</strong><span>PDF</span></div></div>
       </section>
 
