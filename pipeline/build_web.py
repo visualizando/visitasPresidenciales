@@ -157,6 +157,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
     _write_cooccurrences(connection, output / "cooccurrences")
     analytics = _build_analytics(connection)
     _write_compact(output / "analytics" / "overview.json", analytics)
+    _write_compact(output / "analytics" / "rankings.json", _build_rankings(connection))
     exports = _write_exports(connection, output / "exports")
     _write_compact(output / "exports" / "index.json", exports)
 
@@ -238,6 +239,136 @@ def _build_analytics(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
             "first_date": _json_datetime(coverage[0]),
             "last_date": _json_datetime(coverage[1]),
         },
+    }
+
+
+def _build_rankings(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
+    """Build compact rankings from one presence per person, date and location."""
+    date_expr = "coalesce(occurred_at, entered_at, exited_at)"
+    connection.execute(
+        f"""
+        CREATE TEMP TABLE daily_presence AS
+        SELECT DISTINCT entity_id, location, cast({date_expr} AS DATE) AS visit_date
+        FROM records
+        WHERE entity_id IS NOT NULL
+          AND record_type <> 'vehicle'
+          AND {date_expr} IS NOT NULL
+        """
+    )
+    connection.execute(
+        f"""
+        CREATE TEMP TABLE ranking_people AS
+        SELECT
+          entity_id,
+          coalesce(arg_max(canonical_name, {date_expr}), max(canonical_name)) AS canonical_name,
+          coalesce(arg_max(document_type, {date_expr}), max(document_type)) AS document_type,
+          coalesce(arg_max(document_number, {date_expr}), max(document_number)) AS document_number
+        FROM records
+        WHERE record_type <> 'vehicle'
+        GROUP BY entity_id
+        """
+    )
+
+    coverage = connection.execute(
+        "SELECT min(visit_date), max(visit_date) FROM daily_presence"
+    ).fetchone()
+    if not coverage or coverage[0] is None:
+        return _empty_rankings()
+
+    first_date, last_date = coverage
+    years = [
+        {
+            "id": str(year),
+            "label": str(year),
+            "start_date": str(max(first_date, datetime(year, 1, 1).date())),
+            "end_date": str(min(last_date, datetime(year, 12, 31).date())),
+        }
+        for year in range(first_date.year, last_date.year + 1)
+    ]
+    presidency_definitions = [
+        ("macri", "Mauricio Macri", "2015-12-10", "2019-12-09"),
+        ("fernandez", "Alberto Fernández", "2019-12-10", "2023-12-09"),
+        ("milei", "Javier Milei", "2023-12-10", "9999-12-31"),
+    ]
+    presidencies = []
+    for period_id, label, start, end in presidency_definitions:
+        available_start = max(first_date, datetime.fromisoformat(start).date())
+        available_end = min(last_date, datetime.fromisoformat(end).date())
+        if available_start <= available_end:
+            presidencies.append(
+                {
+                    "id": period_id,
+                    "label": label,
+                    "start_date": str(available_start),
+                    "end_date": str(available_end),
+                }
+            )
+
+    def period_rankings(start: str, end: str) -> dict[str, list[dict[str, Any]]]:
+        return {
+            location: _ranking_rows(connection, start, end, location)
+            for location in ("all", "casa-rosada", "olivos")
+        }
+
+    return {
+        "version": 1,
+        "definition": "Una presencia por persona, fecha y sede; se excluyen vehículos.",
+        "limit": 50,
+        "years": years,
+        "presidencies": presidencies,
+        "rankings": {
+            "year": {
+                period["id"]: period_rankings(period["start_date"], period["end_date"])
+                for period in years
+            },
+            "presidency": {
+                period["id"]: period_rankings(period["start_date"], period["end_date"])
+                for period in presidencies
+            },
+        },
+    }
+
+
+def _ranking_rows(
+    connection: duckdb.DuckDBPyConnection, start: str, end: str, location: str
+) -> list[dict[str, Any]]:
+    location_filter = "" if location == "all" else "AND d.location = ?"
+    params: list[Any] = [start, end]
+    if location != "all":
+        params.append(location)
+    return _rows(
+        connection,
+        f"""
+        SELECT
+          d.entity_id,
+          p.canonical_name,
+          p.document_type,
+          p.document_number,
+          count(*)::INTEGER AS daily_visits,
+          min(d.visit_date)::VARCHAR AS first_visit,
+          max(d.visit_date)::VARCHAR AS last_visit,
+          sum(CASE WHEN d.location = 'casa-rosada' THEN 1 ELSE 0 END)::INTEGER AS casa_rosada,
+          sum(CASE WHEN d.location = 'olivos' THEN 1 ELSE 0 END)::INTEGER AS olivos
+        FROM daily_presence d
+        JOIN ranking_people p USING(entity_id)
+        WHERE d.visit_date BETWEEN cast(? AS DATE) AND cast(? AS DATE)
+          {location_filter}
+        GROUP BY d.entity_id, p.canonical_name, p.document_type, p.document_number
+        ORDER BY daily_visits DESC, p.canonical_name, d.entity_id
+        LIMIT 50
+        """,
+        params,
+    )
+
+
+def _empty_rankings() -> dict[str, Any]:
+    return {
+        "version": 1,
+        "definition": "Una presencia por persona, fecha y sede; se excluyen vehículos.",
+        "limit": 50,
+        "years": [],
+        "presidencies": [],
+        "rankings": {"year": {}, "presidency": {}},
     }
 
 
@@ -549,6 +680,7 @@ def _write_empty(output: Path, generated_at: str) -> None:
             "coverage": {"first_date": None, "last_date": None},
         },
     )
+    _write_compact(output / "analytics" / "rankings.json", _empty_rankings())
     _write_compact(output / "exports" / "index.json", [])
     _write_compact(
         output / "cooccurrences" / "meta.json",

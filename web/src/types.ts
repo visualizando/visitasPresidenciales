@@ -105,6 +105,36 @@ export interface ExportFile {
   path: string;
 }
 
+export interface RankingPeriod {
+  id: string;
+  label: string;
+  start_date: string;
+  end_date: string;
+}
+
+export interface RankingEntry {
+  entity_id: string;
+  canonical_name: string;
+  document_type: string | null;
+  document_number: string | null;
+  daily_visits: number;
+  first_visit: string;
+  last_visit: string;
+  casa_rosada: number;
+  olivos: number;
+}
+
+export type RankingLocation = "all" | Location;
+export type RankingGrouping = "presidency" | "year";
+export interface RankingsData {
+  version: number;
+  definition: string;
+  limit: number;
+  years: RankingPeriod[];
+  presidencies: RankingPeriod[];
+  rankings: Record<RankingGrouping, Record<string, Record<RankingLocation, RankingEntry[]>>>;
+}
+
 export type RawCoincidencePerson = [name: string, documentType: string | null, documentNumber: string | null];
 export type RawCoincidenceEpisode = [personId: string, date: string, location: 0 | 1, destinationIndex: number, overlapMinutes: number, specificDestination: 0 | 1, overlapStart: string, overlapEnd: string];
 export interface RawCoincidenceOwner { d: string[]; p: Record<string, RawCoincidencePerson>; e: RawCoincidenceEpisode[]; }

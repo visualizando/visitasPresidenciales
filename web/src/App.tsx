@@ -4,7 +4,9 @@ import {CalendarChart} from "./components/CalendarChart";
 import {HeatmapChart} from "./components/HeatmapChart";
 import {PersonProfile} from "./components/PersonProfile";
 import {PurposeChart} from "./components/PurposeChart";
+import {Rankings} from "./components/Rankings";
 import {SearchResults} from "./components/SearchResults";
+import {SectionNav} from "./components/SectionNav";
 import {TrendChart} from "./components/TrendChart";
 import {useData} from "./hooks/useData";
 import {useCoincidences} from "./hooks/useCoincidences";
@@ -78,13 +80,13 @@ export default function App() {
     <a className="skip-link" href="#main">Saltar al contenido</a>
     <header className="site-header">
       <a className="brand" href="./" aria-label="Accesos públicos, inicio"><span className="brand-mark" aria-hidden="true"><Database /></span><span>Accesos <em>públicos</em></span></a>
-      <nav aria-label="Principal"><a href="#buscar">Buscar</a><a href="#panorama">Gráficos</a><a href="#descargas">Descargas</a></nav>
     </header>
     <main id="main">
       <section className="hero" aria-labelledby="page-title">
         <div className="hero-copy"><p className="eyebrow">Datos públicos</p><h1 id="page-title">Explorador de accesos a Olivos y Casa Rosada</h1><p>Este explorador se basa en datos obtenidos mediante pedidos de acceso a la información que Poder Ciudadano realiza regularmente.</p></div>
         <dl className="hero-facts" aria-label="Estado y cobertura de la base"><div><dd>{formatNumber(meta.data?.record_count)}</dd><dt>registros</dt></div><div><dd>{formatNumber(meta.data?.people_count)}</dd><dt>personas</dt></div><div><dd>{formatNumber(meta.data?.source_count)}</dd><dt>PDF</dt></div><div><dd>{formatMetricDate(meta.data?.first_date)}</dd><dt>primer registro</dt></div><div><dd>{formatMetricDate(meta.data?.last_date)}</dd><dt>último registro</dt></div></dl>
       </section>
+      <SectionNav />
 
       <section className="search-section" id="buscar" aria-labelledby="search-title">
         <div className="section-heading"><div><p className="eyebrow">Buscador</p><h2 id="search-title">Encontrá y agrupá personas</h2></div><p>Seleccioná varias coincidencias cuando parezcan ser la misma persona escrita de distintas maneras.</p></div>
@@ -115,11 +117,17 @@ export default function App() {
         <div className="downloads-intro"><p className="eyebrow">Datos abiertos</p><h2 id="downloads-title">Descargá los registros</h2><p>Un CSV comprimido por año con los registros de Olivos y Casa Rosada.</p></div>
         <div className="download-list">{exportsData.data?.length ? [...exportsData.data].sort((left, right) => right.year - left.year).map((file) => <a className="download-row" key={file.year} href={new URL(`data/exports/${file.path}`, document.baseURI).href} download><span><strong>{file.year}</strong><small>{file.records.toLocaleString("es-AR")} registros</small></span><Download aria-hidden="true" /></a>) : <p className="empty-state">Los CSV aparecerán después de la primera actualización de datos.</p>}</div>
       </section>
+
+      <section className="rankings-section" id="rankings" aria-labelledby="rankings-title">
+        <Rankings />
+      </section>
     </main>
     <footer>
-      <p>Datos obtenidos por <a href="https://poderciudadano.org/">Poder Ciudadano</a> mediante pedidos de acceso a la información pública.</p>
-      <p>Creación y diseño: <a href="https://visualizando.ar/">Andrés Snitcofsky · Visualizando</a>.</p>
-      <p><a href="https://github.com/visualizando/visitasPresidenciales">Código en GitHub</a> · Actualización: {meta.data?.generated_at ? formatDate(meta.data.generated_at) : "pendiente"}</p>
+      <div className="footer-inner">
+        <div className="footer-lead"><strong>Accesos públicos</strong><p>Una herramienta para explorar los registros de ingreso a Olivos y Casa Rosada.</p></div>
+        <div className="footer-details"><p>Datos obtenidos por <a href="https://poderciudadano.org/">Poder Ciudadano</a> mediante pedidos de acceso a la información pública.</p><p>Creación y diseño: <a href="https://visualizando.ar/">Andrés Snitcofsky · Visualizando</a>.</p></div>
+        <p className="footer-meta"><a href="https://github.com/visualizando/visitasPresidenciales">Código en GitHub</a><span>Actualización: {meta.data?.generated_at ? formatDate(meta.data.generated_at) : "pendiente"}</span></p>
+      </div>
     </footer>
   </>;
 }

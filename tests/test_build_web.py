@@ -134,3 +134,37 @@ def test_builds_person_summary_when_record_has_no_timestamp(tmp_path) -> None:
         gzip.decompress((output / "search" / "name" / "p.json.gz").read_bytes())
     )
     assert people[0]["canonical_name"] == "PEREZ SIN HORARIO"
+
+
+def test_rankings_count_one_daily_presence_per_person_and_location(tmp_path) -> None:
+    data = tmp_path / "data"
+    output = tmp_path / "public" / "data"
+    common = {
+        "entity_id": "per_1",
+        "canonical_name": "PEREZ ANA",
+        "document_type": "DNI",
+        "document_number": "30123456",
+        "record_type": "movement",
+        "source_id": "src_1",
+        "source_url": "https://example.org/source.pdf",
+        "source_path": "source.pdf",
+        "source_page": 1,
+        "quality": "high",
+        "raw_text": "fila",
+    }
+    records = [
+        AccessRecord(record_id="rec_1", location="casa-rosada", occurred_at=datetime(2023, 1, 2, 9, 0), **common),
+        AccessRecord(record_id="rec_2", location="casa-rosada", occurred_at=datetime(2023, 1, 2, 18, 0), **common),
+        AccessRecord(record_id="rec_3", location="olivos", occurred_at=datetime(2023, 1, 2, 20, 0), **common),
+        AccessRecord(record_id="rec_4", location="casa-rosada", occurred_at=datetime(2023, 1, 3, 9, 0), **common),
+    ]
+    write_partition(data / "partitions" / "casa-rosada" / "2023" / "01" / "src.parquet", records)
+
+    build_web_data(data, output)
+
+    rankings = json.loads((output / "analytics" / "rankings.json").read_text(encoding="utf-8"))
+    year = rankings["rankings"]["year"]["2023"]
+    assert year["casa-rosada"][0]["daily_visits"] == 2
+    assert year["olivos"][0]["daily_visits"] == 1
+    assert year["all"][0]["daily_visits"] == 3
+    assert rankings["rankings"]["presidency"]["fernandez"]["all"][0]["daily_visits"] == 3
