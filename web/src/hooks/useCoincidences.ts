@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useState} from "react";
 import type {CoincidenceResult, CoincidenceShard, PersonSummary, RawCoincidenceOwner} from "../types";
+import {fetchGzipJson} from "../utils/fetchGzipJson";
 
 type CoincidenceState = {data: CoincidenceResult[]; loading: boolean; error: string | null};
 
@@ -17,9 +18,10 @@ export function useCoincidences(people: PersonSummary[]): CoincidenceState {
     const shards = [...new Set(people.map((person) => person.event_shard))];
     setState({data: [], loading: true, error: null});
     Promise.all(shards.map(async (shard) => {
-      const response = await fetch(new URL(`data/cooccurrences/${shard}.json`, document.baseURI), {signal: controller.signal});
-      if (!response.ok) throw new Error("El índice de coincidencias no está disponible");
-      return response.json() as Promise<CoincidenceShard>;
+      return fetchGzipJson<CoincidenceShard>(
+        new URL(`data/cooccurrences/${shard}.json.gz`, document.baseURI),
+        controller.signal,
+      );
     })).then((groups) => {
       const owners = new Map<string, RawCoincidenceOwner>();
       for (const group of groups) for (const person of people) if (group[person.entity_id]) owners.set(person.entity_id, group[person.entity_id]);

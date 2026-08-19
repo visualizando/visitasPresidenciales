@@ -14,70 +14,68 @@ from pipeline.parsers import legacy_layout as legacy
 def parse_positioned_pdf(path: Path, remote: RemoteFile, source_id: str) -> ParseResult:
     """Parse the recurring government ledgers using their stable column geometry."""
     document = pymupdf.open(path)
-    try:
-        pages = [_legacy_page(page, number) for number, page in enumerate(document, 1)]
-    finally:
-        document.close()
-
     rows: list[dict[str, Any]] = []
     warnings: list[str] = []
-    if remote.location == "casa-rosada":
-        layout = None
-        for page in pages:
-            parsed, layout, problem = legacy.parse_casa_page(
-                source_id, remote.path, page["page_number"], page["texts"], layout
-            )
-            rows.extend(parsed)
-            if problem and page["texts"]:
-                warnings.append(f"página {page['page_number']}: {problem}")
-        records = [_record_from_casa(row, remote, source_id) for row in rows]
-        return ParseResult("casa-rosada-tabla-posicional-v1", records, warnings)
+    try:
+        if remote.location == "casa-rosada":
+            layout = None
+            for page_number, source_page in enumerate(document, 1):
+                texts = _legacy_page(source_page, page_number)["texts"]
+                parsed, layout, problem = legacy.parse_casa_page(
+                    source_id, remote.path, page_number, texts, layout
+                )
+                rows.extend(parsed)
+                if problem and texts:
+                    warnings.append(f"página {page_number}: {problem}")
+            records = [_record_from_casa(row, remote, source_id) for row in rows]
+            return ParseResult("casa-rosada-tabla-posicional-v1", records, warnings)
 
-    last_type = None
-    control_layout = None
-    monthly_layout = None
-    for page in pages:
-        texts = page["texts"]
-        page_number = page["page_number"]
-        page_type = legacy.detect_olivos_page_type(texts)
-        if page_type == "unknown" and last_type in {"control_turno", "monthly_ledger"}:
-            page_type = last_type
-        page_id = f"{source_id}:{page_number}"
-        if page_type == "registro_ingresos":
-            _, parsed = legacy.parse_olivos_standard_page(
-                page_id, source_id, remote.path, page_number, texts
-            )
-            rows.extend((row | {"_kind": "person"}) for row in parsed)
-        elif page_type == "control_turno":
-            _, _, parsed, control_layout, problem = legacy.parse_olivos_control_page(
-                page_id, source_id, remote.path, page_number, texts, control_layout
-            )
-            rows.extend((row | {"_kind": "control"}) for row in parsed)
-            if problem:
-                warnings.append(f"página {page_number}: {problem}")
-        elif page_type == "vehicle_movements":
-            _, parsed = legacy.parse_olivos_vehicle_page(
-                page_id, source_id, remote.path, page_number, texts
-            )
-            rows.extend((row | {"_kind": "vehicle"}) for row in parsed)
-        elif page_type == "on_foot_movements":
-            _, parsed = legacy.parse_olivos_on_foot_page(
-                page_id, source_id, remote.path, page_number, texts
-            )
-            rows.extend((row | {"_kind": "on_foot"}) for row in parsed)
-        elif page_type == "monthly_ledger":
-            parsed, _, _, _, monthly_layout, problem = legacy.parse_olivos_monthly_page(
-                page_id, source_id, remote.path, page_number, texts, monthly_layout
-            )
-            rows.extend((row | {"_kind": "monthly"}) for row in parsed)
-            if problem:
-                warnings.append(f"página {page_number}: {problem}")
-        elif len(texts) > 5:
-            warnings.append(f"página {page_number}: formato de Olivos desconocido")
-        if page_type != "unknown":
-            last_type = page_type
-    records = [_record_from_olivos(row, remote, source_id) for row in rows]
-    return ParseResult("olivos-tabla-posicional-v1", records, warnings)
+        last_type = None
+        control_layout = None
+        monthly_layout = None
+        for page_number, source_page in enumerate(document, 1):
+            texts = _legacy_page(source_page, page_number)["texts"]
+            page_type = legacy.detect_olivos_page_type(texts)
+            if page_type == "unknown" and last_type in {"control_turno", "monthly_ledger"}:
+                page_type = last_type
+            page_id = f"{source_id}:{page_number}"
+            if page_type == "registro_ingresos":
+                _, parsed = legacy.parse_olivos_standard_page(
+                    page_id, source_id, remote.path, page_number, texts
+                )
+                rows.extend((row | {"_kind": "person"}) for row in parsed)
+            elif page_type == "control_turno":
+                _, _, parsed, control_layout, problem = legacy.parse_olivos_control_page(
+                    page_id, source_id, remote.path, page_number, texts, control_layout
+                )
+                rows.extend((row | {"_kind": "control"}) for row in parsed)
+                if problem:
+                    warnings.append(f"página {page_number}: {problem}")
+            elif page_type == "vehicle_movements":
+                _, parsed = legacy.parse_olivos_vehicle_page(
+                    page_id, source_id, remote.path, page_number, texts
+                )
+                rows.extend((row | {"_kind": "vehicle"}) for row in parsed)
+            elif page_type == "on_foot_movements":
+                _, parsed = legacy.parse_olivos_on_foot_page(
+                    page_id, source_id, remote.path, page_number, texts
+                )
+                rows.extend((row | {"_kind": "on_foot"}) for row in parsed)
+            elif page_type == "monthly_ledger":
+                parsed, _, _, _, monthly_layout, problem = legacy.parse_olivos_monthly_page(
+                    page_id, source_id, remote.path, page_number, texts, monthly_layout
+                )
+                rows.extend((row | {"_kind": "monthly"}) for row in parsed)
+                if problem:
+                    warnings.append(f"página {page_number}: {problem}")
+            elif len(texts) > 5:
+                warnings.append(f"página {page_number}: formato de Olivos desconocido")
+            if page_type != "unknown":
+                last_type = page_type
+        records = [_record_from_olivos(row, remote, source_id) for row in rows]
+        return ParseResult("olivos-tabla-posicional-v1", records, warnings)
+    finally:
+        document.close()
 
 
 def _legacy_page(page: pymupdf.Page, page_number: int) -> dict[str, Any]:

@@ -1,3 +1,4 @@
+import gzip
 import json
 from datetime import datetime
 
@@ -38,8 +39,8 @@ def test_builds_search_events_analytics_and_csv(tmp_path) -> None:
     stats = build_web_data(data, output)
     assert stats["records"] == 1
     assert stats["people"] == 1
-    assert (output / "search" / "name" / "p.json").exists()
-    assert list((output / "events").glob("*.json"))
+    assert (output / "search" / "name" / "p.json.gz").exists()
+    assert list((output / "events").glob("*.json.gz"))
     assert (output / "exports" / "2023.csv.gz").exists()
     exports = json.loads((output / "exports" / "index.json").read_text(encoding="utf-8"))
     assert exports == [{"year": 2023, "records": 1, "path": "2023.csv.gz"}]
@@ -97,9 +98,8 @@ def test_builds_deduplicated_cooccurrence_episodes(tmp_path) -> None:
     build_web_data(data, output)
 
     shards = [
-        json.loads(path.read_text(encoding="utf-8"))
-        for path in (output / "cooccurrences").glob("*.json")
-        if path.name != "meta.json"
+        json.loads(gzip.decompress(path.read_bytes()))
+        for path in (output / "cooccurrences").glob("*.json.gz")
     ]
     owner = next(shard["per_1"] for shard in shards if "per_1" in shard)
     assert owner["p"]["per_2"][0] == "GOMEZ LUIS"
@@ -107,3 +107,30 @@ def test_builds_deduplicated_cooccurrence_episodes(tmp_path) -> None:
     assert owner["e"] == [["per_2", "2023-01-02", 0, 0, 30, 1, "09:30", "10:00"]]
     meta = json.loads((output / "cooccurrences" / "meta.json").read_text(encoding="utf-8"))
     assert meta["episode_count"] == 1
+
+
+def test_builds_person_summary_when_record_has_no_timestamp(tmp_path) -> None:
+    data = tmp_path / "data"
+    output = tmp_path / "public" / "data"
+    record = AccessRecord(
+        record_id="rec_without_time",
+        entity_id="per_without_time",
+        canonical_name="PEREZ SIN HORARIO",
+        document_type=None,
+        document_number=None,
+        location="olivos",
+        record_type="person",
+        source_id="src_1",
+        source_url="https://example.org/olivos/2022/01/01.pdf",
+        source_path="olivos/2022/01/01.pdf",
+        source_page=1,
+        quality="low",
+        raw_text="fila sin horario",
+    )
+    write_partition(data / "partitions" / "olivos" / "2022" / "01" / "src.parquet", [record])
+    stats = build_web_data(data, output)
+    assert stats["people"] == 1
+    people = json.loads(
+        gzip.decompress((output / "search" / "name" / "p.json.gz").read_bytes())
+    )
+    assert people[0]["canonical_name"] == "PEREZ SIN HORARIO"

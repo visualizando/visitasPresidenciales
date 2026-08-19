@@ -77,6 +77,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
             PARTITION BY record_id ORDER BY source_path, source_page
           ) AS row_number
           FROM merged_records
+          WHERE canonical_name IS NOT NULL AND trim(canonical_name) <> ''
         ) WHERE row_number = 1
         """
     )
@@ -86,9 +87,18 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         """
         SELECT
           entity_id,
-          arg_max(canonical_name, coalesce(occurred_at, entered_at, exited_at)) AS canonical_name,
-          arg_max(document_type, coalesce(occurred_at, entered_at, exited_at)) AS document_type,
-          arg_max(document_number, coalesce(occurred_at, entered_at, exited_at)) AS document_number,
+          coalesce(
+            arg_max(canonical_name, coalesce(occurred_at, entered_at, exited_at)),
+            max(canonical_name)
+          ) AS canonical_name,
+          coalesce(
+            arg_max(document_type, coalesce(occurred_at, entered_at, exited_at)),
+            max(document_type)
+          ) AS document_type,
+          coalesce(
+            arg_max(document_number, coalesce(occurred_at, entered_at, exited_at)),
+            max(document_number)
+          ) AS document_number,
           count(*)::INTEGER AS record_count,
           min(coalesce(occurred_at, entered_at, exited_at)) AS first_seen,
           max(coalesce(occurred_at, entered_at, exited_at)) AS last_seen,
@@ -118,9 +128,11 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
             document_shards[(document[:2] or "_")][person["entity_id"]] = summary
 
     for key, values in name_shards.items():
-        _write_compact(output / "search" / "name" / f"{key}.json", list(values.values()))
+        _write_gzip_json(output / "search" / "name" / f"{key}.json.gz", list(values.values()))
     for key, values in document_shards.items():
-        _write_compact(output / "search" / "document" / f"{key}.json", list(values.values()))
+        _write_gzip_json(
+            output / "search" / "document" / f"{key}.json.gz", list(values.values())
+        )
 
     event_counts: dict[str, int] = {}
     for prefix in sorted({_entity_shard(person["entity_id"]) for person in people}):
@@ -139,7 +151,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         for row in rows:
             for key in ("occurred_at", "entered_at", "exited_at"):
                 row[key] = _json_datetime(row[key])
-        _write_compact(output / "events" / f"{prefix}.json", rows)
+        _write_gzip_json(output / "events" / f"{prefix}.json.gz", rows)
         event_counts[prefix] = len(rows)
 
     _write_cooccurrences(connection, output / "cooccurrences")
@@ -412,7 +424,7 @@ def _write_cooccurrences(connection: duckdb.DuckDBPyConnection, directory: Path)
                     row["overlap_end"],
                 ]
             )
-        _write_compact(directory / f"{prefix}.json", payload)
+        _write_gzip_json(directory / f"{prefix}.json.gz", payload)
         shard_counts[prefix] = len(rows)
 
     episode_count = connection.execute("SELECT count(*) FROM coincidence_episodes").fetchone()[0]
@@ -564,6 +576,18 @@ def _write_compact(path: Path, value: Any) -> None:
     path.write_text(
         json.dumps(value, ensure_ascii=False, separators=(",", ":"), default=str), encoding="utf-8"
     )
+
+
+def _write_gzip_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(
+        value, ensure_ascii=False, separators=(",", ":"), default=str
+    ).encode("utf-8")
+    with (
+        path.open("wb") as handle,
+        gzip.GzipFile(fileobj=handle, mode="wb", compresslevel=9, mtime=0) as archive,
+    ):
+        archive.write(payload)
 
 
 def _replace_directory(staging: Path, target: Path) -> None:

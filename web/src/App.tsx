@@ -10,6 +10,7 @@ import {useData} from "./hooks/useData";
 import {useCoincidences} from "./hooks/useCoincidences";
 import {useSearch} from "./hooks/useSearch";
 import type {AccessEvent, Analytics, ExportFile, Meta, PersonSummary, SearchFilters} from "./types";
+import {fetchGzipJson} from "./utils/fetchGzipJson";
 
 const DEFAULT_FILTERS: SearchFilters = {location: "all", year: "all", recordType: "all"};
 
@@ -40,9 +41,10 @@ export default function App() {
     const shards = [...new Set(selected.map((person) => person.event_shard))];
     setEvents({data: [], loading: true, error: null});
     Promise.all(shards.map(async (shard) => {
-      const response = await fetch(new URL(`data/events/${shard}.json`, document.baseURI), {signal: controller.signal});
-      if (!response.ok) throw new Error("El archivo de detalle no está disponible");
-      return response.json() as Promise<AccessEvent[]>;
+      return fetchGzipJson<AccessEvent[]>(
+        new URL(`data/events/${shard}.json.gz`, document.baseURI),
+        controller.signal,
+      );
     }))
       .then((groups) => setEvents({data: groups.flat().filter((row) => selectedIds.has(row.entity_id)), loading: false, error: null}))
       .catch((error: Error) => {

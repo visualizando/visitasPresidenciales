@@ -10,7 +10,7 @@ from pipeline.build_web import build_web_data
 from pipeline.discovery import discover, download
 from pipeline.models import ManifestEntry, RemoteFile
 from pipeline.normalize import stable_id
-from pipeline.parsers import parse_pdf
+from pipeline.parsers import ParseFailure, parse_pdf
 from pipeline.storage import load_json, utc_now, write_json_atomic, write_partition
 
 
@@ -20,6 +20,9 @@ def update_dataset(
     data_dir: Path,
     web_data_dir: Path,
     min_year: int = 2023,
+    quarantine_failures: bool = False,
+    mark_missing: bool = True,
+    force_locations: set[str] | None = None,
 ) -> dict[str, int]:
     data_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = data_dir / "manifest.json"
@@ -28,15 +31,26 @@ def update_dataset(
     manifest_before = json.dumps(manifest, sort_keys=True)
     remote_files = discover(source_base_url, min_year=min_year)
     seen_paths = {item.path for item in remote_files}
-    changed = [item for item in remote_files if _needs_download(item, previous.get(item.path))]
+    forced = force_locations or set()
+    changed = [
+        item
+        for item in remote_files
+        if item.location in forced or _needs_download(item, previous.get(item.path))
+    ]
     staging_root = Path(tempfile.mkdtemp(prefix="accesos-update-", dir=data_dir))
     staged_entries: list[tuple[RemoteFile, ManifestEntry, Path]] = []
+    quarantined_entries: list[tuple[RemoteFile, ManifestEntry]] = []
     try:
         for remote in changed:
             local_pdf = staging_root / "downloads" / Path(remote.path).name
             sha256 = download(remote, local_pdf)
             old = previous.get(remote.path)
-            if old and old.get("sha256") == sha256:
+            if (
+                old
+                and remote.location not in forced
+                and old.get("sha256") == sha256
+                and old.get("status") != "quarantined"
+            ):
                 old.update(
                     {
                         "etag": remote.etag,
@@ -47,7 +61,33 @@ def update_dataset(
                 )
                 continue
             source_id = stable_id("src_", remote.path)
-            result = parse_pdf(local_pdf, remote, source_id)
+            try:
+                result = parse_pdf(local_pdf, remote, source_id)
+            except ParseFailure:
+                if not quarantine_failures:
+                    raise
+                quarantined_entries.append(
+                    (
+                        remote,
+                        ManifestEntry(
+                            source_id=source_id,
+                            url=remote.url,
+                            path=remote.path,
+                            location=remote.location,
+                            year=remote.year,
+                            month=remote.month,
+                            size=remote.size,
+                            etag=remote.etag,
+                            last_modified=remote.last_modified,
+                            sha256=sha256,
+                            parser="no-legible-o-formato-desconocido-v1",
+                            record_count=0,
+                            status="quarantined",
+                            processed_at=utc_now(),
+                        ),
+                    )
+                )
+                continue
             partition_relative = (
                 Path(remote.location)
                 / str(remote.year)
@@ -74,14 +114,23 @@ def update_dataset(
             )
             staged_entries.append((remote, entry, staged_partition))
 
-        for path, entry in previous.items():
-            if path not in seen_paths:
-                entry["status"] = "missing"
+        if mark_missing:
+            for path, entry in previous.items():
+                if path not in seen_paths:
+                    entry["status"] = "missing"
         for remote in remote_files:
-            if remote.path in previous and remote.path in seen_paths:
+            if (
+                remote.path in previous
+                and remote.path in seen_paths
+                and previous[remote.path].get("status") != "quarantined"
+            ):
                 previous[remote.path]["status"] = "active"
 
-        if not staged_entries and json.dumps(manifest, sort_keys=True) == manifest_before:
+        if (
+            not staged_entries
+            and not quarantined_entries
+            and json.dumps(manifest, sort_keys=True) == manifest_before
+        ):
             return {"discovered": len(remote_files), "changed": 0}
 
         for remote, entry, staged_partition in staged_entries:
@@ -104,16 +153,28 @@ def update_dataset(
                     obsolete.unlink()
             previous[remote.path] = entry.to_dict()
 
+        for remote, entry in quarantined_entries:
+            old = previous.get(remote.path)
+            if not old or old.get("status") == "quarantined":
+                previous[remote.path] = entry.to_dict()
+
         manifest["generated_at"] = utc_now()
         write_json_atomic(manifest_path, manifest)
         web_stats = build_web_data(data_dir, web_data_dir)
-        return {"discovered": len(remote_files), "changed": len(staged_entries), **web_stats}
+        return {
+            "discovered": len(remote_files),
+            "changed": len(staged_entries),
+            "quarantined": len(quarantined_entries),
+            **web_stats,
+        }
     finally:
         shutil.rmtree(staging_root, ignore_errors=True)
 
 
 def _needs_download(remote: RemoteFile, old: dict[str, object] | None) -> bool:
     if not old:
+        return True
+    if old.get("status") == "quarantined":
         return True
     if remote.sha256 and remote.sha256 != old.get("sha256"):
         return True

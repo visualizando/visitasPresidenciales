@@ -8,6 +8,7 @@ from pathlib import Path
 
 from pipeline.build_web import build_web_data
 from pipeline.discovery import discover
+from pipeline.drive_backfill import download_public_folder
 from pipeline.legacy_import import import_legacy_tsv
 from pipeline.update import update_dataset
 
@@ -41,6 +42,27 @@ def parser() -> argparse.ArgumentParser:
         "--output", type=Path, default=Path(os.getenv("WEB_DATA_DIR", "web/public/data"))
     )
     legacy.add_argument("--public-base", default=os.getenv("SOURCE_PUBLIC_BASE_URL"))
+    backfill = subcommands.add_parser(
+        "backfill-local", help="Importa PDF históricos legibles y pone el resto en cuarentena"
+    )
+    backfill.add_argument("source")
+    backfill.add_argument("--min-year", type=int, default=1900)
+    backfill.add_argument("--data-dir", type=Path, default=Path(os.getenv("DATA_DIR", "data")))
+    backfill.add_argument(
+        "--output", type=Path, default=Path(os.getenv("WEB_DATA_DIR", "web/public/data"))
+    )
+    backfill.add_argument(
+        "--force-location",
+        action="append",
+        choices=("casa-rosada", "olivos"),
+        default=[],
+        help="Reprocesa una sede aunque el PDF no haya cambiado",
+    )
+    drive = subcommands.add_parser(
+        "download-drive", help="Descarga recursivamente los PDF de una carpeta pública de Drive"
+    )
+    drive.add_argument("folder_id")
+    drive.add_argument("output", type=Path)
     return root
 
 
@@ -61,6 +83,18 @@ def main() -> None:
         result = import_legacy_tsv(
             arguments.legacy_dir, arguments.data_dir, arguments.output, arguments.public_base
         )
+    elif arguments.command == "backfill-local":
+        result = update_dataset(
+            source_base_url=arguments.source,
+            data_dir=arguments.data_dir,
+            web_data_dir=arguments.output,
+            min_year=arguments.min_year,
+            quarantine_failures=True,
+            mark_missing=False,
+            force_locations=set(arguments.force_location),
+        )
+    elif arguments.command == "download-drive":
+        result = download_public_folder(arguments.folder_id, arguments.output)
     else:
         result = [asdict(item) for item in discover(arguments.source, arguments.min_year)]
     print(json.dumps(result, ensure_ascii=False, indent=2, default=str))

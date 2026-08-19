@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 
 from pipeline.models import ParseResult, RemoteFile
 from pipeline.normalize import parse_datetime
@@ -26,7 +27,7 @@ VISITOR_RE = re.compile(
 
 
 def parse_casa_pages(
-    pages: list[str], remote: RemoteFile, source_id: str, *, family: str = "movement"
+    pages: Iterable[str], remote: RemoteFile, source_id: str, *, family: str = "movement"
 ) -> ParseResult:
     if family == "visitor":
         return _parse_visitors(pages, remote, source_id)

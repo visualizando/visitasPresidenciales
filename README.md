@@ -1,8 +1,10 @@
 # Accesos públicos
 
-Pipeline y sitio estático para explorar los registros públicos de acceso a Casa Rosada y la Quinta de Olivos. El proyecto descarga PDF desde una carpeta pública, normaliza los registros desde 2023, conserva las tablas canónicas en Parquet y genera índices y agregados compactos para GitHub Pages.
+Pipeline y sitio estático para explorar los registros públicos de acceso a Casa Rosada y la Quinta de Olivos. El proyecto descarga PDF desde una carpeta pública, normaliza los registros, conserva las tablas canónicas en Parquet y genera índices y agregados compactos para GitHub Pages.
 
-La base incluida se construyó con los 54 PDF y TSV disponibles en `D:\_DATAVIZ\RosadaOlivos\old`: 102.322 registros deduplicados entre el 16 de noviembre de 2023 y el 28 de febrero de 2026. Esa carpeta se usa sólo como entrada local; no se modifica ni se copia al repositorio. Cuando aparezcan archivos anteriores o posteriores, se pueden importar sobre el mismo esquema.
+La base incluida contiene 1.636.491 registros deduplicados y 71.849 personas entre el 11 de julio de 2019 y el 28 de febrero de 2026. Combina los datos normalizados existentes con 372 PDF históricos legibles: siete consolidados/listados de Casa Rosada y los 365 partes diarios de Olivos de 2022. Los PDF escaneados, vacíos o no descargables no se incorporan como filas.
+
+Los índices de búsqueda, fichas y co-presencias se publican en shards JSON comprimidos con gzip y se descomprimen en el navegador. La salida estática completa ocupa aproximadamente 327 MB y el shard más grande queda debajo de 1,6 MB.
 
 ## Desarrollo
 
@@ -26,6 +28,24 @@ Para importar los TSV históricos ya normalizados sin copiar los PDF al reposito
 
 ```bash
 uv run accesos import-legacy "D:\_DATAVIZ\RosadaOlivos\old\normalized_tsv"
+```
+
+Para descargar recursivamente una carpeta pública de Google Drive durante un backfill puntual:
+
+```bash
+uv run accesos download-drive ID_DE_CARPETA tmp/historical-pdfs
+```
+
+Para incorporar PDF históricos legibles desde una carpeta local, dejando los formatos desconocidos en cuarentena:
+
+```bash
+uv run accesos backfill-local tmp/historical-pdfs --min-year 2019
+```
+
+Si cambia un parser, puede reprocesarse sólo una sede aunque los checksum no hayan cambiado:
+
+```bash
+uv run accesos backfill-local tmp/historical-pdfs --min-year 2019 --force-location olivos
 ```
 
 Para revisar una fuente pública:
