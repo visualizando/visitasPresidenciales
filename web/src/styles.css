@@ -192,8 +192,9 @@ td:nth-child(n + 3), th:nth-child(n + 3) { font-variant-numeric: tabular-nums; }
 .download-row span { display: flex; flex-direction: column; gap: 0.1rem; }
 .download-row small { color: var(--color-text-secondary); }
 .download-row svg { width: 1rem; color: var(--color-accent-solid); stroke-width: 2; }
-footer { display: flex; justify-content: space-between; gap: 2rem; padding: 1.25rem var(--space-page); border-block-start: 1px solid var(--color-border); color: var(--color-text-secondary); background: var(--color-bg-page); font-size: 0.6875rem; }
+footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 1rem 2rem; padding: 1.25rem var(--space-page); border-block-start: 1px solid var(--color-border); color: var(--color-text-secondary); background: var(--color-bg-page); font-size: 0.6875rem; }
 footer p { margin: 0; }
+footer a { color: var(--color-text-primary); text-decoration-color: var(--color-border-strong); text-underline-offset: 0.18em; }
 .notice { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.7rem; border-radius: var(--radius-inner); }
 .notice--error { color: var(--status-error-text); background: var(--status-error-bg); }
 
@@ -202,6 +203,7 @@ footer p { margin: 0; }
   .result-card:hover { border-color: var(--accent-500); }
   .download-row:hover { border-color: var(--accent-500); background: var(--color-accent-soft); }
   .text-button:hover { color: var(--color-accent-hover); }
+  footer a:hover { color: var(--color-accent-solid); text-decoration-color: currentColor; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .result-card, .download-row, .text-button { transition-property: background-color, border-color, color, transform; transition-duration: 140ms; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }

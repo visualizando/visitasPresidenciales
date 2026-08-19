@@ -111,7 +111,11 @@ export default function App() {
         <div className="download-list">{exportsData.data?.length ? [...exportsData.data].sort((left, right) => right.year - left.year).map((file) => <a className="download-row" key={file.year} href={new URL(`data/exports/${file.path}`, document.baseURI).href} download><span><strong>{file.year}</strong><small>{file.records.toLocaleString("es-AR")} registros</small></span><Download aria-hidden="true" /></a>) : <p className="empty-state">Los CSV aparecerán después de la primera actualización de datos.</p>}</div>
       </section>
     </main>
-    <footer><p>Datos publicados por sus fuentes originales. Este proyecto facilita su consulta, no certifica su exactitud.</p><p>Actualización: {meta.data?.generated_at ? formatDate(meta.data.generated_at) : "pendiente"}</p></footer>
+    <footer>
+      <p>Datos obtenidos por <a href="https://poderciudadano.org/">Poder Ciudadano</a> mediante pedidos de acceso a la información pública.</p>
+      <p>Creación y diseño: <a href="https://visualizando.ar/">Andrés Snitcofsky · Visualizando</a>.</p>
+      <p><a href="https://github.com/visualizando/visitasPresidenciales">Código en GitHub</a> · Actualización: {meta.data?.generated_at ? formatDate(meta.data.generated_at) : "pendiente"}</p>
+    </footer>
   </>;
 }
 
