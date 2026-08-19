@@ -1,0 +1,17 @@
+.venv/
+.uv-cache/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+node_modules/
+.pnpm-store/
+web/node_modules/
+web/dist/
+web/playwright-report/
+web/test-results/
+tmp/
+.env
+data/staging/
+data/quarantine/*.pdf
+old/

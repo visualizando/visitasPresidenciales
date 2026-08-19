@@ -1,0 +1,65 @@
+name: Actualizar datos
+
+on:
+  schedule:
+    - cron: "0 9 8 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      SOURCE_BASE_URL: ${{ vars.SOURCE_BASE_URL }}
+      MIN_YEAR: "2023"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync
+      - name: Verificar configuración
+        run: test -n "$SOURCE_BASE_URL" || (echo "Configure la variable SOURCE_BASE_URL" && exit 1)
+      - name: Procesar novedades
+        run: uv run accesos update
+      - name: Guardar actualización
+        run: |
+          if git diff --quiet; then
+            echo "No hay cambios"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data web/public/data
+          git commit -m "data: actualizar registros públicos"
+          git push
+      - name: Adjuntar diagnóstico
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostico-actualizacion
+          path: |
+            data/manifest.json
+            data/quarantine/
+          if-no-files-found: ignore
+      - name: Abrir alerta
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Falló la actualización mensual de datos"
+          body="La ejecución $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID no publicó cambios. Revisar el artifact de diagnóstico."
+          issue_number=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number')
+          if [ -n "$issue_number" ]; then
+            gh issue comment "$issue_number" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

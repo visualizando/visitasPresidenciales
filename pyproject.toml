@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "accesos-publicos"
+version = "0.1.0"
+description = "Pipeline reproducible para registros públicos de acceso"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "beautifulsoup4>=4.12,<5",
+  "duckdb>=1.3,<2",
+  "httpx>=0.28,<1",
+  "pyarrow>=20,<23",
+  "pymupdf>=1.25,<2",
+  "rapidfuzz>=3.12,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<10",
+  "pytest-cov>=6,<8",
+  "respx>=0.22,<1",
+  "ruff>=0.11,<1",
+]
+
+[project.scripts]
+accesos = "pipeline.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pipeline"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]

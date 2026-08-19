@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/access-data.schema.json",
+  "title": "Registros públicos de acceso",
+  "type": "object",
+  "$defs": {
+    "source_file": {
+      "type": "object",
+      "required": ["source_id", "url", "path", "location", "year", "month", "sha256", "status"],
+      "properties": {
+        "source_id": {"type": "string"},
+        "url": {"type": "string", "format": "uri"},
+        "path": {"type": "string"},
+        "location": {"enum": ["casa-rosada", "olivos"]},
+        "year": {"type": "integer", "minimum": 2023},
+        "month": {"type": "integer", "minimum": 1, "maximum": 12},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "parser": {"type": ["string", "null"]},
+        "record_count": {"type": "integer", "minimum": 0},
+        "status": {"enum": ["active", "missing", "quarantined"]}
+      }
+    },
+    "person": {
+      "type": "object",
+      "required": ["entity_id", "canonical_name"],
+      "properties": {
+        "entity_id": {"type": "string"},
+        "canonical_name": {"type": "string"},
+        "document_type": {"type": ["string", "null"]},
+        "document_number": {"type": ["string", "null"]}
+      }
+    },
+    "access_record": {
+      "type": "object",
+      "required": ["record_id", "entity_id", "location", "record_type", "source_id", "source_page"],
+      "properties": {
+        "record_id": {"type": "string"},
+        "entity_id": {"type": "string"},
+        "location": {"enum": ["casa-rosada", "olivos"]},
+        "record_type": {"enum": ["movement", "person", "vehicle", "visitor"]},
+        "occurred_at": {"type": ["string", "null"], "format": "date-time"},
+        "entered_at": {"type": ["string", "null"], "format": "date-time"},
+        "exited_at": {"type": ["string", "null"], "format": "date-time"},
+        "direction": {"type": ["string", "null"]},
+        "device": {"type": ["string", "null"]},
+        "destination": {"type": ["string", "null"]},
+        "purpose": {"type": ["string", "null"]},
+        "activity": {"type": ["string", "null"]},
+        "authorized_by": {"type": ["string", "null"]},
+        "quality": {"enum": ["high", "medium", "low"]},
+        "source_id": {"type": "string"},
+        "source_page": {"type": "integer", "minimum": 1},
+        "raw_text": {"type": "string"}
+      }
+    }
+  }
+}
+
