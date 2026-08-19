@@ -78,7 +78,7 @@ export default function App() {
     <main id="main">
       <section className="hero" aria-labelledby="page-title">
         <div className="hero-copy"><p className="eyebrow">Datos públicos</p><h1 id="page-title">Explorador de accesos a Olivos y Casa Rosada</h1><p>Este explorador se basa en datos obtenidos mediante pedidos de acceso a la información que Poder Ciudadano realiza regularmente.</p></div>
-        <div className="hero-facts" aria-label="Estado de la base"><div><strong>{formatNumber(meta.data?.record_count)}</strong><span>registros</span></div><div><strong>{formatNumber(meta.data?.people_count)}</strong><span>personas</span></div><div><strong>{formatNumber(meta.data?.source_count)}</strong><span>PDF</span></div></div>
+        <dl className="hero-facts" aria-label="Estado y cobertura de la base"><div><dd>{formatNumber(meta.data?.record_count)}</dd><dt>registros</dt></div><div><dd>{formatNumber(meta.data?.people_count)}</dd><dt>personas</dt></div><div><dd>{formatNumber(meta.data?.source_count)}</dd><dt>PDF</dt></div><div><dd>{formatMetricDate(meta.data?.first_date)}</dd><dt>primer registro</dt></div><div><dd>{formatMetricDate(meta.data?.last_date)}</dd><dt>último registro</dt></div></dl>
       </section>
 
       <section className="search-section" id="buscar" aria-labelledby="search-title">
@@ -156,5 +156,6 @@ function aggregateEvents(events: AccessEvent[]): Analytics {
 }
 
 function formatNumber(value?: number) { return value == null ? "—" : Intl.NumberFormat("es-AR", {notation: value >= 100000 ? "compact" : "standard", maximumFractionDigits: 1}).format(value); }
+function formatMetricDate(value?: string | null) { return value ? new Intl.DateTimeFormat("es-AR", {day: "2-digit", month: "short", year: "numeric", timeZone: "UTC"}).format(new Date(value)) : "—"; }
 function formatDate(value: string) { return new Intl.DateTimeFormat("es-AR", {dateStyle: "long"}).format(new Date(value)); }
 function monthLabel(year: number, month: number) { return new Intl.DateTimeFormat("es-AR", {month: "long", year: "numeric", timeZone: "UTC"}).format(new Date(Date.UTC(year, month - 1, 1))); }
