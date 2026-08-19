@@ -1,5 +1,6 @@
 import {Database, Download, Search} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
+import {CalendarChart} from "./components/CalendarChart";
 import {HeatmapChart} from "./components/HeatmapChart";
 import {PersonProfile} from "./components/PersonProfile";
 import {PurposeChart} from "./components/PurposeChart";
@@ -103,7 +104,7 @@ export default function App() {
         <div className="section-heading"><div><p className="eyebrow">Gráficos</p><h2 id="dashboard-title">Actividad</h2></div><p>{selected.length ? `Vista filtrada por ${selectedLabel}. Limpiá la selección para volver al total.` : "Panorama general de todos los registros publicados."}</p></div>
         {dashboardLoading && <p role="status">Cargando gráficos…</p>}
         {dashboardError && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los gráficos.</strong><span>{dashboardError}</span></div>}
-        {activeAnalytics && !dashboardLoading && !dashboardError && <div className="dashboard-grid"><div className="dashboard-wide"><TrendChart data={activeAnalytics.monthly} /></div><HeatmapChart data={activeAnalytics.heatmap} location={heatmapLocation} /><PurposeChart data={activeAnalytics.purposes} /></div>}
+        {activeAnalytics && !dashboardLoading && !dashboardError && <div className="dashboard-grid"><div className="dashboard-wide"><CalendarChart data={activeAnalytics.daily} location={heatmapLocation} /></div><HeatmapChart data={activeAnalytics.heatmap} location={heatmapLocation} /><PurposeChart data={activeAnalytics.purposes} /><div className="dashboard-wide"><TrendChart data={activeAnalytics.monthly} /></div></div>}
       </section>
 
       <section className="downloads-section" id="descargas" aria-labelledby="downloads-title">
@@ -120,6 +121,7 @@ export default function App() {
 }
 
 function aggregateEvents(events: AccessEvent[]): Analytics {
+  const daily = new Map<string, {date: string; location: AccessEvent["location"]; record_type: AccessEvent["record_type"]; records: number; people: Set<string>}>();
   const monthly = new Map<string, {month: string; location: AccessEvent["location"]; records: number; people: Set<string>}>();
   const heatmap = new Map<string, {location: AccessEvent["location"]; weekday: number; hour: number; records: number}>();
   const purposes = new Map<string, {location: AccessEvent["location"]; label: string; records: number}>();
@@ -129,6 +131,12 @@ function aggregateEvents(events: AccessEvent[]): Analytics {
     if (dateValue) {
       const date = new Date(dateValue);
       if (!Number.isNaN(date.valueOf())) {
+        const day = date.toISOString().slice(0, 10);
+        const dayKey = `${day}|${event.location}|${event.record_type}`;
+        const dayPoint = daily.get(dayKey) ?? {date: day, location: event.location, record_type: event.record_type, records: 0, people: new Set<string>()};
+        dayPoint.records += 1;
+        dayPoint.people.add(event.entity_id);
+        daily.set(dayKey, dayPoint);
         const month = date.toISOString().slice(0, 7);
         const monthKey = `${month}|${event.location}`;
         const monthPoint = monthly.get(monthKey) ?? {month, location: event.location, records: 0, people: new Set<string>()};
@@ -151,7 +159,7 @@ function aggregateEvents(events: AccessEvent[]): Analytics {
   }
 
   return {
-    daily: [],
+    daily: [...daily.values()].map(({people, ...point}) => ({...point, people: people.size})).sort((a, b) => a.date.localeCompare(b.date)),
     monthly: [...monthly.values()].map(({people, ...point}) => ({...point, people: people.size})).sort((a, b) => a.month.localeCompare(b.month)),
     heatmap: [...heatmap.values()],
     purposes: [...purposes.values()].sort((a, b) => b.records - a.records),

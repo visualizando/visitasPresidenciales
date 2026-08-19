@@ -167,20 +167,40 @@ table { width: 100%; border-collapse: collapse; color: var(--color-text-primary)
 caption { padding-block-end: 0.4rem; text-align: start; font-weight: 700; }
 th, td { padding: 0.45rem; border-block-end: 1px solid var(--color-border); text-align: start; white-space: nowrap; }
 td:nth-child(n + 3), th:nth-child(n + 3) { font-variant-numeric: tabular-nums; }
-.heatmap { display: flex; flex-direction: column; }
-.heatmap-row { display: grid; grid-template-columns: 2.25rem repeat(24, 1fr); gap: 0.12rem; }
+.heatmap-wrap { padding: 0.7rem; border-radius: var(--radius-inner); background: var(--neutral-50); }
+.heatmap { display: flex; flex-direction: column; gap: 0.12rem; }
+.heatmap-row { display: grid; grid-template-columns: 2.25rem repeat(24, 1fr); gap: 0.16rem; }
 .heatmap-day { align-self: center; color: var(--color-text-secondary); font-size: 0.65rem; }
 .heatmap-cell { display: block; aspect-ratio: 1; min-width: 0.5rem; border-radius: 0.15rem; }
 .heatmap > .heatmap-hour, .heatmap > span:first-child { display: none; }
 .heatmap-key { display: flex; justify-content: end; align-items: center; gap: 0.4rem; margin-block-start: 0.5rem; color: var(--color-text-secondary); font-size: 0.65rem; }
 .heatmap-key i { width: 4rem; height: 0.4rem; border-radius: 999px; background: linear-gradient(90deg, #e6edf0, #075c70); }
-.bar-list { display: flex; flex-direction: column; gap: 0.65rem; padding: 0; list-style: none; }
-.bar-label { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.78rem; }
-.bar-label span { overflow-wrap: anywhere; }
-.bar-label strong { font-variant-numeric: tabular-nums; }
-.bar-track { height: 0.4rem; margin-block: 0.25rem; border-radius: 999px; background: var(--neutral-100); overflow: hidden; }
-.bar-track span { display: block; height: 100%; border-radius: inherit; background: var(--color-accent-solid); }
-.bar-list small { color: var(--color-text-secondary); }
+.calendar-scroll { overflow-x: auto; border-radius: var(--radius-inner); background: var(--neutral-50); scrollbar-color: var(--neutral-500) transparent; }
+.calendar-periods { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; min-width: 46rem; padding: 0.75rem; }
+.calendar-period { min-width: 0; }
+.calendar-period h4 { margin: 0 0 0.35rem; font-size: 0.75rem; }
+.calendar-months { display: grid; gap: 0.15rem; margin-inline-start: 1.8rem; color: var(--color-text-secondary); font-size: 0.6rem; line-height: 1; }
+.calendar-months span { white-space: nowrap; }
+.calendar-body { display: grid; grid-template-columns: 1.45rem minmax(0, 1fr); gap: 0.35rem; margin-block-start: 0.25rem; }
+.calendar-weekdays { display: grid; grid-template-rows: repeat(7, 1fr); gap: 0.15rem; color: var(--color-text-secondary); font-size: 0.6rem; line-height: 1; text-align: center; }
+.calendar-weekdays span { display: grid; place-items: center; }
+.calendar-days { display: grid; grid-template-rows: repeat(7, minmax(0, 1fr)); gap: 0.15rem; }
+.calendar-day { display: block; min-width: 0; aspect-ratio: 1; border-radius: 0.12rem; }
+.calendar-day--outside { visibility: hidden; }
+.calendar-key { display: flex; justify-content: end; align-items: center; gap: 0.4rem; margin-block-start: 0.55rem; color: var(--color-text-secondary); font-size: 0.65rem; }
+.calendar-key i { width: 5rem; height: 0.4rem; border-radius: 999px; background: linear-gradient(90deg, var(--neutral-100), var(--accent-700)); }
+.legend-dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; }
+.legend-dot--casa-rosada { background: var(--accent-500); }
+.legend-dot--olivos { background: #b86422; }
+.pack-chart { display: block; width: 100%; height: auto; max-height: 22.5rem; overflow: visible; }
+.pack-group circle { fill: none; stroke: var(--color-border); stroke-width: 1; }
+.pack-group text { fill: var(--color-text-secondary); font-size: 10px; font-weight: 700; text-anchor: middle; text-transform: uppercase; letter-spacing: 0.04em; pointer-events: none; }
+.pack-leaf circle { stroke-width: 1.25; }
+.pack-leaf--casa-rosada circle { fill: var(--accent-100); stroke: var(--accent-500); }
+.pack-leaf--olivos circle { fill: #f3ddca; stroke: #b86422; }
+.pack-label { fill: var(--accent-900); font-size: 10px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+.pack-leaf--olivos .pack-label { fill: #62330e; }
+.pack-value { font-variant-numeric: tabular-nums; font-weight: 500; opacity: 0.76; }
 .chart-empty, .chart-empty-copy { color: var(--color-text-secondary); }
 .selection-empty { display: flex; flex-direction: column; gap: 0.2rem; margin: 0; padding: 1rem; border: 1px dashed var(--color-border); border-radius: var(--radius-inner); color: var(--color-text-secondary); background: var(--color-bg-surface); text-align: center; }
 .selection-empty strong { color: var(--color-text-primary); }
@@ -204,9 +224,12 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .download-row:hover { border-color: var(--accent-500); background: var(--color-accent-soft); }
   .text-button:hover { color: var(--color-accent-hover); }
   footer a:hover { color: var(--color-accent-solid); text-decoration-color: currentColor; }
+  .pack-leaf:hover circle { fill: var(--accent-50); stroke-width: 2; }
+  .pack-leaf--olivos:hover circle { fill: #f9eadc; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .result-card, .download-row, .text-button { transition-property: background-color, border-color, color, transform; transition-duration: 140ms; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
+  .pack-leaf circle { transition-property: fill, stroke-width; transition-duration: 140ms; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
   .result-card:active, .download-row:active, .person-chip button:active { transform: scale(0.96); }
   .result-skeleton { animation: skeleton 1.6s linear infinite; }
   @keyframes skeleton { to { background-position: -200% 0; } }
@@ -232,6 +255,7 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .profile-header { flex-direction: column; gap: 0.25rem; }
   .profile-stats, .dashboard-grid { grid-template-columns: 1fr; }
   .dashboard-wide { grid-column: auto; }
+  .calendar-periods { padding: 0.6rem; }
   .download-list { grid-template-columns: 1fr; }
   footer { flex-direction: column; gap: 0.4rem; }
 }
