@@ -14,7 +14,7 @@ function event(record_id: string, entity_id: string, canonical_name: string, occ
 
 describe("PersonProfile", () => {
   it("agrupa variantes y ordena la tabla por persona", () => {
-    render(<PersonProfile people={people} events={[event("1", "one", "PEREZ ANA", "2024-01-01T10:00:00Z"), event("2", "two", "ANA PEREZ", "2024-02-01T10:00:00Z")]} loading={false} error={null} onRemove={vi.fn()} onClear={vi.fn()} />);
+    render(<PersonProfile people={people} events={[event("1", "one", "PEREZ ANA", "2024-01-01T10:00:00Z"), event("2", "two", "ANA PEREZ", "2024-02-01T10:00:00Z")]} loading={false} error={null} coincidences={[]} coincidencesLoading={false} coincidencesError={null} onRemove={vi.fn()} onClear={vi.fn()} />);
     expect(screen.getByRole("heading", {name: /2 variantes/i})).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", {name: "Persona"}));
     const rows = screen.getAllByRole("row").slice(1);

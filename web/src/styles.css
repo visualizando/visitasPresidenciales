@@ -121,6 +121,30 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .profile-stats span { padding: 0.55rem 0.65rem; border-radius: var(--radius-inner); background: var(--color-bg-page); color: var(--color-text-secondary); font-size: 0.75rem; }
 .profile-stats strong { display: block; color: var(--color-text-primary); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
 .privacy-note { margin: 0; padding: 0.55rem 0.65rem; border-radius: var(--radius-inner); color: var(--status-warning-text); background: var(--status-warning-bg); font-size: 0.75rem; }
+.coincidences { margin-block-start: 1rem; padding-block-start: 0.9rem; border-block-start: 1px solid var(--color-border); }
+.coincidences .records-heading { align-items: start; }
+.coincidences .records-heading p { max-width: 72ch; margin: 0.2rem 0 0; color: var(--color-text-secondary); font-size: 0.75rem; line-height: 1.4; }
+.coincidence-warning { margin: 0 0 0.55rem; padding: 0.5rem 0.65rem; border-inline-start: 3px solid #b86422; color: var(--color-text-secondary); background: var(--neutral-50); font-size: 0.72rem; }
+.coincidence-warning strong { color: var(--color-text-primary); }
+.coincidence-table-wrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-inner); }
+.coincidence-table { min-width: 68rem; font-size: 0.75rem; }
+.coincidence-table th, .coincidence-table td { padding: 0.4rem 0.5rem; vertical-align: top; }
+.coincidence-table th { color: var(--color-text-secondary); background: var(--color-bg-subtle); font-size: 0.6875rem; }
+.coincidence-table tbody tr:nth-child(even) { background: var(--neutral-50); }
+.coincidence-table td:first-child, .coincidence-table td:nth-child(n + 3):nth-child(-n + 7) { font-variant-numeric: tabular-nums; }
+.coincidence-table td:nth-child(2) { min-width: 12rem; }
+.coincidence-table td:nth-child(2) strong, .coincidence-table td:nth-child(2) small { display: block; }
+.coincidence-table td:nth-child(2) small { margin-block-start: 0.12rem; color: var(--color-text-secondary); font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
+.coincidence-table details { position: relative; min-width: 8.5rem; }
+.coincidence-table summary { display: inline-flex; align-items: center; gap: 0.2rem; min-height: 1.75rem; color: var(--color-accent-solid); font-weight: 700; cursor: pointer; list-style: none; }
+.coincidence-table summary::-webkit-details-marker { display: none; }
+.coincidence-table summary svg { width: 0.75rem; transition: transform 140ms ease; }
+.coincidence-table details[open] summary svg { transform: rotate(180deg); }
+.coincidence-table details ul { display: grid; gap: 0.35rem; width: 22rem; max-height: 14rem; margin: 0.25rem 0 0; padding: 0.5rem; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 0.4rem; background: var(--color-bg-surface); box-shadow: var(--shadow-card); list-style: none; }
+.coincidence-table details li { display: flex; flex-direction: column; gap: 0.08rem; padding-block-end: 0.35rem; border-block-end: 1px solid var(--color-border); white-space: normal; }
+.coincidence-table details li:last-child { padding-block-end: 0; border: 0; }
+.coincidence-table details li span, .coincidence-table details li small { color: var(--color-text-secondary); font-size: 0.6875rem; }
+.evidence-limit { width: 22rem; margin: 0.25rem 0 0; color: var(--color-text-secondary); font-size: 0.6875rem; }
 .records-section { margin-block-start: 1rem; }
 .records-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-block-end: 0.4rem; }
 .records-heading span { color: var(--color-text-secondary); font-size: 0.75rem; font-variant-numeric: tabular-nums; }

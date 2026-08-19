@@ -104,3 +104,31 @@ export interface ExportFile {
   records: number;
   path: string;
 }
+
+export type RawCoincidencePerson = [name: string, documentType: string | null, documentNumber: string | null];
+export type RawCoincidenceEpisode = [personId: string, date: string, location: 0 | 1, destinationIndex: number, overlapMinutes: number, specificDestination: 0 | 1, overlapStart: string, overlapEnd: string];
+export interface RawCoincidenceOwner { d: string[]; p: Record<string, RawCoincidencePerson>; e: RawCoincidenceEpisode[]; }
+export type CoincidenceShard = Record<string, RawCoincidenceOwner>;
+
+export interface CoincidenceEvidence {
+  date: string;
+  location: Location;
+  destination: string;
+  overlapMinutes: number;
+  overlapStart: string;
+  overlapEnd: string;
+  specificDestination: boolean;
+}
+
+export interface CoincidenceResult {
+  entityId: string;
+  canonicalName: string;
+  documentType: string | null;
+  documentNumber: string | null;
+  days: number;
+  episodes: number;
+  overlapMinutes: number;
+  specificEpisodes: number;
+  latestDate: string;
+  evidence: CoincidenceEvidence[];
+}

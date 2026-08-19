@@ -18,7 +18,7 @@ async function walk(directory) {
       total += info.size;
       const rel = relative(root, path).replaceAll("\\", "/");
       if (/^assets\/.*\.(js|css)$/.test(rel)) appCompressed += gzipSync(await readFile(path)).length;
-      if ((rel.includes("/search/") || rel.includes("/events/")) && info.size > limits.shard) throw new Error(`${rel} supera 3 MB`);
+      if ((rel.includes("/search/") || rel.includes("/events/") || rel.includes("/cooccurrences/")) && info.size > limits.shard) throw new Error(`${rel} supera 3 MB`);
       if (rel.includes("/analytics/") && info.size > limits.analytics) throw new Error(`${rel} supera 1 MB`);
     }
   }

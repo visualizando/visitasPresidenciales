@@ -1,6 +1,7 @@
 import {ArrowDown, ArrowUp, ExternalLink, FileText, X} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
-import type {AccessEvent, PersonSummary} from "../types";
+import type {AccessEvent, CoincidenceResult, PersonSummary} from "../types";
+import {CoincidenceRanking} from "./CoincidenceRanking";
 import {locationLabel, titleCase} from "./SearchResults";
 
 type SortKey = "date" | "person" | "location" | "type" | "detail" | "exit" | "quality";
@@ -11,11 +12,14 @@ type PersonProfileProps = {
   events: AccessEvent[];
   loading: boolean;
   error: string | null;
+  coincidences: CoincidenceResult[];
+  coincidencesLoading: boolean;
+  coincidencesError: string | null;
   onRemove: (entityId: string) => void;
   onClear: () => void;
 };
 
-export function PersonProfile({people, events, loading, error, onRemove, onClear}: PersonProfileProps) {
+export function PersonProfile({people, events, loading, error, coincidences, coincidencesLoading, coincidencesError, onRemove, onClear}: PersonProfileProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [sort, setSort] = useState<{key: SortKey; direction: SortDirection}>({key: "date", direction: "desc"});
   useEffect(() => { headingRef.current?.focus(); }, [people.length]);
@@ -45,6 +49,8 @@ export function PersonProfile({people, events, loading, error, onRemove, onClear
 
     <div className="profile-stats"><span><strong>{events.length.toLocaleString("es-AR")}</strong> registros cargados</span><span><strong>{locations.map(locationLabel).join(" y ")}</strong> sedes</span><span><strong>{formatDate(latest)}</strong> última aparición</span></div>
     <p className="privacy-note"><strong>Dato publicado por la fuente.</strong> Verificá el PDF indicado antes de reutilizarlo.</p>
+
+    <CoincidenceRanking results={coincidences} loading={coincidencesLoading} error={coincidencesError} />
 
     {loading && <p role="status">Cargando registros…</p>}
     {error && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los registros.</strong><span>{error}</span></div>}
