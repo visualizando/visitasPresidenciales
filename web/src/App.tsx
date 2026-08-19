@@ -13,6 +13,7 @@ const DEFAULT_FILTERS: SearchFilters = {location: "all", year: "all", recordType
 
 export default function App() {
   const meta = useData<Meta>("meta.json");
+  const analytics = useData<Analytics>("analytics/overview.json");
   const exportsData = useData<ExportFile[]>("exports/index.json");
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
@@ -51,10 +52,13 @@ export default function App() {
 
   const selectedIds = useMemo(() => new Set(selected.map((person) => person.entity_id)), [selected]);
   const selectionAnalytics = useMemo(() => aggregateEvents(events.data), [events.data]);
+  const activeAnalytics = selected.length ? selectionAnalytics : analytics.data;
   const heatmapLocation = useMemo(() => {
-    const totals = events.data.reduce((result, event) => ({...result, [event.location]: result[event.location] + 1}), {"casa-rosada": 0, olivos: 0});
+    const totals = (activeAnalytics?.heatmap ?? []).reduce((result, point) => ({...result, [point.location]: result[point.location] + point.records}), {"casa-rosada": 0, olivos: 0});
     return totals.olivos > totals["casa-rosada"] ? "olivos" : "casa-rosada";
-  }, [events.data]);
+  }, [activeAnalytics]);
+  const dashboardLoading = selected.length ? events.loading : analytics.loading;
+  const dashboardError = selected.length ? events.error : analytics.error;
 
   function togglePerson(person: PersonSummary) {
     setSelected((current) => current.some((item) => item.entity_id === person.entity_id)
@@ -96,11 +100,10 @@ export default function App() {
       </section>
 
       <section className="dashboard-section" id="panorama" aria-labelledby="dashboard-title">
-        <div className="section-heading"><div><p className="eyebrow">Gráficos</p><h2 id="dashboard-title">Actividad de la selección</h2></div><p>{selected.length ? `Los gráficos reúnen los registros de ${selectedLabel}.` : "Seleccioná una o más personas para actualizar esta sección."}</p></div>
-        {!selected.length && <div className="selection-empty"><strong>No hay personas seleccionadas</strong><span>Buscá arriba y elegí las variantes que quieras comparar como una sola identidad.</span></div>}
-        {events.loading && <p role="status">Cargando gráficos…</p>}
-        {events.error && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los gráficos.</strong><span>{events.error}</span></div>}
-        {selected.length > 0 && !events.loading && !events.error && <div className="dashboard-grid"><div className="dashboard-wide"><TrendChart data={selectionAnalytics.monthly} /></div><HeatmapChart data={selectionAnalytics.heatmap} location={heatmapLocation} /><PurposeChart data={selectionAnalytics.purposes} /></div>}
+        <div className="section-heading"><div><p className="eyebrow">Gráficos</p><h2 id="dashboard-title">Actividad</h2></div><p>{selected.length ? `Vista filtrada por ${selectedLabel}. Limpiá la selección para volver al total.` : "Panorama general de todos los registros publicados."}</p></div>
+        {dashboardLoading && <p role="status">Cargando gráficos…</p>}
+        {dashboardError && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los gráficos.</strong><span>{dashboardError}</span></div>}
+        {activeAnalytics && !dashboardLoading && !dashboardError && <div className="dashboard-grid"><div className="dashboard-wide"><TrendChart data={activeAnalytics.monthly} /></div><HeatmapChart data={activeAnalytics.heatmap} location={heatmapLocation} /><PurposeChart data={activeAnalytics.purposes} /></div>}
       </section>
 
       <section className="downloads-section" id="descargas" aria-labelledby="downloads-title">
