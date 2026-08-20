@@ -1199,6 +1199,50 @@
       "url": "file:///D:/_DATAVIZ/RosadaOlivos/tmp/historical-source-casa-clean/casa-rosada/2023/04/H_Listado_2021-08_a_2023-04.pdf",
       "year": 2023
     },
+    "historical/olivos/datos_olivos-csv.csv": {
+      "etag": null,
+      "import_diagnostics": {
+        "exit_date_mismatch": 504,
+        "outside_year_range": 195
+      },
+      "last_modified": "1787261514217814800",
+      "location": "olivos",
+      "month": 1,
+      "parser": "olivos-csv-historico-v1",
+      "partition": null,
+      "partitions": [
+        "olivos/2020/01/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/02/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/03/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/04/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/05/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/06/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/07/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/08/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/09/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/10/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/11/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2020/12/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2021/01/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2021/02/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2021/03/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2021/04/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2021/05/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2021/06/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2021/07/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2021/10/src_6e5297fdfd4677b1044514cd.parquet",
+        "olivos/2021/12/src_6e5297fdfd4677b1044514cd.parquet"
+      ],
+      "path": "historical/olivos/datos_olivos-csv.csv",
+      "processed_at": "2026-08-20T21:37:29.300000Z",
+      "record_count": 37451,
+      "sha256": "14c04982cd89cc648daaf2d1d6a624d41cbb1faecd725389726816a3d89d44fa",
+      "size": 4119601,
+      "source_id": "src_6e5297fdfd4677b1044514cd",
+      "status": "active",
+      "url": "local-source:///historical/olivos/datos_olivos-csv.csv",
+      "year": 2020
+    },
     "olivos/2022/1. Enero/PLANILLAS DE INGRESOS 01 ENE 22.pdf": {
       "etag": null,
       "last_modified": "1787175772190836900",
@@ -7405,6 +7449,6 @@
       "year": 2022
     }
   },
-  "generated_at": "2026-08-19T23:08:14.503009Z",
+  "generated_at": "2026-08-20T21:37:29.300027Z",
   "version": 1
 }

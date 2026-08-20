@@ -9,6 +9,7 @@ from pathlib import Path
 from pipeline.build_web import build_web_data
 from pipeline.discovery import discover
 from pipeline.drive_backfill import download_public_folder
+from pipeline.historical_csv_import import import_olivos_historical_csv
 from pipeline.legacy_import import import_legacy_tsv
 from pipeline.update import update_dataset
 
@@ -42,6 +43,16 @@ def parser() -> argparse.ArgumentParser:
         "--output", type=Path, default=Path(os.getenv("WEB_DATA_DIR", "web/public/data"))
     )
     legacy.add_argument("--public-base", default=os.getenv("SOURCE_PUBLIC_BASE_URL"))
+    historical_csv = subcommands.add_parser(
+        "import-olivos-csv", help="Importa el CSV histórico unificado de Olivos"
+    )
+    historical_csv.add_argument("source", type=Path)
+    historical_csv.add_argument("--first-year", type=int, default=2020)
+    historical_csv.add_argument("--last-year", type=int, default=2021)
+    historical_csv.add_argument("--data-dir", type=Path, default=Path(os.getenv("DATA_DIR", "data")))
+    historical_csv.add_argument(
+        "--output", type=Path, default=Path(os.getenv("WEB_DATA_DIR", "web/public/data"))
+    )
     backfill = subcommands.add_parser(
         "backfill-local", help="Importa PDF históricos legibles y pone el resto en cuarentena"
     )
@@ -82,6 +93,14 @@ def main() -> None:
     elif arguments.command == "import-legacy":
         result = import_legacy_tsv(
             arguments.legacy_dir, arguments.data_dir, arguments.output, arguments.public_base
+        )
+    elif arguments.command == "import-olivos-csv":
+        result = import_olivos_historical_csv(
+            arguments.source,
+            arguments.data_dir,
+            arguments.output,
+            first_year=arguments.first_year,
+            last_year=arguments.last_year,
         )
     elif arguments.command == "backfill-local":
         result = update_dataset(
