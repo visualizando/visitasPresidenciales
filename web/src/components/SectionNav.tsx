@@ -5,6 +5,7 @@ const ITEMS = [
   {id: "panorama", label: "Actividad"},
   {id: "descargas", label: "Descargas"},
   {id: "rankings", label: "Rankings"},
+  {id: "cobertura", label: "Cobertura"},
 ] as const;
 
 export function SectionNav() {

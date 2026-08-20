@@ -168,3 +168,57 @@ def test_rankings_count_one_daily_presence_per_person_and_location(tmp_path) -> 
     assert year["olivos"][0]["daily_visits"] == 1
     assert year["all"][0]["daily_visits"] == 3
     assert rankings["rankings"]["presidency"]["fernandez"]["all"][0]["daily_visits"] == 3
+
+
+def test_builds_coverage_with_gaps_and_quarantined_files(tmp_path) -> None:
+    data = tmp_path / "data"
+    output = tmp_path / "public" / "data"
+    records = [
+        AccessRecord(
+            record_id="coverage_1",
+            entity_id="per_coverage",
+            canonical_name="PERSONA COBERTURA",
+            document_type=None,
+            document_number=None,
+            location="casa-rosada",
+            record_type="visitor",
+            source_id="src_coverage",
+            source_url="https://example.org/source.pdf",
+            source_path="source.pdf",
+            source_page=1,
+            occurred_at=datetime(2023, 1, 1, 10, 0),
+            quality="high",
+            raw_text="fila",
+        ),
+        AccessRecord(
+            record_id="coverage_2",
+            entity_id="per_coverage",
+            canonical_name="PERSONA COBERTURA",
+            document_type=None,
+            document_number=None,
+            location="casa-rosada",
+            record_type="visitor",
+            source_id="src_coverage",
+            source_url="https://example.org/source.pdf",
+            source_path="source.pdf",
+            source_page=1,
+            occurred_at=datetime(2023, 3, 1, 10, 0),
+            quality="high",
+            raw_text="fila",
+        ),
+    ]
+    write_partition(data / "partitions" / "casa-rosada" / "2023" / "01" / "src.parquet", records)
+    (data / "manifest.json").write_text(
+        json.dumps(
+            {"files": {"scan.pdf": {"path": "scan.pdf", "location": "olivos", "year": 2023, "month": 2, "status": "quarantined", "record_count": 0, "parser": "no-legible-o-formato-desconocido-v1"}}}
+        ),
+        encoding="utf-8",
+    )
+
+    build_web_data(data, output)
+
+    coverage = json.loads((output / "analytics" / "coverage.json").read_text(encoding="utf-8"))
+    casa = next(item for item in coverage["locations"] if item["location"] == "casa-rosada")
+    assert casa["gaps"][0]["start_month"] == "2023-02"
+    assert coverage["summary"]["quarantined_files"] == 1
+    assert coverage["file_issues"][0]["status"] == "quarantined"

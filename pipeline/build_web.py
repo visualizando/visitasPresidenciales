@@ -8,7 +8,7 @@ import os
 import shutil
 import tempfile
 from collections import defaultdict
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -157,6 +157,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
     _write_cooccurrences(connection, output / "cooccurrences")
     analytics = _build_analytics(connection)
     _write_compact(output / "analytics" / "overview.json", analytics)
+    _write_compact(output / "analytics" / "coverage.json", _build_coverage(data_dir, connection))
     _write_compact(output / "analytics" / "rankings.json", _build_rankings(connection))
     exports = _write_exports(connection, output / "exports")
     _write_compact(output / "exports" / "index.json", exports)
@@ -240,6 +241,133 @@ def _build_analytics(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
             "last_date": _json_datetime(coverage[1]),
         },
     }
+
+
+def _build_coverage(data_dir: Path, connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
+    """Describe missing periods and source files without inferring unverified causes."""
+    date_expr = "coalesce(occurred_at, entered_at, exited_at)"
+    boundaries = connection.execute(
+        f"SELECT min(cast({date_expr} AS DATE)), max(cast({date_expr} AS DATE)) FROM records"
+    ).fetchone()
+    manifest = load_json(data_dir / "manifest.json", {"files": {}})
+    files = list(manifest.get("files", {}).values())
+    if not boundaries or boundaries[0] is None:
+        return _empty_coverage(files)
+
+    first_date, last_date = boundaries
+    month_rows = _rows(
+        connection,
+        f"""
+        SELECT location, strftime({date_expr}, '%Y-%m') AS month,
+               count(*)::INTEGER AS record_count
+        FROM records
+        WHERE {date_expr} IS NOT NULL
+        GROUP BY ALL
+        """,
+    )
+    months_by_location: dict[str, set[str]] = {"casa-rosada": set(), "olivos": set()}
+    for row in month_rows:
+        months_by_location[row["location"]].add(row["month"])
+
+    all_months = _month_keys(first_date, last_date)
+    locations = []
+    for location in ("casa-rosada", "olivos"):
+        covered = months_by_location[location]
+        gaps = _periods_from_months([month for month in all_months if month not in covered])
+        locations.append(
+            {
+                "location": location,
+                "months_with_data": len(covered),
+                "gaps": [
+                    {
+                        **gap,
+                        "reason": "No hay registros procesados ni un archivo incorporado para este período en el inventario actual.",
+                    }
+                    for gap in gaps
+                ],
+            }
+        )
+
+    issues = []
+    for item in files:
+        status = item.get("status", "active")
+        records = item.get("record_count") or 0
+        if status == "active" and records > 0:
+            continue
+        if status == "quarantined":
+            reason = "El archivo está disponible, pero no tiene texto legible o usa un formato todavía no compatible."
+        elif status == "missing":
+            reason = "El archivo había sido detectado antes, pero ya no está visible en la fuente pública."
+        else:
+            reason = "El archivo se procesó, pero no produjo registros utilizables."
+        issues.append(
+            {
+                "path": item.get("path"),
+                "location": item.get("location"),
+                "year": item.get("year"),
+                "month": item.get("month"),
+                "status": status,
+                "parser": item.get("parser"),
+                "reason": reason,
+            }
+        )
+
+    return {
+        "version": 1,
+        "first_date": str(first_date),
+        "last_date": str(last_date),
+        "older_period": {
+            "end_date": str(first_date),
+            "reason": "No hay registros incorporados al proyecto antes de esta fecha. No permite concluir que no hayan existido accesos ni que no existan archivos históricos.",
+        },
+        "summary": {
+            "active_files": sum(item.get("status", "active") == "active" for item in files),
+            "quarantined_files": sum(item.get("status") == "quarantined" for item in files),
+            "missing_files": sum(item.get("status") == "missing" for item in files),
+            "zero_record_files": sum(
+                item.get("status", "active") == "active" and not (item.get("record_count") or 0)
+                for item in files
+            ),
+        },
+        "locations": locations,
+        "file_issues": sorted(
+            issues,
+            key=lambda item: (
+                item.get("location") or "",
+                item.get("year") or 0,
+                item.get("month") or 0,
+                item.get("path") or "",
+            ),
+        ),
+    }
+
+
+def _month_keys(first_date: date, last_date: date) -> list[str]:
+    year, month = first_date.year, first_date.month
+    result = []
+    while (year, month) <= (last_date.year, last_date.month):
+        result.append(f"{year:04d}-{month:02d}")
+        if month == 12:
+            year, month = year + 1, 1
+        else:
+            month += 1
+    return result
+
+
+def _periods_from_months(months: list[str]) -> list[dict[str, str]]:
+    if not months:
+        return []
+    periods = []
+    start = previous = datetime.strptime(months[0], "%Y-%m").date()
+    for value in months[1:]:
+        current = datetime.strptime(value, "%Y-%m").date()
+        expected = (previous.year + 1, 1) if previous.month == 12 else (previous.year, previous.month + 1)
+        if (current.year, current.month) != expected:
+            periods.append({"start_month": start.strftime("%Y-%m"), "end_month": previous.strftime("%Y-%m")})
+            start = current
+        previous = current
+    periods.append({"start_month": start.strftime("%Y-%m"), "end_month": previous.strftime("%Y-%m")})
+    return periods
 
 
 def _build_rankings(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
@@ -369,6 +497,30 @@ def _empty_rankings() -> dict[str, Any]:
         "years": [],
         "presidencies": [],
         "rankings": {"year": {}, "presidency": {}},
+    }
+
+
+def _empty_coverage(files: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    files = files or []
+    return {
+        "version": 1,
+        "first_date": None,
+        "last_date": None,
+        "older_period": None,
+        "summary": {
+            "active_files": sum(item.get("status", "active") == "active" for item in files),
+            "quarantined_files": sum(item.get("status") == "quarantined" for item in files),
+            "missing_files": sum(item.get("status") == "missing" for item in files),
+            "zero_record_files": sum(
+                item.get("status", "active") == "active" and not (item.get("record_count") or 0)
+                for item in files
+            ),
+        },
+        "locations": [
+            {"location": "casa-rosada", "months_with_data": 0, "gaps": []},
+            {"location": "olivos", "months_with_data": 0, "gaps": []},
+        ],
+        "file_issues": [],
     }
 
 
@@ -680,6 +832,7 @@ def _write_empty(output: Path, generated_at: str) -> None:
             "coverage": {"first_date": None, "last_date": None},
         },
     )
+    _write_compact(output / "analytics" / "coverage.json", _empty_coverage())
     _write_compact(output / "analytics" / "rankings.json", _empty_rankings())
     _write_compact(output / "exports" / "index.json", [])
     _write_compact(

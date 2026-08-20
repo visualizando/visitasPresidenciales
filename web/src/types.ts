@@ -135,6 +135,38 @@ export interface RankingsData {
   rankings: Record<RankingGrouping, Record<string, Record<RankingLocation, RankingEntry[]>>>;
 }
 
+export interface CoverageGap {
+  start_month: string;
+  end_month: string;
+  reason: string;
+}
+
+export interface CoverageLocation {
+  location: Location;
+  months_with_data: number;
+  gaps: CoverageGap[];
+}
+
+export interface CoverageFileIssue {
+  path: string;
+  location: Location;
+  year: number;
+  month: number;
+  status: "active" | "missing" | "quarantined";
+  parser: string | null;
+  reason: string;
+}
+
+export interface CoverageData {
+  version: number;
+  first_date: string | null;
+  last_date: string | null;
+  older_period: {end_date: string; reason: string} | null;
+  summary: {active_files: number; quarantined_files: number; missing_files: number; zero_record_files: number};
+  locations: CoverageLocation[];
+  file_issues: CoverageFileIssue[];
+}
+
 export type RawCoincidencePerson = [name: string, documentType: string | null, documentNumber: string | null];
 export type RawCoincidenceEpisode = [personId: string, date: string, location: 0 | 1, destinationIndex: number, overlapMinutes: number, specificDestination: 0 | 1, overlapStart: string, overlapEnd: string];
 export interface RawCoincidenceOwner { d: string[]; p: Record<string, RawCoincidencePerson>; e: RawCoincidenceEpisode[]; }

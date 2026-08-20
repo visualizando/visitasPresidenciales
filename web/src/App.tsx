@@ -1,6 +1,7 @@
 import {Database, Download, Search} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
 import {CalendarChart} from "./components/CalendarChart";
+import {CoverageReport} from "./components/CoverageReport";
 import {HeatmapChart} from "./components/HeatmapChart";
 import {PersonProfile} from "./components/PersonProfile";
 import {PurposeChart} from "./components/PurposeChart";
@@ -120,6 +121,9 @@ export default function App() {
 
       <section className="rankings-section" id="rankings" aria-labelledby="rankings-title">
         <Rankings />
+      </section>
+      <section className="coverage-section" id="cobertura" aria-labelledby="coverage-title">
+        <CoverageReport />
       </section>
     </main>
     <footer>

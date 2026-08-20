@@ -76,7 +76,7 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .section-nav a[aria-current="location"] { color: var(--color-accent-solid); background: var(--color-accent-soft); }
 .section-nav a[aria-current="location"]::after { position: absolute; inset-inline: 0.8rem; inset-block-end: 0.25rem; height: 2px; border-radius: 999px; background: currentColor; content: ""; }
 
-.search-section, .dashboard-section, .downloads-section, .rankings-section { padding-block: 1.75rem; }
+.search-section, .dashboard-section, .downloads-section, .rankings-section, .coverage-section { padding-block: 1.75rem; }
 .section-heading { display: flex; justify-content: space-between; gap: 2rem; align-items: end; margin-block-end: 1rem; }
 .section-heading > p { max-width: 58ch; margin: 0; color: var(--color-text-secondary); line-height: 1.45; text-wrap: pretty; }
 .search-panel { display: grid; grid-template-columns: minmax(17rem, 0.85fr) minmax(0, 1.15fr); gap: 1rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: var(--radius-outer); background: var(--color-bg-surface); box-shadow: var(--shadow-card); }
@@ -266,6 +266,29 @@ td:nth-child(n + 3), th:nth-child(n + 3) { font-variant-numeric: tabular-nums; }
 .ranking-total { color: var(--color-accent-solid); font-weight: 800; }
 .ranking-status { display: grid; min-height: 8rem; place-items: center; margin: 0; color: var(--color-text-secondary); }
 
+.coverage-section { max-width: none; background: var(--color-bg-page); }
+.coverage-section > * { max-width: calc(96rem - 2 * var(--space-page)); margin-inline: auto; }
+.coverage-heading { align-items: start; }
+.coverage-panel { padding: 1rem; border: 1px solid var(--color-border); border-radius: var(--radius-outer); background: var(--color-bg-surface); box-shadow: var(--shadow-card); }
+.coverage-summary { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-block-end: 0.85rem; }
+.coverage-summary span { padding: 0.35rem 0.5rem; border-radius: 999px; color: var(--color-text-secondary); background: var(--color-bg-subtle); font-size: 0.75rem; }
+.coverage-summary strong { color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
+.coverage-note { margin: 0 0 0.85rem; padding: 0.6rem 0.7rem; border-inline-start: 3px solid var(--accent-500); color: var(--color-text-secondary); background: var(--color-accent-soft); font-size: 0.75rem; line-height: 1.45; }
+.coverage-note strong { color: var(--color-text-primary); }
+.coverage-locations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.coverage-locations details, .coverage-files { border: 1px solid var(--color-border); border-radius: var(--radius-inner); }
+.coverage-locations summary, .coverage-files summary { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; min-height: 2.75rem; padding: 0.65rem 0.7rem; color: var(--color-text-primary); font-weight: 750; cursor: pointer; }
+.coverage-locations summary small { color: var(--color-text-secondary); font-size: 0.6875rem; font-weight: 500; text-align: end; }
+.coverage-locations ul, .coverage-files ul { display: grid; gap: 0.55rem; margin: 0; padding: 0 0.7rem 0.7rem; list-style: none; }
+.coverage-locations li, .coverage-files li { display: grid; gap: 0.12rem; padding-block-start: 0.55rem; border-block-start: 1px solid var(--color-border); font-size: 0.75rem; }
+.coverage-locations li strong, .coverage-files li strong { color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
+.coverage-locations li span, .coverage-files li span, .coverage-files li small { color: var(--color-text-secondary); line-height: 1.4; }
+.coverage-files { margin-block-start: 0.75rem; }
+.coverage-files summary { color: var(--color-accent-solid); }
+.coverage-files li small { overflow-wrap: anywhere; font-size: 0.6875rem; }
+.coverage-clear, .coverage-status { margin: 0.75rem 0 0; color: var(--color-text-secondary); font-size: 0.75rem; }
+.coverage-locations .coverage-clear { padding: 0 0.7rem 0.7rem; }
+
 footer { padding: 2.75rem var(--space-page) 3rem; border-block-start: 1px solid var(--color-border); color: var(--color-text-secondary); background: var(--color-bg-page); font-size: 0.8125rem; }
 .footer-inner { display: grid; grid-template-columns: minmax(15rem, 0.7fr) minmax(20rem, 1.3fr) auto; gap: 2rem 3rem; align-items: start; max-width: 96rem; margin-inline: auto; }
 footer p { margin: 0; }
@@ -322,6 +345,7 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .download-list { grid-template-columns: 1fr; }
   .ranking-filters { grid-template-columns: 1fr; }
   .ranking-coverage { grid-column: auto; }
+  .coverage-locations { grid-template-columns: 1fr; }
   footer { padding-block: 2.25rem; }
   .footer-inner { grid-template-columns: 1fr; gap: 1.25rem; }
   .footer-meta { grid-column: auto; flex-direction: column; align-items: start; }
