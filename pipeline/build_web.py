@@ -295,7 +295,12 @@ def _build_coverage(data_dir: Path, connection: duckdb.DuckDBPyConnection) -> di
         if status == "active" and records > 0:
             continue
         if status == "quarantined":
-            reason = "El archivo está disponible, pero no tiene texto legible o usa un formato todavía no compatible."
+            if item.get("parser") == "archivo-vacio-v1":
+                reason = "El archivo está publicado, pero está vacío y no contiene datos recuperables."
+            elif item.get("parser") == "pdf-sin-texto-extraible-v1":
+                reason = "El PDF no contiene texto extraíble; puede ser un escaneo y requiere OCR."
+            else:
+                reason = "El archivo está disponible, pero usa un formato todavía no compatible."
         elif status == "missing":
             reason = "El archivo había sido detectado antes, pero ya no está visible en la fuente pública."
         else:

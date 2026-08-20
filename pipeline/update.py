@@ -28,6 +28,11 @@ def update_dataset(
     manifest_path = data_dir / "manifest.json"
     manifest = load_json(manifest_path, {"version": 1, "generated_at": None, "files": {}})
     previous: dict[str, dict[str, object]] = manifest.setdefault("files", {})
+    known_hashes = {
+        str(entry.get("sha256"))
+        for entry in previous.values()
+        if entry.get("sha256") and entry.get("status") != "quarantined"
+    }
     manifest_before = json.dumps(manifest, sort_keys=True)
     remote_files = discover(source_base_url, min_year=min_year)
     seen_paths = {item.path for item in remote_files}
@@ -45,6 +50,8 @@ def update_dataset(
             local_pdf = staging_root / "downloads" / Path(remote.path).name
             sha256 = download(remote, local_pdf)
             old = previous.get(remote.path)
+            if not old and remote.location not in forced and sha256 in known_hashes:
+                continue
             if (
                 old
                 and remote.location not in forced
@@ -63,9 +70,15 @@ def update_dataset(
             source_id = stable_id("src_", remote.path)
             try:
                 result = parse_pdf(local_pdf, remote, source_id)
-            except ParseFailure:
+            except ParseFailure as error:
                 if not quarantine_failures:
                     raise
+                if local_pdf.stat().st_size == 0:
+                    failure_parser = "archivo-vacio-v1"
+                elif "escaneado" in str(error).lower() or "texto extraíble" in str(error).lower():
+                    failure_parser = "pdf-sin-texto-extraible-v1"
+                else:
+                    failure_parser = "no-legible-o-formato-desconocido-v1"
                 quarantined_entries.append(
                     (
                         remote,
@@ -80,7 +93,7 @@ def update_dataset(
                             etag=remote.etag,
                             last_modified=remote.last_modified,
                             sha256=sha256,
-                            parser="no-legible-o-formato-desconocido-v1",
+                            parser=failure_parser,
                             record_count=0,
                             status="quarantined",
                             processed_at=utc_now(),
@@ -113,6 +126,7 @@ def update_dataset(
                 processed_at=utc_now(),
             )
             staged_entries.append((remote, entry, staged_partition))
+            known_hashes.add(sha256)
 
         if mark_missing:
             for path, entry in previous.items():
@@ -173,8 +187,6 @@ def update_dataset(
 
 def _needs_download(remote: RemoteFile, old: dict[str, object] | None) -> bool:
     if not old:
-        return True
-    if old.get("status") == "quarantined":
         return True
     if remote.sha256 and remote.sha256 != old.get("sha256"):
         return True

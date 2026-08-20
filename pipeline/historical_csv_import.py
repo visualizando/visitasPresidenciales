@@ -22,6 +22,7 @@ def import_olivos_historical_csv(
     *,
     first_year: int = 2020,
     last_year: int = 2021,
+    rebuild_web: bool = True,
 ) -> dict[str, int]:
     """Import the previously unified Olivos CSV in a reproducible, idempotent way."""
     source_id = stable_id("src_", SOURCE_PATH)
@@ -71,7 +72,7 @@ def import_olivos_historical_csv(
     }
     manifest["generated_at"] = utc_now()
     write_json_atomic(data_dir / "manifest.json", manifest)
-    web = build_web_data(data_dir, web_data_dir)
+    web = build_web_data(data_dir, web_data_dir) if rebuild_web else {}
     return {"imported": sum(len(records) for records in partitions.values()), **dict(diagnostics), **web}
 
 
@@ -112,7 +113,18 @@ def _record_from_row(
     person_id = entity_id(name, document_number)
     destination = _clean(row.get("fin"))
     activity = _clean(row.get("hoja"))
-    record_id = stable_id("rec_", source_id, line_number, person_id, entered, exited, destination)
+    logical_time = entered or exited
+    record_id = stable_id(
+        "rec_",
+        person_id,
+        "olivos",
+        "person",
+        logical_time.isoformat() if logical_time else "",
+        exited.isoformat() if exited else "",
+        None,
+        None,
+        destination,
+    )
     raw_text = " | ".join(
         f"{key}={value}" for key, value in row.items() if value and key not in {"Column"}
     )

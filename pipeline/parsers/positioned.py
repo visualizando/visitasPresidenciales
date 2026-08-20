@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -135,6 +136,8 @@ def _record_from_olivos(
     if kind == "control":
         entered = _date_time(row.get("register_date_start"), row.get("entry_time_raw"))
         exited = _date_time(row.get("register_date_start"), row.get("exit_time_raw"), entered)
+    entered = _sanitize_olivos_date(entered, remote)
+    exited = _sanitize_olivos_date(exited, remote)
     purpose = row.get("meeting") or row.get("motivo") or row.get("actividad_otro")
     activity = _join(
         row.get("function"),
@@ -209,6 +212,24 @@ def _datetime(value: str | None) -> datetime | None:
         return None
     try:
         return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _sanitize_olivos_date(value: datetime | None, remote: RemoteFile) -> datetime | None:
+    if value is None or abs(value.year - remote.year) <= 1:
+        return value
+    filename = Path(remote.path).stem
+    day = next(
+        (
+            int(match.group(1))
+            for match in re.finditer(r"(?:^|\D)([0-3]?\d)(?:\D|$)", filename)
+            if 1 <= int(match.group(1)) <= 31
+        ),
+        1,
+    )
+    try:
+        return value.replace(year=remote.year, month=remote.month, day=day)
     except ValueError:
         return None
 

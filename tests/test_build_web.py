@@ -210,7 +210,28 @@ def test_builds_coverage_with_gaps_and_quarantined_files(tmp_path) -> None:
     write_partition(data / "partitions" / "casa-rosada" / "2023" / "01" / "src.parquet", records)
     (data / "manifest.json").write_text(
         json.dumps(
-            {"files": {"scan.pdf": {"path": "scan.pdf", "location": "olivos", "year": 2023, "month": 2, "status": "quarantined", "record_count": 0, "parser": "no-legible-o-formato-desconocido-v1"}}}
+            {
+                "files": {
+                    "scan.pdf": {
+                        "path": "scan.pdf",
+                        "location": "olivos",
+                        "year": 2023,
+                        "month": 2,
+                        "status": "quarantined",
+                        "record_count": 0,
+                        "parser": "no-legible-o-formato-desconocido-v1",
+                    },
+                    "empty.pdf": {
+                        "path": "empty.pdf",
+                        "location": "olivos",
+                        "year": 2023,
+                        "month": 2,
+                        "status": "quarantined",
+                        "record_count": 0,
+                        "parser": "archivo-vacio-v1",
+                    },
+                }
+            }
         ),
         encoding="utf-8",
     )
@@ -220,5 +241,6 @@ def test_builds_coverage_with_gaps_and_quarantined_files(tmp_path) -> None:
     coverage = json.loads((output / "analytics" / "coverage.json").read_text(encoding="utf-8"))
     casa = next(item for item in coverage["locations"] if item["location"] == "casa-rosada")
     assert casa["gaps"][0]["start_month"] == "2023-02"
-    assert coverage["summary"]["quarantined_files"] == 1
-    assert coverage["file_issues"][0]["status"] == "quarantined"
+    assert coverage["summary"]["quarantined_files"] == 2
+    empty = next(item for item in coverage["file_issues"] if item["path"] == "empty.pdf")
+    assert "vacío" in empty["reason"]

@@ -2,9 +2,9 @@
 
 Pipeline y sitio estático para explorar los registros públicos de acceso a Casa Rosada y la Quinta de Olivos. El proyecto descarga PDF desde una carpeta pública, normaliza los registros, conserva las tablas canónicas en Parquet y genera índices y agregados compactos para GitHub Pages.
 
-La base incluida contiene 1.636.491 registros deduplicados y 71.849 personas entre el 11 de julio de 2019 y el 28 de febrero de 2026. Combina los datos normalizados existentes con 372 PDF históricos legibles: siete consolidados/listados de Casa Rosada y los 365 partes diarios de Olivos de 2022. Los PDF escaneados, vacíos o no descargables no se incorporan como filas.
+La base incluida contiene 2.022.698 registros deduplicados y 91.199 personas entre el 8 de enero de 2016 y el 30 de junio de 2026. Combina 1.378 fuentes activas: PDF consolidados y mensuales de Casa Rosada, partes diarios de Olivos, el CSV histórico unificado de 2020-2021 y planillas XLSX/DOCX estructuradas de 2016, 2018, 2019 y 2020. Los 122 PDF vacíos de 2021 se conservan en el manifiesto como faltantes explicados, pero no generan filas.
 
-Los índices de búsqueda, fichas y co-presencias se publican en shards JSON comprimidos con gzip y se descomprimen en el navegador. La salida estática completa ocupa aproximadamente 327 MB y el shard más grande queda debajo de 1,6 MB.
+Los índices de búsqueda, fichas y co-presencias se publican en shards JSON comprimidos con gzip y se descomprimen en el navegador. La salida estática completa ocupa aproximadamente 435 MB y el shard interactivo más grande queda debajo de 1,9 MB.
 
 ## Desarrollo
 
@@ -40,6 +40,18 @@ Para incorporar PDF históricos legibles desde una carpeta local, dejando los fo
 
 ```bash
 uv run accesos backfill-local tmp/historical-pdfs --min-year 2019
+```
+
+Para incorporar las planillas XLSX y DOCX históricas estructuradas:
+
+```bash
+uv run accesos import-historical-office data/Raw
+```
+
+Para regenerar el CSV histórico unificado de Olivos 2020-2021:
+
+```bash
+uv run accesos import-olivos-csv old/datos_olivos-csv.csv
 ```
 
 Si cambia un parser, puede reprocesarse sólo una sede aunque los checksum no hayan cambiado:

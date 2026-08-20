@@ -10,6 +10,7 @@ from pipeline.build_web import build_web_data
 from pipeline.discovery import discover
 from pipeline.drive_backfill import download_public_folder
 from pipeline.historical_csv_import import import_olivos_historical_csv
+from pipeline.historical_office_import import import_historical_office
 from pipeline.legacy_import import import_legacy_tsv
 from pipeline.update import update_dataset
 
@@ -51,6 +52,16 @@ def parser() -> argparse.ArgumentParser:
     historical_csv.add_argument("--last-year", type=int, default=2021)
     historical_csv.add_argument("--data-dir", type=Path, default=Path(os.getenv("DATA_DIR", "data")))
     historical_csv.add_argument(
+        "--output", type=Path, default=Path(os.getenv("WEB_DATA_DIR", "web/public/data"))
+    )
+    historical_office = subcommands.add_parser(
+        "import-historical-office", help="Importa XLSX y DOCX históricos estructurados"
+    )
+    historical_office.add_argument("source", type=Path)
+    historical_office.add_argument(
+        "--data-dir", type=Path, default=Path(os.getenv("DATA_DIR", "data"))
+    )
+    historical_office.add_argument(
         "--output", type=Path, default=Path(os.getenv("WEB_DATA_DIR", "web/public/data"))
     )
     backfill = subcommands.add_parser(
@@ -101,6 +112,10 @@ def main() -> None:
             arguments.output,
             first_year=arguments.first_year,
             last_year=arguments.last_year,
+        )
+    elif arguments.command == "import-historical-office":
+        result = import_historical_office(
+            arguments.source, arguments.data_dir, arguments.output
         )
     elif arguments.command == "backfill-local":
         result = update_dataset(
