@@ -46,6 +46,17 @@ class CurationApplication:
             note=str(payload.get("note") or ""),
         )
 
+    def batch_preview(self) -> dict[str, Any]:
+        return self.store.safe_batch_preview()
+
+    def batch(self, payload: dict[str, Any]) -> dict[str, Any]:
+        action = str(payload.get("action") or "")
+        if action == "apply":
+            return self.store.apply_safe_batch(confirmed=payload.get("confirmed") is True)
+        if action == "undo":
+            return self.store.undo_batch(str(payload.get("batch_id") or ""))
+        raise CurationError("La acción de lote solicitada no existe.")
+
 
 def serve_curation(
     candidates_path: Path,
@@ -92,10 +103,14 @@ def _handler(application: CurationApplication) -> type[BaseHTTPRequestHandler]:
             if parsed.path == "/api/candidates":
                 self._json(HTTPStatus.OK, application.candidates(parse_qs(parsed.query)))
                 return
+            if parsed.path == "/api/batch-preview":
+                self._json(HTTPStatus.OK, application.batch_preview())
+                return
             self._static(parsed.path)
 
         def do_POST(self) -> None:  # noqa: N802
-            if urlparse(self.path).path != "/api/decision":
+            path = urlparse(self.path).path
+            if path not in {"/api/decision", "/api/batch"}:
                 self._json(HTTPStatus.NOT_FOUND, {"error": "Ruta inexistente."})
                 return
             supplied = self.headers.get("X-Curation-Token", "")
@@ -104,7 +119,12 @@ def _handler(application: CurationApplication) -> type[BaseHTTPRequestHandler]:
                 return
             try:
                 payload = self._read_json()
-                self._json(HTTPStatus.OK, {"candidate": application.decide(payload)})
+                result = (
+                    {"candidate": application.decide(payload)}
+                    if path == "/api/decision"
+                    else application.batch(payload)
+                )
+                self._json(HTTPStatus.OK, result)
             except CurationError as error:
                 self._json(
                     error.status,

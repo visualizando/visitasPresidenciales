@@ -8,6 +8,7 @@ export interface Candidate {
   reasons: string[];
   warnings: string[];
   status: CandidateStatus;
+  batch_id: string | null;
   recommended_canonical_id: string;
   left_entity_id: string;
   left_name: string;
@@ -23,6 +24,30 @@ export interface Candidate {
   right_first_seen: string;
   right_last_seen: string;
   right_locations: string;
+}
+
+export interface BatchInfo {
+  batch_id: string;
+  status: "applied" | "undone";
+  created_at: string;
+  merge_count: number;
+  component_count: number;
+}
+
+export interface BatchPreview {
+  rule: string;
+  candidate_edges: number;
+  eligible_components: number;
+  eligible_identities: number;
+  merge_operations: number;
+  excluded_no_document_components: number;
+  excluded_no_document_merges: number;
+  excluded_conflict_components: number;
+  excluded_conflict_merges: number;
+  excluded_curated_components: number;
+  excluded_curated_merges: number;
+  latest_batch: BatchInfo | null;
+  batch?: BatchInfo;
 }
 
 export interface Summary {

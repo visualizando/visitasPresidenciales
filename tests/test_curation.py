@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from pipeline.curation import ConfirmationRequired, CurationStore, DocumentConflict
+from pipeline.curation import ConfirmationRequired, CurationError, CurationStore, DocumentConflict
 
 FIELDS = [
     "candidate_id",
@@ -135,3 +135,48 @@ def test_blocks_documents_that_conflict_inside_chain(tmp_path) -> None:
         curation.decide("cand_2", "merge", canonical_entity_id="B", confirmed=True)
 
     assert error.value.details["documents"] == ["DNI:111", "DNI:222"]
+
+
+def test_safe_batch_previews_applies_and_undoes_without_touching_manual_merges(tmp_path) -> None:
+    curation = store(
+        tmp_path,
+        [
+            candidate("safe_1", "A", "B", left_document="DNI:111"),
+            candidate("safe_2", "B", "C"),
+            candidate("no_doc", "D", "E"),
+            candidate("conflict_1", "F", "G", left_document="DNI:222"),
+            candidate("conflict_2", "G", "H", right_document="DNI:333"),
+            candidate("curated", "I", "J", left_document="DNI:444"),
+            candidate("curated_path_1", "I", "K", left_document="DNI:444"),
+            candidate("curated_path_2", "K", "J"),
+            candidate("manual", "Y", "Z", confidence="review", right_document="DNI:999"),
+        ],
+    )
+    curation.decide("curated", "reject")
+    curation.decide("manual", "merge", canonical_entity_id="Z", confirmed=True)
+
+    preview = curation.safe_batch_preview()
+    assert preview["eligible_components"] == 1
+    assert preview["merge_operations"] == 2
+    assert preview["excluded_no_document_merges"] == 1
+    assert preview["excluded_conflict_merges"] == 2
+    assert preview["excluded_curated_merges"] == 2
+
+    with pytest.raises(ConfirmationRequired):
+        curation.apply_safe_batch()
+
+    applied = curation.apply_safe_batch(confirmed=True)
+    batch_id = applied["batch"]["batch_id"]
+    assert applied["batch"]["merge_count"] == 2
+    assert curation.list_candidates(status="merged")["total"] == 3
+
+    with pytest.raises(CurationError, match="lote completo"):
+        curation.decide("safe_1", "undo")
+
+    undone = curation.undo_batch(batch_id)
+    assert undone["batch"]["status"] == "undone"
+    assert curation.list_candidates(status="merged")["total"] == 1
+    saved = json.loads((tmp_path / "entity_merges.json").read_text(encoding="utf-8"))
+    assert saved["merges"] == [
+        next(item for item in saved["merges"] if item["candidate_id"] == "manual")
+    ]

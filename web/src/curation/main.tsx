@@ -1,7 +1,7 @@
-import {AlertTriangle, Check, ChevronLeft, ChevronRight, Clock3, GitMerge, RotateCcw, Search, ShieldCheck, X} from "lucide-react";
+import {AlertTriangle, Check, ChevronLeft, ChevronRight, Clock3, GitMerge, Layers3, RotateCcw, Search, ShieldCheck, X} from "lucide-react";
 import {StrictMode, useEffect, useMemo, useRef, useState} from "react";
 import {createRoot} from "react-dom/client";
-import type {Candidate, CandidatePage, CandidateStatus, Confidence, Summary} from "./types";
+import type {BatchPreview, Candidate, CandidatePage, CandidateStatus, Confidence, Summary} from "./types";
 import "./styles.css";
 
 const PAGE_SIZE = 50;
@@ -20,6 +20,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [mergeCandidate, setMergeCandidate] = useState<Candidate | null>(null);
+  const [batchOpen, setBatchOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const selected = page?.items.find((candidate) => candidate.candidate_id === selectedId) ?? page?.items[0] ?? null;
 
@@ -126,6 +127,7 @@ function App() {
         <label className="search-field"><span>Buscar nombre o documento</span><div><Search aria-hidden="true" /><input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ej.: Cerimedo o 28.675.966" autoComplete="off" /></div></label>
         <label><span>Confianza</span><select value={confidence} onChange={(event) => {setConfidence(event.target.value as Confidence | "all"); setOffset(0);}}><option value="high">Alta confianza</option><option value="review">Requiere revisión</option><option value="all">Todas</option></select></label>
         <label><span>Estado</span><select value={status} onChange={(event) => {setStatus(event.target.value as CandidateStatus | "all"); setOffset(0);}}><option value="pending">Pendientes</option><option value="deferred">Pospuestos</option><option value="merged">Unificados</option><option value="rejected">Rechazados</option><option value="all">Todos</option></select></label>
+        <button className="button button--batch" type="button" onClick={() => setBatchOpen(true)}><Layers3 aria-hidden="true" /><span><strong>Fusión segura</strong><small>Ver lote con 100% de confianza</small></span></button>
       </section>
 
       {error && <div className="notice notice--error" role="alert"><AlertTriangle aria-hidden="true" /><span><strong>No se pudo completar la acción.</strong>{error}</span><button type="button" onClick={() => setError(null)} aria-label="Cerrar error"><X /></button></div>}
@@ -139,16 +141,17 @@ function App() {
         </aside>
 
         <section className="detail-pane" id="candidate-detail" aria-labelledby="detail-title">
-          {selected ? <CandidateDetail candidate={selected} onMerge={() => setMergeCandidate(selected)} onReject={() => decide(selected, "reject")} onDefer={() => decide(selected, "defer")} onUndo={() => decide(selected, "undo")} /> : <div className="empty-detail"><GitMerge aria-hidden="true" /><h2 id="detail-title">Elegí un candidato</h2><p>La comparación, la evidencia y las acciones aparecerán acá.</p></div>}
+          {selected ? <CandidateDetail candidate={selected} onMerge={() => setMergeCandidate(selected)} onReject={() => decide(selected, "reject")} onDefer={() => decide(selected, "defer")} onUndo={() => decide(selected, "undo")} onBatch={() => setBatchOpen(true)} /> : <div className="empty-detail"><GitMerge aria-hidden="true" /><h2 id="detail-title">Elegí un candidato</h2><p>La comparación, la evidencia y las acciones aparecerán acá.</p></div>}
         </section>
       </div>
     </main>
     <footer>Las decisiones se guardan localmente en <code>data/curation/entity_merges.json</code>. Revisá el diff antes de commitear.</footer>
     <MergeDialog candidate={mergeCandidate} token={token} onClose={() => setMergeCandidate(null)} onSaved={async () => {setMergeCandidate(null); setAnnouncement("Identidades unificadas."); await refreshCurrentPage();}} onError={(message) => setError(message)} />
+    <BatchDialog open={batchOpen} token={token} onClose={() => setBatchOpen(false)} onChanged={async (message) => {setAnnouncement(message); await refreshCurrentPage();}} onError={(message) => setError(message)} />
   </>;
 }
 
-function CandidateDetail({candidate, onMerge, onReject, onDefer, onUndo}: {candidate: Candidate; onMerge: () => void; onReject: () => void; onDefer: () => void; onUndo: () => void}) {
+function CandidateDetail({candidate, onMerge, onReject, onDefer, onUndo, onBatch}: {candidate: Candidate; onMerge: () => void; onReject: () => void; onDefer: () => void; onUndo: () => void; onBatch: () => void}) {
   const decided = candidate.status !== "pending";
   return <>
     <div className="detail-heading"><div><p className="eyebrow">Comparación seleccionada</p><h2 id="detail-title">¿Es la misma persona?</h2></div><div className={`score score--${candidate.confidence}`}><strong>{candidate.score}</strong><span>{candidate.confidence === "high" ? "confianza alta" : "revisar"}</span></div></div>
@@ -158,9 +161,54 @@ function CandidateDetail({candidate, onMerge, onReject, onDefer, onUndo}: {candi
     </div>
     <section className="evidence" aria-labelledby="evidence-title"><h3 id="evidence-title">Por qué fue propuesto</h3><ul>{candidate.reasons.map((reason) => <li key={reason}>{reasonLabel(reason)}</li>)}</ul>{candidate.warnings.length > 0 && <div className="warning"><AlertTriangle aria-hidden="true" /><span><strong>Requiere atención adicional</strong>{candidate.warnings.map(reasonLabel).join(" · ")}</span></div>}</section>
     <div className="action-bar">
-      {decided ? <><span>Estado actual: <StatusBadge status={candidate.status} /></span><button className="button button--secondary" type="button" onClick={onUndo}><RotateCcw aria-hidden="true" />Deshacer decisión</button></> : <><button className="button button--primary" type="button" onClick={onMerge}><GitMerge aria-hidden="true" />Unificar</button><button className="button button--danger" type="button" onClick={onReject}><X aria-hidden="true" />No son la misma</button><button className="button button--secondary" type="button" onClick={onDefer}><Clock3 aria-hidden="true" />Revisar después</button></>}
+      {decided ? <><span>Estado actual: <StatusBadge status={candidate.status} />{candidate.batch_id && <> · lote seguro</>}</span>{candidate.batch_id ? <button className="button button--secondary" type="button" onClick={onBatch}><Layers3 aria-hidden="true" />Administrar lote</button> : <button className="button button--secondary" type="button" onClick={onUndo}><RotateCcw aria-hidden="true" />Deshacer decisión</button>}</> : <><button className="button button--primary" type="button" onClick={onMerge}><GitMerge aria-hidden="true" />Unificar</button><button className="button button--danger" type="button" onClick={onReject}><X aria-hidden="true" />No son la misma</button><button className="button button--secondary" type="button" onClick={onDefer}><Clock3 aria-hidden="true" />Revisar después</button></>}
     </div>
   </>;
+}
+
+function BatchDialog({open, token, onClose, onChanged, onError}: {open: boolean; token: string; onClose: () => void; onChanged: (message: string) => Promise<void>; onError: (message: string) => void}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [preview, setPreview] = useState<BatchPreview | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const [working, setWorking] = useState(false);
+  useEffect(() => {
+    if (!open) {
+      if (dialogRef.current?.open) dialogRef.current.close();
+      return;
+    }
+    setPreview(null);
+    setConfirmed(false);
+    dialogRef.current?.showModal();
+    fetchJson<BatchPreview>("/api/batch-preview").then(setPreview).catch((reason: Error) => onError(reason.message));
+  }, [open]);
+  async function applyBatch() {
+    if (!confirmed) return;
+    setWorking(true);
+    try {
+      const result = await fetchJson<BatchPreview>("/api/batch", {method: "POST", headers: {"Content-Type": "application/json", "X-Curation-Token": token}, body: JSON.stringify({action: "apply", confirmed: true})});
+      setPreview(await fetchJson<BatchPreview>("/api/batch-preview"));
+      setConfirmed(false);
+      await onChanged(`${result.batch?.merge_count.toLocaleString("es-AR") ?? 0} fusiones seguras aplicadas.`);
+    } catch (reason) { onError((reason as Error).message); } finally { setWorking(false); }
+  }
+  async function undoBatch(batchId: string) {
+    setWorking(true);
+    try {
+      const result = await fetchJson<{preview: BatchPreview}>("/api/batch", {method: "POST", headers: {"Content-Type": "application/json", "X-Curation-Token": token}, body: JSON.stringify({action: "undo", batch_id: batchId})});
+      setPreview(result.preview);
+      setConfirmed(false);
+      await onChanged("Lote deshecho. Las decisiones manuales se conservaron.");
+    } catch (reason) { onError((reason as Error).message); } finally { setWorking(false); }
+  }
+  return <dialog ref={dialogRef} className="merge-dialog batch-dialog" onClose={onClose} aria-labelledby="batch-title"><div className="batch-dialog__body"><div className="dialog-heading"><div><p className="eyebrow">Acción masiva reversible</p><h2 id="batch-title">Fusión segura por lote</h2></div><button type="button" onClick={() => dialogRef.current?.close()} aria-label="Cerrar"><X /></button></div>
+    {!preview ? <div className="batch-loading" role="status">Calculando una vista previa segura…</div> : <>
+      <p>Sólo incluye coincidencias con puntaje 100 y exactamente un documento consistente en todo el grupo.</p>
+      <div className="batch-summary"><div><strong>{preview.merge_operations.toLocaleString("es-AR")}</strong><span>fusiones a escribir</span></div><div><strong>{preview.eligible_components.toLocaleString("es-AR")}</strong><span>grupos seguros</span></div><div><strong>{preview.eligible_identities.toLocaleString("es-AR")}</strong><span>identidades involucradas</span></div></div>
+      <section className="batch-exclusions" aria-labelledby="exclusions-title"><h3 id="exclusions-title">Quedan fuera para revisión manual</h3><ul><li><strong>{preview.excluded_no_document_merges.toLocaleString("es-AR")}</strong> fusiones sin documento</li><li><strong>{preview.excluded_conflict_merges.toLocaleString("es-AR")}</strong> con documentos en conflicto</li><li><strong>{preview.excluded_curated_merges.toLocaleString("es-AR")}</strong> vinculadas a decisiones previas</li></ul></section>
+      {preview.latest_batch && <div className="batch-active" role="status"><span><strong>Último lote aplicado</strong>{preview.latest_batch.merge_count.toLocaleString("es-AR")} fusiones · {formatDate(preview.latest_batch.created_at)}</span><button className="button button--secondary" type="button" disabled={working} onClick={() => undoBatch(preview.latest_batch!.batch_id)}><RotateCcw aria-hidden="true" />Deshacer este lote</button></div>}
+      {preview.merge_operations > 0 ? <><label className="batch-confirm"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>Entiendo que se escribirán <strong>{preview.merge_operations.toLocaleString("es-AR")} fusiones</strong> en el archivo de curación y que podré deshacer el lote completo.</span></label><div className="dialog-actions"><button type="button" className="button button--secondary" onClick={() => dialogRef.current?.close()}>Cancelar</button><button type="button" className="button button--primary" disabled={!confirmed || working} onClick={applyBatch}>{working ? "Aplicando…" : "Aplicar lote seguro"}</button></div></> : !preview.latest_batch && <div className="batch-active"><span><strong>No hay fusiones seguras pendientes.</strong>Las coincidencias restantes requieren revisión manual.</span></div>}
+    </>}
+  </div></dialog>;
 }
 
 function PersonCard({candidate, side, recommended}: {candidate: Candidate; side: "left" | "right"; recommended: boolean}) {
