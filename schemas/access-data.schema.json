@@ -30,6 +30,28 @@
         "document_number": {"type": ["string", "null"]}
       }
     },
+    "identity_alias": {
+      "type": "object",
+      "required": ["entity_id", "observed_name"],
+      "properties": {
+        "entity_id": {"type": "string"},
+        "observed_name": {"type": "string"},
+        "normalized_name": {"type": "string"},
+        "record_count": {"type": "integer", "minimum": 1}
+      }
+    },
+    "identity_candidate": {
+      "type": "object",
+      "required": ["candidate_id", "left_entity_id", "right_entity_id", "score", "confidence", "reasons"],
+      "properties": {
+        "candidate_id": {"type": "string"},
+        "left_entity_id": {"type": "string"},
+        "right_entity_id": {"type": "string"},
+        "score": {"type": "integer", "minimum": 0, "maximum": 100},
+        "confidence": {"enum": ["high", "review"]},
+        "reasons": {"type": "array", "items": {"type": "string"}}
+      }
+    },
     "access_record": {
       "type": "object",
       "required": ["record_id", "entity_id", "location", "record_type", "source_id", "source_page"],
@@ -55,4 +77,3 @@
     }
   }
 }
-

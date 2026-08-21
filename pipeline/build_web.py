@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Any
 
 import duckdb
-from rapidfuzz.fuzz import token_set_ratio
 
+from pipeline.identity_candidates import write_identity_candidates
 from pipeline.normalize import fold_text
 from pipeline.storage import load_json, utc_now
 
@@ -188,8 +188,13 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         "is_demo": False,
     }
     _write_compact(output / "meta.json", meta)
-    _write_candidates(data_dir / "curation" / "candidates.csv", people)
     connection.close()
+    candidate_stats = write_identity_candidates(
+        data_dir / "curation" / "candidates.csv",
+        people,
+        data_dir / "curation" / "entity_merges.json",
+    )
+    _write_compact(data_dir / "curation" / "candidates.summary.json", candidate_stats)
     return {"records": record_count, "people": len(people), "exports": len(exports)}
 
 
@@ -769,36 +774,6 @@ def _write_exports(connection: duckdb.DuckDBPyConnection, directory: Path) -> li
             }
         )
     return exports
-
-
-def _write_candidates(path: Path, people: list[dict[str, Any]]) -> None:
-    blocks: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for person in people:
-        tokens = person["normalized_name"].split()
-        if tokens:
-            blocks[tokens[-1][:2]].append(person)
-    rows: list[tuple[str, str, int, str, str]] = []
-    for block in blocks.values():
-        for index, left in enumerate(block):
-            for right in block[index + 1 :]:
-                if left.get("document_number") and right.get("document_number"):
-                    continue
-                score = int(token_set_ratio(left["normalized_name"], right["normalized_name"]))
-                if score >= 88:
-                    rows.append(
-                        (
-                            left["entity_id"],
-                            right["entity_id"],
-                            score,
-                            left["canonical_name"],
-                            right["canonical_name"],
-                        )
-                    )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(["left_entity_id", "right_entity_id", "score", "left_name", "right_name"])
-        writer.writerows(sorted(rows, key=lambda row: (-row[2], row[3], row[4])))
 
 
 def _write_empty(output: Path, generated_at: str) -> None:

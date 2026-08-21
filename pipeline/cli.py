@@ -11,6 +11,7 @@ from pipeline.discovery import discover
 from pipeline.drive_backfill import download_public_folder
 from pipeline.historical_csv_import import import_olivos_historical_csv
 from pipeline.historical_office_import import import_historical_office
+from pipeline.identity_candidates import build_identity_candidates_from_search
 from pipeline.legacy_import import import_legacy_tsv
 from pipeline.update import update_dataset
 
@@ -85,6 +86,18 @@ def parser() -> argparse.ArgumentParser:
     )
     drive.add_argument("folder_id")
     drive.add_argument("output", type=Path)
+    identities = subcommands.add_parser(
+        "identity-candidates",
+        help="Regenera candidatos de identidad desde los índices públicos existentes",
+    )
+    identities.add_argument(
+        "--data-dir", type=Path, default=Path(os.getenv("DATA_DIR", "data"))
+    )
+    identities.add_argument(
+        "--web-data-dir",
+        type=Path,
+        default=Path(os.getenv("WEB_DATA_DIR", "web/public/data")),
+    )
     return root
 
 
@@ -129,6 +142,10 @@ def main() -> None:
         )
     elif arguments.command == "download-drive":
         result = download_public_folder(arguments.folder_id, arguments.output)
+    elif arguments.command == "identity-candidates":
+        result = build_identity_candidates_from_search(
+            arguments.data_dir, arguments.web_data_dir
+        )
     else:
         result = [asdict(item) for item in discover(arguments.source, arguments.min_year)]
     print(json.dumps(result, ensure_ascii=False, indent=2, default=str))

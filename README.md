@@ -78,6 +78,14 @@ La fuente debe organizarse como `casa-rosada/{año}/{mes}` y `olivos/{año}/{mes
 
 Los resultados reproducen documentos publicados por la fuente y mantienen enlaces de procedencia. DNI y CUIL se muestran completos porque así fue definido para esta versión. Las coincidencias por documento se consolidan automáticamente; las coincidencias sólo por nombre se presentan como candidatos de revisión.
 
+Cada regeneración crea `data/curation/candidates.csv`, un reporte auditable de posibles identidades duplicadas. El reporte compara nombres por tokens, orden, nombres adicionales y errores tipográficos pequeños; incluye puntaje, nivel de confianza, documentos, períodos, sedes y una explicación de cada propuesta. Nunca propone unir dos documentos distintos y respeta las fusiones y rechazos versionados en `data/curation/entity_merges.json`. Los candidatos no modifican la base hasta que una decisión sea incorporada explícitamente a ese archivo.
+
+Para iterar sobre las reglas sin reconstruir todos los índices y gráficos:
+
+```bash
+uv run accesos identity-candidates
+```
+
 El ranking de co-presencias se calcula únicamente cuando dos registros tienen entrada y salida válidas, comparten sede, fecha y destino normalizado, y sus intervalos se superponen durante al menos 10 minutos. Se deduplican los episodios repetidos y se priorizan días distintos, destinos específicos y minutos superpuestos. Es una señal de presencia compatible en los registros: no prueba un encuentro ni una interacción entre personas.
 
 ## Configuración
