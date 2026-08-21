@@ -85,6 +85,7 @@ kbd { padding: 0.05rem 0.25rem; border: 1px solid var(--neutral-200); border-rad
 .pagination button { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 2.25rem; padding-inline: 0.5rem; border: 1px solid var(--neutral-200); border-radius: var(--radius-inner); color: var(--neutral-700); background: var(--neutral-0); font-size: 0.72rem; font-weight: 700; }
 .pagination svg { width: 0.85rem; }
 button:disabled { cursor: not-allowed; opacity: 0.5; }
+.button:focus-visible, .candidate-row:focus-visible, .pagination button:focus-visible, .dialog-heading button:focus-visible { outline: 2px solid var(--accent-700); outline-offset: 2px; }
 .detail-pane { min-width: 0; padding: 0.9rem; overflow-y: auto; }
 .detail-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
 .detail-heading h2 { margin: 0; font-size: 1.2rem; letter-spacing: -0.02em; }

@@ -23,6 +23,7 @@ function App() {
   const [mergeCandidate, setMergeCandidate] = useState<Candidate | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const mergeButtonRef = useRef<HTMLButtonElement>(null);
   const selected = page?.items.find((candidate) => candidate.candidate_id === selectedId) ?? page?.items[0] ?? null;
 
   useEffect(() => {
@@ -61,6 +62,12 @@ function App() {
   useEffect(() => {
     function handleKeydown(event: KeyboardEvent) {
       const target = event.target as HTMLElement;
+      const candidateRow = target.closest(".candidate-row");
+      if (event.key === "Enter" && candidateRow && selected?.status === "pending") {
+        event.preventDefault();
+        setMergeCandidate(selected);
+        return;
+      }
       if (target.closest("input, select, textarea, button, dialog")) return;
       if (event.key === "/") {
         event.preventDefault();
@@ -98,6 +105,13 @@ function App() {
     }
     setPage(result);
     setSelectedId(result.items[0]?.candidate_id ?? null);
+  }
+
+  function selectCandidate(candidate: Candidate, event: React.MouseEvent<HTMLButtonElement>) {
+    setSelectedId(candidate.candidate_id);
+    if (event.detail > 0 && candidate.status === "pending") {
+      window.requestAnimationFrame(() => mergeButtonRef.current?.focus());
+    }
   }
 
   const summary = page?.summary ?? EMPTY_SUMMARY;
@@ -138,12 +152,12 @@ function App() {
       <div className="review-layout">
         <aside className="candidate-pane" aria-label="Cola de candidatos" aria-busy={loading}>
           <div className="pane-heading"><div><h2>Candidatos</h2><span>{start}–{end} de {page?.total.toLocaleString("es-AR") ?? "—"}</span></div><small>Atajos: <kbd>j</kbd>/<kbd>k</kbd> para recorrer, <kbd>/</kbd> para buscar</small></div>
-          {loading && !page ? <CandidateSkeleton /> : page?.items.length ? <ol className="candidate-list">{page.items.map((candidate) => <li key={candidate.candidate_id}><button id={`candidate-${candidate.candidate_id}`} type="button" className="candidate-row" aria-current={selected?.candidate_id === candidate.candidate_id ? "true" : undefined} onClick={() => setSelectedId(candidate.candidate_id)}><span className="row-top"><StatusBadge status={candidate.status} /><b>{candidate.score}</b></span><strong>{candidate.left_name}</strong><span className="comparison-arrow" aria-hidden="true">↔</span><strong>{candidate.right_name}</strong><small><b>{candidate.total_records.toLocaleString("es-AR")} en total</b> · {candidate.left_records.toLocaleString("es-AR")} + {candidate.right_records.toLocaleString("es-AR")}</small></button></li>)}</ol> : <div className="empty-state"><Check aria-hidden="true" /><strong>No hay candidatos en esta vista.</strong><span>Probá otro estado, actividad, nivel de confianza o búsqueda.</span></div>}
+          {loading && !page ? <CandidateSkeleton /> : page?.items.length ? <ol className="candidate-list">{page.items.map((candidate) => <li key={candidate.candidate_id}><button id={`candidate-${candidate.candidate_id}`} type="button" className="candidate-row" aria-current={selected?.candidate_id === candidate.candidate_id ? "true" : undefined} onClick={(event) => selectCandidate(candidate, event)}><span className="row-top"><StatusBadge status={candidate.status} /><b>{candidate.score}</b></span><strong>{candidate.left_name}</strong><span className="comparison-arrow" aria-hidden="true">↔</span><strong>{candidate.right_name}</strong><small><b>{candidate.total_records.toLocaleString("es-AR")} en total</b> · {candidate.left_records.toLocaleString("es-AR")} + {candidate.right_records.toLocaleString("es-AR")}</small></button></li>)}</ol> : <div className="empty-state"><Check aria-hidden="true" /><strong>No hay candidatos en esta vista.</strong><span>Probá otro estado, actividad, nivel de confianza o búsqueda.</span></div>}
           <nav className="pagination" aria-label="Paginación"><button type="button" disabled={offset === 0 || loading} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}><ChevronLeft aria-hidden="true" />Anterior</button><button type="button" disabled={!page || offset + PAGE_SIZE >= page.total || loading} onClick={() => setOffset(offset + PAGE_SIZE)}>Siguiente<ChevronRight aria-hidden="true" /></button></nav>
         </aside>
 
         <section className="detail-pane" id="candidate-detail" aria-labelledby="detail-title">
-          {selected ? <CandidateDetail candidate={selected} onMerge={() => setMergeCandidate(selected)} onReject={() => decide(selected, "reject")} onDefer={() => decide(selected, "defer")} onUndo={() => decide(selected, "undo")} onBatch={() => setBatchOpen(true)} /> : <div className="empty-detail"><GitMerge aria-hidden="true" /><h2 id="detail-title">Elegí un candidato</h2><p>La comparación, la evidencia y las acciones aparecerán acá.</p></div>}
+          {selected ? <CandidateDetail candidate={selected} mergeButtonRef={mergeButtonRef} onMerge={() => setMergeCandidate(selected)} onReject={() => decide(selected, "reject")} onDefer={() => decide(selected, "defer")} onUndo={() => decide(selected, "undo")} onBatch={() => setBatchOpen(true)} /> : <div className="empty-detail"><GitMerge aria-hidden="true" /><h2 id="detail-title">Elegí un candidato</h2><p>La comparación, la evidencia y las acciones aparecerán acá.</p></div>}
         </section>
       </div>
     </main>
@@ -153,7 +167,7 @@ function App() {
   </>;
 }
 
-function CandidateDetail({candidate, onMerge, onReject, onDefer, onUndo, onBatch}: {candidate: Candidate; onMerge: () => void; onReject: () => void; onDefer: () => void; onUndo: () => void; onBatch: () => void}) {
+function CandidateDetail({candidate, mergeButtonRef, onMerge, onReject, onDefer, onUndo, onBatch}: {candidate: Candidate; mergeButtonRef: React.RefObject<HTMLButtonElement | null>; onMerge: () => void; onReject: () => void; onDefer: () => void; onUndo: () => void; onBatch: () => void}) {
   const decided = candidate.status !== "pending";
   return <>
     <div className="detail-heading"><div><p className="eyebrow">Comparación seleccionada</p><h2 id="detail-title">¿Es la misma persona?</h2></div><div className={`score score--${candidate.confidence}`}><strong>{candidate.score}</strong><span>{candidate.confidence === "high" ? "confianza alta" : "revisar"}</span></div></div>
@@ -163,7 +177,7 @@ function CandidateDetail({candidate, onMerge, onReject, onDefer, onUndo, onBatch
     </div>
     <section className="evidence" aria-labelledby="evidence-title"><h3 id="evidence-title">Por qué fue propuesto</h3><ul>{candidate.reasons.map((reason) => <li key={reason}>{reasonLabel(reason)}</li>)}</ul>{candidate.warnings.length > 0 && <div className="warning"><AlertTriangle aria-hidden="true" /><span><strong>Requiere atención adicional</strong>{candidate.warnings.map(reasonLabel).join(" · ")}</span></div>}</section>
     <div className="action-bar">
-      {decided ? <><span>Estado actual: <StatusBadge status={candidate.status} />{candidate.batch_id && <> · lote seguro</>}</span>{candidate.batch_id ? <button className="button button--secondary" type="button" onClick={onBatch}><Layers3 aria-hidden="true" />Administrar lote</button> : <button className="button button--secondary" type="button" onClick={onUndo}><RotateCcw aria-hidden="true" />Deshacer decisión</button>}</> : <><button className="button button--primary" type="button" onClick={onMerge}><GitMerge aria-hidden="true" />Unificar</button><button className="button button--danger" type="button" onClick={onReject}><X aria-hidden="true" />No son la misma</button><button className="button button--secondary" type="button" onClick={onDefer}><Clock3 aria-hidden="true" />Revisar después</button></>}
+      {decided ? <><span>Estado actual: <StatusBadge status={candidate.status} />{candidate.batch_id && <> · lote seguro</>}</span>{candidate.batch_id ? <button className="button button--secondary" type="button" onClick={onBatch}><Layers3 aria-hidden="true" />Administrar lote</button> : <button className="button button--secondary" type="button" onClick={onUndo}><RotateCcw aria-hidden="true" />Deshacer decisión</button>}</> : <><button ref={mergeButtonRef} className="button button--primary" type="button" onClick={onMerge}><GitMerge aria-hidden="true" />Unificar</button><button className="button button--danger" type="button" onClick={onReject}><X aria-hidden="true" />No son la misma</button><button className="button button--secondary" type="button" onClick={onDefer}><Clock3 aria-hidden="true" />Revisar después</button></>}
     </div>
   </>;
 }
@@ -220,6 +234,7 @@ function PersonCard({candidate, side, recommended}: {candidate: Candidate; side:
 
 function MergeDialog({candidate, token, onClose, onSaved, onError}: {candidate: Candidate | null; token: string; onClose: () => void; onSaved: () => Promise<void>; onError: (message: string) => void}) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const [canonical, setCanonical] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -228,6 +243,7 @@ function MergeDialog({candidate, token, onClose, onSaved, onError}: {candidate: 
       setCanonical(candidate.recommended_canonical_id);
       setNote("");
       dialogRef.current?.showModal();
+      window.requestAnimationFrame(() => confirmButtonRef.current?.focus());
     } else if (dialogRef.current?.open) dialogRef.current.close();
   }, [candidate]);
   if (!candidate) return <dialog ref={dialogRef} />;
@@ -243,7 +259,7 @@ function MergeDialog({candidate, token, onClose, onSaved, onError}: {candidate: 
       setSaving(false);
     }
   }
-  return <dialog ref={dialogRef} className="merge-dialog" onClose={onClose}><form onSubmit={submit}><div className="dialog-heading"><div><p className="eyebrow">Confirmar unificación</p><h2>Elegí la identidad canónica</h2></div><button type="button" onClick={() => dialogRef.current?.close()} aria-label="Cerrar"><X /></button></div><p>Todos los registros seguirán disponibles, pero búsquedas, rankings y gráficos los tratarán como una sola persona.</p><fieldset><legend>Identidad que se conservará</legend><label><input type="radio" name="canonical" value={candidate.left_entity_id} checked={canonical === candidate.left_entity_id} onChange={(event) => setCanonical(event.target.value)} /><span><strong>{candidate.left_name}</strong><small>{candidate.left_document || "Sin documento"} · {candidate.left_records.toLocaleString("es-AR")} registros</small></span></label><label><input type="radio" name="canonical" value={candidate.right_entity_id} checked={canonical === candidate.right_entity_id} onChange={(event) => setCanonical(event.target.value)} /><span><strong>{candidate.right_name}</strong><small>{candidate.right_document || "Sin documento"} · {candidate.right_records.toLocaleString("es-AR")} registros</small></span></label></fieldset><label className="note-field"><span>Nota opcional</span><textarea value={note} onChange={(event) => setNote(event.target.value)} maxLength={500} rows={3} placeholder="Qué evidencia justifica esta decisión" /></label>{candidate.warnings.length > 0 && <div className="warning"><AlertTriangle aria-hidden="true" /><span><strong>Confirmación reforzada</strong>{candidate.warnings.map(reasonLabel).join(" · ")}</span></div>}<div className="dialog-actions"><button type="button" className="button button--secondary" onClick={() => dialogRef.current?.close()}>Cancelar</button><button type="submit" className="button button--primary" disabled={saving}>{saving ? "Guardando…" : "Confirmar unificación"}</button></div></form></dialog>;
+  return <dialog ref={dialogRef} className="merge-dialog" onClose={onClose}><form onSubmit={submit}><div className="dialog-heading"><div><p className="eyebrow">Confirmar unificación</p><h2>Elegí la identidad canónica</h2></div><button type="button" onClick={() => dialogRef.current?.close()} aria-label="Cerrar"><X /></button></div><p>Todos los registros seguirán disponibles, pero búsquedas, rankings y gráficos los tratarán como una sola persona.</p><fieldset><legend>Identidad que se conservará</legend><label><input type="radio" name="canonical" value={candidate.left_entity_id} checked={canonical === candidate.left_entity_id} onChange={(event) => setCanonical(event.target.value)} /><span><strong>{candidate.left_name}</strong><small>{candidate.left_document || "Sin documento"} · {candidate.left_records.toLocaleString("es-AR")} registros</small></span></label><label><input type="radio" name="canonical" value={candidate.right_entity_id} checked={canonical === candidate.right_entity_id} onChange={(event) => setCanonical(event.target.value)} /><span><strong>{candidate.right_name}</strong><small>{candidate.right_document || "Sin documento"} · {candidate.right_records.toLocaleString("es-AR")} registros</small></span></label></fieldset><label className="note-field"><span>Nota opcional</span><textarea value={note} onChange={(event) => setNote(event.target.value)} maxLength={500} rows={3} placeholder="Qué evidencia justifica esta decisión" /></label>{candidate.warnings.length > 0 && <div className="warning"><AlertTriangle aria-hidden="true" /><span><strong>Confirmación reforzada</strong>{candidate.warnings.map(reasonLabel).join(" · ")}</span></div>}<div className="dialog-actions"><button type="button" className="button button--secondary" onClick={() => dialogRef.current?.close()}>Cancelar</button><button ref={confirmButtonRef} type="submit" className="button button--primary" disabled={saving}>{saving ? "Guardando…" : "Confirmar unificación"}</button></div></form></dialog>;
 }
 
 function Metric({label, value, accent = false}: {label: string; value: number; accent?: boolean}) { return <div className={accent ? "metric metric--accent" : "metric"}><strong>{value.toLocaleString("es-AR")}</strong><span>{label}</span></div>; }
