@@ -7,6 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from pipeline.build_web import build_web_data
+from pipeline.curation_server import serve_curation
 from pipeline.discovery import discover
 from pipeline.drive_backfill import download_public_folder
 from pipeline.historical_csv_import import import_olivos_historical_csv
@@ -98,6 +99,21 @@ def parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path(os.getenv("WEB_DATA_DIR", "web/public/data")),
     )
+    curate = subcommands.add_parser(
+        "curate-identities", help="Abre la interfaz local de curación de identidades"
+    )
+    curate.add_argument(
+        "--candidates",
+        type=Path,
+        default=Path("data/curation/candidates.csv"),
+    )
+    curate.add_argument(
+        "--decisions",
+        type=Path,
+        default=Path("data/curation/entity_merges.json"),
+    )
+    curate.add_argument("--port", type=int, default=8765)
+    curate.add_argument("--no-open", action="store_true")
     return root
 
 
@@ -146,6 +162,14 @@ def main() -> None:
         result = build_identity_candidates_from_search(
             arguments.data_dir, arguments.web_data_dir
         )
+    elif arguments.command == "curate-identities":
+        serve_curation(
+            arguments.candidates,
+            arguments.decisions,
+            port=arguments.port,
+            open_browser=not arguments.no_open,
+        )
+        return
     else:
         result = [asdict(item) for item in discover(arguments.source, arguments.min_year)]
     print(json.dumps(result, ensure_ascii=False, indent=2, default=str))

@@ -31,6 +31,9 @@ jobs:
         working-directory: web
       - run: pnpm build
         working-directory: web
+      - run: pnpm build:curation
+        working-directory: web
+      - run: git diff --exit-code -- pipeline/curation_ui/static
       - run: cp -R public/data dist/data
         working-directory: web
       - run: node scripts/check-size.mjs

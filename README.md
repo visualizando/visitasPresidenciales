@@ -86,6 +86,14 @@ Para iterar sobre las reglas sin reconstruir todos los índices y gráficos:
 uv run accesos identity-candidates
 ```
 
+Para revisar los candidatos en una interfaz privada que sólo escucha en este equipo:
+
+```bash
+uv run accesos curate-identities
+```
+
+La herramienta abre `http://127.0.0.1:8765`, pagina el reporte local y guarda cada unificación, rechazo o postergación de forma atómica en `data/curation/entity_merges.json`. Una unificación con confianza de revisión, nombre frecuente o decisiones encadenadas exige confirmación adicional; los documentos incompatibles siempre quedan bloqueados. Ninguna decisión llega a la base publicada hasta revisar y commitear ese archivo y regenerar los datos.
+
 El ranking de co-presencias se calcula únicamente cuando dos registros tienen entrada y salida válidas, comparten sede, fecha y destino normalizado, y sus intervalos se superponen durante al menos 10 minutos. Se deduplican los episodios repetidos y se priorizan días distintos, destinos específicos y minutos superpuestos. Es una señal de presencia compatible en los registros: no prueba un encuentro ni una interacción entre personas.
 
 ## Configuración

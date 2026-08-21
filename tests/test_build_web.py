@@ -2,7 +2,9 @@ import gzip
 import json
 from datetime import datetime
 
-from pipeline.build_web import build_web_data
+import pytest
+
+from pipeline.build_web import _resolved_merge_rows, build_web_data
 from pipeline.models import AccessRecord
 from pipeline.storage import write_partition
 
@@ -244,3 +246,20 @@ def test_builds_coverage_with_gaps_and_quarantined_files(tmp_path) -> None:
     assert coverage["summary"]["quarantined_files"] == 2
     empty = next(item for item in coverage["file_issues"] if item["path"] == "empty.pdf")
     assert "vacío" in empty["reason"]
+
+
+def test_resolves_transitive_identity_merges_and_rejects_cycles() -> None:
+    assert _resolved_merge_rows(
+        [
+            {"from": "per_a", "into": "per_b"},
+            {"from": "per_b", "into": "per_c"},
+        ]
+    ) == [("per_a", "per_c"), ("per_b", "per_c")]
+
+    with pytest.raises(ValueError, match="ciclo"):
+        _resolved_merge_rows(
+            [
+                {"from": "per_a", "into": "per_b"},
+                {"from": "per_b", "into": "per_a"},
+            ]
+        )

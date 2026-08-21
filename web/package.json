@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/check-size.mjs",
+    "build:curation": "tsc -b && vite build --config vite.curation.config.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",

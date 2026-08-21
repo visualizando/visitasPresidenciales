@@ -55,11 +55,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
     )
     connection.execute("CREATE TEMP TABLE identity_merges(old_id VARCHAR, canonical_id VARCHAR)")
     curation = load_json(data_dir / "curation" / "entity_merges.json", {"merges": []})
-    merge_rows = [
-        (item["from"], item["into"])
-        for item in curation.get("merges", [])
-        if isinstance(item, dict) and item.get("from") and item.get("into")
-    ]
+    merge_rows = _resolved_merge_rows(curation.get("merges", []))
     if merge_rows:
         connection.executemany("INSERT INTO identity_merges VALUES (?, ?)", merge_rows)
     connection.execute(
@@ -196,6 +192,26 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
     )
     _write_compact(data_dir / "curation" / "candidates.summary.json", candidate_stats)
     return {"records": record_count, "people": len(people), "exports": len(exports)}
+
+
+def _resolved_merge_rows(items: list[Any]) -> list[tuple[str, str]]:
+    targets = {
+        item["from"]: item["into"]
+        for item in items
+        if isinstance(item, dict) and item.get("from") and item.get("into")
+    }
+    rows: list[tuple[str, str]] = []
+    for source in sorted(targets):
+        current = source
+        seen: set[str] = set()
+        while current in targets:
+            if current in seen:
+                raise ValueError("Las fusiones de identidad contienen un ciclo")
+            seen.add(current)
+            current = targets[current]
+        if source != current:
+            rows.append((source, current))
+    return rows
 
 
 def _build_analytics(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
