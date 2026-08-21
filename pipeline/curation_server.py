@@ -33,6 +33,7 @@ class CurationApplication:
             query=_first(query, "q", ""),
             confidence=_first(query, "confidence", "all"),
             status=_first(query, "status", "pending"),
+            activity=_first(query, "activity", "all"),
             offset=_integer(query, "offset", 0),
             limit=_integer(query, "limit", 50),
         )

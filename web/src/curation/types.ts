@@ -1,5 +1,6 @@
 export type CandidateStatus = "pending" | "merged" | "rejected" | "deferred";
 export type Confidence = "high" | "review";
+export type ActivityLevel = "very_high" | "high" | "medium" | "low";
 
 export interface Candidate {
   candidate_id: string;
@@ -8,6 +9,8 @@ export interface Candidate {
   reasons: string[];
   warnings: string[];
   status: CandidateStatus;
+  activity_level: ActivityLevel;
+  total_records: number;
   batch_id: string | null;
   recommended_canonical_id: string;
   left_entity_id: string;
@@ -66,4 +69,5 @@ export interface CandidatePage {
   limit: number;
   total: number;
   summary: Summary;
+  activity_summary: Record<ActivityLevel | "all", number>;
 }

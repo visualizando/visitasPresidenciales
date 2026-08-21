@@ -35,6 +35,8 @@ def candidate(
     confidence: str = "high",
     left_document: str = "",
     right_document: str = "",
+    left_records: int = 2,
+    right_records: int = 5,
 ) -> dict[str, object]:
     return {
         "candidate_id": candidate_id,
@@ -44,14 +46,14 @@ def candidate(
         "left_entity_id": left,
         "left_name": f"PERSONA {left}",
         "left_document": left_document,
-        "left_records": 2,
+        "left_records": left_records,
         "left_first_seen": "2023-01-01T00:00:00Z",
         "left_last_seen": "2023-02-01T00:00:00Z",
         "left_locations": "casa-rosada",
         "right_entity_id": right,
         "right_name": f"PERSONA {right}",
         "right_document": right_document,
-        "right_records": 5,
+        "right_records": right_records,
         "right_first_seen": "2023-01-01T00:00:00Z",
         "right_last_seen": "2023-03-01T00:00:00Z",
         "right_locations": "casa-rosada|olivos",
@@ -82,6 +84,30 @@ def test_lists_searches_and_paginates_candidates(tmp_path) -> None:
     assert result["items"][0]["candidate_id"] == "cand_1"
     assert result["items"][0]["recommended_canonical_id"] == "A"
     assert result["summary"]["pending"] == 2
+
+
+def test_filters_candidates_by_combined_activity_and_returns_counts(tmp_path) -> None:
+    curation = store(
+        tmp_path,
+        [
+            candidate("low", "A", "B", left_records=1, right_records=3),
+            candidate("medium", "C", "D", left_records=2, right_records=7),
+            candidate("high", "E", "F", left_records=10, right_records=25),
+            candidate("very_high", "G", "H", left_records=40, right_records=80),
+        ],
+    )
+
+    result = curation.list_candidates(activity="very_high")
+
+    assert [item["candidate_id"] for item in result["items"]] == ["very_high"]
+    assert result["items"][0]["total_records"] == 120
+    assert result["activity_summary"] == {
+        "all": 4,
+        "very_high": 1,
+        "high": 1,
+        "medium": 1,
+        "low": 1,
+    }
 
 
 def test_merges_rejects_defers_and_undoes_atomically(tmp_path) -> None:

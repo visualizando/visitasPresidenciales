@@ -15,6 +15,7 @@ from pipeline.storage import load_json
 FINAL_ACTIONS = {"merge", "reject"}
 VALID_ACTIONS = FINAL_ACTIONS | {"defer", "undo"}
 SAFE_BATCH_RULE = "high-score-100-single-document-v1"
+VALID_ACTIVITY_LEVELS = {"all", "very_high", "high", "medium", "low"}
 
 
 class CurationError(Exception):
@@ -264,20 +265,31 @@ class CurationStore:
         query: str = "",
         confidence: str = "all",
         status: str = "pending",
+        activity: str = "all",
         offset: int = 0,
         limit: int = 50,
     ) -> dict[str, Any]:
         offset = max(0, offset)
         limit = min(max(1, limit), 100)
+        activity = activity if activity in VALID_ACTIVITY_LEVELS else "all"
         query_folded = query.casefold().strip()
         with self._lock:
             decorated = [self._decorate(candidate) for candidate in self._candidates]
-        matches = [
+        base_matches = [
             candidate
             for candidate in decorated
             if (confidence == "all" or candidate["confidence"] == confidence)
             and (status == "all" or candidate["status"] == status)
             and (not query_folded or query_folded in self._search_text(candidate))
+        ]
+        activity_summary = {key: 0 for key in ("all", "very_high", "high", "medium", "low")}
+        for candidate in base_matches:
+            activity_summary["all"] += 1
+            activity_summary[self._activity_level(candidate["total_records"])] += 1
+        matches = [
+            candidate
+            for candidate in base_matches
+            if activity == "all" or candidate["activity_level"] == activity
         ]
         return {
             "items": matches[offset : offset + limit],
@@ -285,6 +297,7 @@ class CurationStore:
             "limit": limit,
             "total": len(matches),
             "summary": self.summary(decorated),
+            "activity_summary": activity_summary,
         }
 
     def summary(self, decorated: list[dict[str, Any]] | None = None) -> dict[str, int]:
@@ -398,6 +411,8 @@ class CurationStore:
 
     def _decorate(self, candidate: dict[str, Any]) -> dict[str, Any]:
         result = dict(candidate)
+        result["total_records"] = candidate["left_records"] + candidate["right_records"]
+        result["activity_level"] = self._activity_level(result["total_records"])
         result["status"] = self._candidate_status(candidate)
         result["warnings"] = self._merge_warnings(
             candidate,
@@ -408,18 +423,22 @@ class CurationStore:
         result["batch_id"] = batch_ids[0] if len(batch_ids) == 1 else None
         return result
 
+    @staticmethod
+    def _activity_level(total_records: int) -> str:
+        if total_records >= 100:
+            return "very_high"
+        if total_records >= 20:
+            return "high"
+        if total_records >= 5:
+            return "medium"
+        return "low"
+
     def _candidate_batch_ids(self, candidate: dict[str, Any]) -> list[str]:
         component = self._merge_component(candidate["left_entity_id"]) | self._merge_component(
             candidate["right_entity_id"]
         )
         return sorted(
-            {
-                item["batch_id"]
-                for item in self._decisions["merges"]
-                if item.get("batch_id")
-                and item.get("from") in component
-                and item.get("into") in component
-            }
+            set().union(*(self._batch_ids_by_entity.get(entity, set()) for entity in component))
         )
 
     def _candidate_status(self, candidate: dict[str, Any]) -> str:
@@ -463,12 +482,16 @@ class CurationStore:
     def _refresh_decision_indexes(self) -> None:
         self._merge_targets: dict[str, str] = {}
         self._merge_graph: dict[str, set[str]] = defaultdict(set)
+        self._batch_ids_by_entity: dict[str, set[str]] = defaultdict(set)
         for item in self._decisions["merges"]:
             source, target = item.get("from"), item.get("into")
             if source and target:
                 self._merge_targets[source] = target
                 self._merge_graph[source].add(target)
                 self._merge_graph[target].add(source)
+                if item.get("batch_id"):
+                    self._batch_ids_by_entity[source].add(item["batch_id"])
+                    self._batch_ids_by_entity[target].add(item["batch_id"])
         self._resolved_entities: dict[str, str] = {}
         self._rejected_candidates = {
             item.get("candidate_id")

@@ -1,7 +1,7 @@
 import {AlertTriangle, Check, ChevronLeft, ChevronRight, Clock3, GitMerge, Layers3, RotateCcw, Search, ShieldCheck, X} from "lucide-react";
 import {StrictMode, useEffect, useMemo, useRef, useState} from "react";
 import {createRoot} from "react-dom/client";
-import type {BatchPreview, Candidate, CandidatePage, CandidateStatus, Confidence, Summary} from "./types";
+import type {ActivityLevel, BatchPreview, Candidate, CandidatePage, CandidateStatus, Confidence, Summary} from "./types";
 import "./styles.css";
 
 const PAGE_SIZE = 50;
@@ -14,6 +14,7 @@ function App() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [confidence, setConfidence] = useState<Confidence | "all">("high");
   const [status, setStatus] = useState<CandidateStatus | "all">("pending");
+  const [activity, setActivity] = useState<ActivityLevel | "all">("all");
   const [offset, setOffset] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ function App() {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-    const parameters = new URLSearchParams({q: debouncedQuery, confidence, status, offset: String(offset), limit: String(PAGE_SIZE)});
+    const parameters = new URLSearchParams({q: debouncedQuery, confidence, status, activity, offset: String(offset), limit: String(PAGE_SIZE)});
     fetchJson<CandidatePage>(`/api/candidates?${parameters}`, {signal: controller.signal})
       .then((result) => {
         setPage(result);
@@ -55,7 +56,7 @@ function App() {
       })
       .finally(() => setLoading(false));
     return () => controller.abort();
-  }, [token, debouncedQuery, confidence, status, offset]);
+  }, [token, debouncedQuery, confidence, status, activity, offset]);
 
   useEffect(() => {
     function handleKeydown(event: KeyboardEvent) {
@@ -89,7 +90,7 @@ function App() {
   }
 
   async function refreshCurrentPage() {
-    const parameters = new URLSearchParams({q: debouncedQuery, confidence, status, offset: String(offset), limit: String(PAGE_SIZE)});
+    const parameters = new URLSearchParams({q: debouncedQuery, confidence, status, activity, offset: String(offset), limit: String(PAGE_SIZE)});
     const result = await fetchJson<CandidatePage>(`/api/candidates?${parameters}`);
     if (!result.items.length && offset > 0) {
       setOffset(Math.max(0, offset - PAGE_SIZE));
@@ -127,6 +128,7 @@ function App() {
         <label className="search-field"><span>Buscar nombre o documento</span><div><Search aria-hidden="true" /><input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ej.: Cerimedo o 28.675.966" autoComplete="off" /></div></label>
         <label><span>Confianza</span><select value={confidence} onChange={(event) => {setConfidence(event.target.value as Confidence | "all"); setOffset(0);}}><option value="high">Alta confianza</option><option value="review">Requiere revisión</option><option value="all">Todas</option></select></label>
         <label><span>Estado</span><select value={status} onChange={(event) => {setStatus(event.target.value as CandidateStatus | "all"); setOffset(0);}}><option value="pending">Pendientes</option><option value="deferred">Pospuestos</option><option value="merged">Unificados</option><option value="rejected">Rechazados</option><option value="all">Todos</option></select></label>
+        <label><span>Actividad combinada</span><select value={activity} onChange={(event) => {setActivity(event.target.value as ActivityLevel | "all"); setOffset(0);}}><option value="all">Todas · {formatCount(page?.activity_summary.all)}</option><option value="very_high">Muy alta · 100+ ({formatCount(page?.activity_summary.very_high)})</option><option value="high">Alta · 20–99 ({formatCount(page?.activity_summary.high)})</option><option value="medium">Media · 5–19 ({formatCount(page?.activity_summary.medium)})</option><option value="low">Baja · 1–4 ({formatCount(page?.activity_summary.low)})</option></select></label>
         <button className="button button--batch" type="button" onClick={() => setBatchOpen(true)}><Layers3 aria-hidden="true" /><span><strong>Fusión segura</strong><small>Ver lote con 100% de confianza</small></span></button>
       </section>
 
@@ -136,7 +138,7 @@ function App() {
       <div className="review-layout">
         <aside className="candidate-pane" aria-label="Cola de candidatos" aria-busy={loading}>
           <div className="pane-heading"><div><h2>Candidatos</h2><span>{start}–{end} de {page?.total.toLocaleString("es-AR") ?? "—"}</span></div><small>Atajos: <kbd>j</kbd>/<kbd>k</kbd> para recorrer, <kbd>/</kbd> para buscar</small></div>
-          {loading && !page ? <CandidateSkeleton /> : page?.items.length ? <ol className="candidate-list">{page.items.map((candidate) => <li key={candidate.candidate_id}><button id={`candidate-${candidate.candidate_id}`} type="button" className="candidate-row" aria-current={selected?.candidate_id === candidate.candidate_id ? "true" : undefined} onClick={() => setSelectedId(candidate.candidate_id)}><span className="row-top"><StatusBadge status={candidate.status} /><b>{candidate.score}</b></span><strong>{candidate.left_name}</strong><span className="comparison-arrow" aria-hidden="true">↔</span><strong>{candidate.right_name}</strong><small>{candidate.left_records.toLocaleString("es-AR")} + {candidate.right_records.toLocaleString("es-AR")} registros</small></button></li>)}</ol> : <div className="empty-state"><Check aria-hidden="true" /><strong>No hay candidatos en esta vista.</strong><span>Probá otro estado, nivel de confianza o búsqueda.</span></div>}
+          {loading && !page ? <CandidateSkeleton /> : page?.items.length ? <ol className="candidate-list">{page.items.map((candidate) => <li key={candidate.candidate_id}><button id={`candidate-${candidate.candidate_id}`} type="button" className="candidate-row" aria-current={selected?.candidate_id === candidate.candidate_id ? "true" : undefined} onClick={() => setSelectedId(candidate.candidate_id)}><span className="row-top"><StatusBadge status={candidate.status} /><b>{candidate.score}</b></span><strong>{candidate.left_name}</strong><span className="comparison-arrow" aria-hidden="true">↔</span><strong>{candidate.right_name}</strong><small><b>{candidate.total_records.toLocaleString("es-AR")} en total</b> · {candidate.left_records.toLocaleString("es-AR")} + {candidate.right_records.toLocaleString("es-AR")}</small></button></li>)}</ol> : <div className="empty-state"><Check aria-hidden="true" /><strong>No hay candidatos en esta vista.</strong><span>Probá otro estado, actividad, nivel de confianza o búsqueda.</span></div>}
           <nav className="pagination" aria-label="Paginación"><button type="button" disabled={offset === 0 || loading} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}><ChevronLeft aria-hidden="true" />Anterior</button><button type="button" disabled={!page || offset + PAGE_SIZE >= page.total || loading} onClick={() => setOffset(offset + PAGE_SIZE)}>Siguiente<ChevronRight aria-hidden="true" /></button></nav>
         </aside>
 
@@ -264,6 +266,7 @@ function reasonLabel(reason: string) {
   return labels[reason] ?? reason.replaceAll("_", " ");
 }
 function formatDate(value: string) { if (!value) return "Sin fecha"; return new Intl.DateTimeFormat("es-AR", {day: "2-digit", month: "short", year: "numeric", timeZone: "UTC"}).format(new Date(value)); }
+function formatCount(value: number | undefined) { return value == null ? "—" : value.toLocaleString("es-AR"); }
 function locationLabel(value: string) { return value.split("|").map((location) => location === "casa-rosada" ? "Casa Rosada" : location === "olivos" ? "Olivos" : location).join(" · "); }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);

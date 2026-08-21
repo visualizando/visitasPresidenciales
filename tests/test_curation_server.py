@@ -25,7 +25,13 @@ def test_application_parses_filters_and_decisions() -> None:
     application = CurationApplication(StubStore(), token="fixed")
 
     result = application.candidates(
-        {"q": ["Cerimedo"], "confidence": ["high"], "offset": ["50"], "limit": ["25"]}
+        {
+            "q": ["Cerimedo"],
+            "confidence": ["high"],
+            "activity": ["very_high"],
+            "offset": ["50"],
+            "limit": ["25"],
+        }
     )
     decision = application.decide(
         {
@@ -40,6 +46,7 @@ def test_application_parses_filters_and_decisions() -> None:
     assert result["query"] == "Cerimedo"
     assert result["offset"] == 50
     assert result["limit"] == 25
+    assert result["activity"] == "very_high"
     assert decision["confirmed"] is True
 
 
