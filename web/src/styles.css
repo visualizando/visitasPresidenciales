@@ -107,6 +107,8 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .search-guidance p, .empty-state strong { margin: 0; color: var(--color-text-primary); font-weight: 700; }
 .search-guidance span, .empty-state p { margin: 0.25rem 0 0; }
 .results-loading { display: flex; flex-direction: column; gap: 0.4rem; }
+.results-loading > p { margin: 0 0 0.1rem; color: var(--color-text-secondary); font-size: 0.75rem; }
+.results-loading > div { display: flex; flex-direction: column; gap: 0.4rem; }
 .result-skeleton { min-height: 3.75rem; border-radius: var(--radius-inner); background: linear-gradient(90deg, var(--neutral-100), #f8f9f7, var(--neutral-100)); background-size: 200% 100%; }
 
 .profile { margin-block-start: 1rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: var(--radius-outer); background: var(--color-bg-surface); box-shadow: var(--shadow-card); }

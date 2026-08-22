@@ -36,6 +36,7 @@ def build_web_data(data_dir: Path, output_dir: Path) -> dict[str, int]:
 def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[str, int]:
     for directory in (
         "search/name",
+        "search/name-fallback",
         "search/document",
         "events",
         "cooccurrences",
@@ -113,22 +114,28 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         people.append(row)
 
     name_shards: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+    name_fallback_shards: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     document_shards: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     for person in people:
         summary = {key: value for key, value in person.items() if key != "search_tokens"}
-        keys = {token[0].lower() for token in person["search_tokens"] if token}
+        keys = {_safe_shard(token[:3].lower()) for token in person["search_tokens"] if token}
         for key in keys or {"_"}:
-            name_shards[_safe_shard(key)][person["entity_id"]] = summary
+            name_shards[key][person["entity_id"]] = summary
+        fallback_keys = {_safe_shard(token[0].lower()) for token in person["search_tokens"] if token}
+        for key in fallback_keys or {"_"}:
+            name_fallback_shards[key][person["entity_id"]] = summary
         document = person.get("document_number") or ""
         if document:
             document_shards[(document[:2] or "_")][person["entity_id"]] = summary
 
     for key, values in name_shards.items():
         _write_gzip_json(output / "search" / "name" / f"{key}.json.gz", list(values.values()))
-    for key, values in document_shards.items():
+    for key, values in name_fallback_shards.items():
         _write_gzip_json(
-            output / "search" / "document" / f"{key}.json.gz", list(values.values())
+            output / "search" / "name-fallback" / f"{key}.json.gz", list(values.values())
         )
+    for key, values in document_shards.items():
+        _write_gzip_json(output / "search" / "document" / f"{key}.json.gz", list(values.values()))
 
     event_counts: dict[str, int] = {}
     for prefix in sorted({_entity_shard(person["entity_id"]) for person in people}):
@@ -159,10 +166,12 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
     _write_compact(output / "exports" / "index.json", exports)
 
     search_meta = {
-        "version": 1,
+        "version": 2,
         "generated_at": generated_at,
         "people_count": len(people),
+        "name_shard_prefix_length": 3,
         "name_shards": sorted(name_shards),
+        "name_fallback_shards": sorted(name_fallback_shards),
         "document_shards": sorted(document_shards),
         "event_shards": event_counts,
     }
@@ -317,7 +326,9 @@ def _build_coverage(data_dir: Path, connection: duckdb.DuckDBPyConnection) -> di
             continue
         if status == "quarantined":
             if item.get("parser") == "archivo-vacio-v1":
-                reason = "El archivo está publicado, pero está vacío y no contiene datos recuperables."
+                reason = (
+                    "El archivo está publicado, pero está vacío y no contiene datos recuperables."
+                )
             elif item.get("parser") == "pdf-sin-texto-extraible-v1":
                 reason = "El PDF no contiene texto extraíble; puede ser un escaneo y requiere OCR."
             else:
@@ -387,12 +398,18 @@ def _periods_from_months(months: list[str]) -> list[dict[str, str]]:
     start = previous = datetime.strptime(months[0], "%Y-%m").date()
     for value in months[1:]:
         current = datetime.strptime(value, "%Y-%m").date()
-        expected = (previous.year + 1, 1) if previous.month == 12 else (previous.year, previous.month + 1)
+        expected = (
+            (previous.year + 1, 1) if previous.month == 12 else (previous.year, previous.month + 1)
+        )
         if (current.year, current.month) != expected:
-            periods.append({"start_month": start.strftime("%Y-%m"), "end_month": previous.strftime("%Y-%m")})
+            periods.append(
+                {"start_month": start.strftime("%Y-%m"), "end_month": previous.strftime("%Y-%m")}
+            )
             start = current
         previous = current
-    periods.append({"start_month": start.strftime("%Y-%m"), "end_month": previous.strftime("%Y-%m")})
+    periods.append(
+        {"start_month": start.strftime("%Y-%m"), "end_month": previous.strftime("%Y-%m")}
+    )
     return periods
 
 
@@ -772,10 +789,7 @@ def _write_exports(connection: duckdb.DuckDBPyConnection, directory: Path) -> li
             "year(coalesce(occurred_at, entered_at, exited_at)) = ? "
             "ORDER BY coalesce(occurred_at, entered_at, exited_at)"
         )
-        columns = [
-            item[0]
-            for item in connection.execute(query + " LIMIT 0", [year]).description
-        ]
+        columns = [item[0] for item in connection.execute(query + " LIMIT 0", [year]).description]
         cursor = connection.execute(query, [year])
         with gzip.open(target, "wt", encoding="utf-8", newline="") as handle:
             writer = csv.writer(handle)
@@ -810,10 +824,12 @@ def _write_empty(output: Path, generated_at: str) -> None:
     _write_compact(
         output / "search" / "meta.json",
         {
-            "version": 1,
+            "version": 2,
             "generated_at": generated_at,
             "people_count": 0,
+            "name_shard_prefix_length": 3,
             "name_shards": [],
+            "name_fallback_shards": [],
             "document_shards": [],
             "event_shards": {},
         },
@@ -861,9 +877,9 @@ def _write_compact(path: Path, value: Any) -> None:
 
 def _write_gzip_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(
-        value, ensure_ascii=False, separators=(",", ":"), default=str
-    ).encode("utf-8")
+    payload = json.dumps(value, ensure_ascii=False, separators=(",", ":"), default=str).encode(
+        "utf-8"
+    )
     with (
         path.open("wb") as handle,
         gzip.GzipFile(fileobj=handle, mode="wb", compresslevel=9, mtime=0) as archive,

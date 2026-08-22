@@ -102,7 +102,7 @@ export default function App() {
               {JSON.stringify(filters) !== JSON.stringify(DEFAULT_FILTERS) && <button type="button" className="text-button" onClick={() => setFilters(DEFAULT_FILTERS)}>Limpiar filtros</button>}
             </div>
           </form>
-          <div className="results-region" aria-busy={search.loading}><div className="sr-only" role="status" aria-live="polite">{statusMessage}</div><SearchResults query={query} results={search.results} selectedIds={selectedIds} loading={search.loading} error={search.error} onToggle={togglePerson} /></div>
+          <div className="results-region" aria-busy={search.loading}><div className="sr-only" role="status" aria-live="polite">{statusMessage}</div><SearchResults query={query} results={search.results} selectedIds={selectedIds} loading={search.loading} phase={search.phase} error={search.error} onToggle={togglePerson} /></div>
         </div>
         {selected.length > 0 && <PersonProfile people={selected} events={events.data} loading={events.loading} error={events.error} coincidences={coincidences.data} coincidencesLoading={coincidences.loading} coincidencesError={coincidences.error} onRemove={(entityId) => setSelected((current) => current.filter((person) => person.entity_id !== entityId))} onClear={() => setSelected([])} />}
       </section>

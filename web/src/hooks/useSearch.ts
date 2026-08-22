@@ -5,12 +5,13 @@ interface State {
   results: PersonSummary[];
   loading: boolean;
   error: string | null;
+  phase: "searching" | "broadening" | null;
 }
 
 export function useSearch(query: string, filters: SearchFilters): State {
   const workerRef = useRef<Worker | null>(null);
   const requestId = useRef(0);
-  const [state, setState] = useState<State>({results: [], loading: false, error: null});
+  const [state, setState] = useState<State>({results: [], loading: false, error: null, phase: null});
 
   useEffect(() => {
     const worker = new Worker(new URL("../search.worker.ts", import.meta.url), {type: "module"});
@@ -18,9 +19,11 @@ export function useSearch(query: string, filters: SearchFilters): State {
     workerRef.current = worker;
     worker.onmessage = (event) => {
       if (event.data.type === "results" && event.data.id === requestId.current) {
-        setState({results: event.data.results, loading: false, error: null});
+        setState({results: event.data.results, loading: false, error: null, phase: null});
       } else if (event.data.type === "error" && event.data.id === requestId.current) {
-        setState((current) => ({...current, loading: false, error: event.data.message}));
+        setState((current) => ({...current, loading: false, error: event.data.message, phase: null}));
+      } else if (event.data.type === "progress" && event.data.id === requestId.current) {
+        setState((current) => ({...current, phase: event.data.phase}));
       }
     };
     return () => worker.terminate();
@@ -29,10 +32,10 @@ export function useSearch(query: string, filters: SearchFilters): State {
   useEffect(() => {
     const normalized = query.trim();
     if (normalized.length < 2) {
-      setState({results: [], loading: false, error: null});
+      setState({results: [], loading: false, error: null, phase: null});
       return;
     }
-    setState((current) => ({...current, loading: true, error: null}));
+    setState((current) => ({...current, loading: true, error: null, phase: "searching"}));
     const timeout = window.setTimeout(() => {
       requestId.current += 1;
       workerRef.current?.postMessage({type: "query", id: requestId.current, query: normalized, filters});
@@ -42,4 +45,3 @@ export function useSearch(query: string, filters: SearchFilters): State {
 
   return state;
 }
-

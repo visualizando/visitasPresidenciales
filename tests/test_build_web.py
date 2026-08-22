@@ -41,7 +41,10 @@ def test_builds_search_events_analytics_and_csv(tmp_path) -> None:
     stats = build_web_data(data, output)
     assert stats["records"] == 1
     assert stats["people"] == 1
-    assert (output / "search" / "name" / "p.json.gz").exists()
+    assert (output / "search" / "name" / "per.json.gz").exists()
+    assert (output / "search" / "name-fallback" / "p.json.gz").exists()
+    search_meta = json.loads((output / "search" / "meta.json").read_text(encoding="utf-8"))
+    assert search_meta["name_shard_prefix_length"] == 3
     assert list((output / "events").glob("*.json.gz"))
     assert (output / "exports" / "2023.csv.gz").exists()
     exports = json.loads((output / "exports" / "index.json").read_text(encoding="utf-8"))
@@ -132,9 +135,7 @@ def test_builds_person_summary_when_record_has_no_timestamp(tmp_path) -> None:
     write_partition(data / "partitions" / "olivos" / "2022" / "01" / "src.parquet", [record])
     stats = build_web_data(data, output)
     assert stats["people"] == 1
-    people = json.loads(
-        gzip.decompress((output / "search" / "name" / "p.json.gz").read_bytes())
-    )
+    people = json.loads(gzip.decompress((output / "search" / "name" / "per.json.gz").read_bytes()))
     assert people[0]["canonical_name"] == "PEREZ SIN HORARIO"
 
 
@@ -155,10 +156,27 @@ def test_rankings_count_one_daily_presence_per_person_and_location(tmp_path) -> 
         "raw_text": "fila",
     }
     records = [
-        AccessRecord(record_id="rec_1", location="casa-rosada", occurred_at=datetime(2023, 1, 2, 9, 0), **common),
-        AccessRecord(record_id="rec_2", location="casa-rosada", occurred_at=datetime(2023, 1, 2, 18, 0), **common),
-        AccessRecord(record_id="rec_3", location="olivos", occurred_at=datetime(2023, 1, 2, 20, 0), **common),
-        AccessRecord(record_id="rec_4", location="casa-rosada", occurred_at=datetime(2023, 1, 3, 9, 0), **common),
+        AccessRecord(
+            record_id="rec_1",
+            location="casa-rosada",
+            occurred_at=datetime(2023, 1, 2, 9, 0),
+            **common,
+        ),
+        AccessRecord(
+            record_id="rec_2",
+            location="casa-rosada",
+            occurred_at=datetime(2023, 1, 2, 18, 0),
+            **common,
+        ),
+        AccessRecord(
+            record_id="rec_3", location="olivos", occurred_at=datetime(2023, 1, 2, 20, 0), **common
+        ),
+        AccessRecord(
+            record_id="rec_4",
+            location="casa-rosada",
+            occurred_at=datetime(2023, 1, 3, 9, 0),
+            **common,
+        ),
     ]
     write_partition(data / "partitions" / "casa-rosada" / "2023" / "01" / "src.parquet", records)
 

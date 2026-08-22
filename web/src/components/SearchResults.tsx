@@ -6,13 +6,14 @@ type SearchResultsProps = {
   results: PersonSummary[];
   selectedIds: Set<string>;
   loading: boolean;
+  phase: "searching" | "broadening" | null;
   error: string | null;
   onToggle: (person: PersonSummary) => void;
 };
 
-export function SearchResults({query, results, selectedIds, loading, error, onToggle}: SearchResultsProps) {
+export function SearchResults({query, results, selectedIds, loading, phase, error, onToggle}: SearchResultsProps) {
   if (error) return <div className="notice notice--error" role="alert"><strong>No se pudo buscar.</strong><span>{error}. Volvé a intentar.</span></div>;
-  if (loading) return <div className="results-loading" aria-hidden="true">{Array.from({length: 3}, (_, index) => <div className="result-skeleton" key={index} />)}</div>;
+  if (loading) return <div className="results-loading"><p role="status">{phase === "broadening" ? "Probando una búsqueda más amplia…" : "Buscando coincidencias…"}</p><div aria-hidden="true">{Array.from({length: 3}, (_, index) => <div className="result-skeleton" key={index} />)}</div></div>;
   if (query.trim().length < 2) return <div className="search-guidance"><p>Escribí al menos dos letras o tres dígitos.</p><span>Podés buscar por apellido, nombre, DNI o CUIL.</span></div>;
   if (!results.length) return <div className="empty-state"><strong>Sin resultados para “{query}”</strong><p>Revisá la escritura o probá sin filtros.</p></div>;
   return <div className="results-list" aria-label="Coincidencias">{results.map((person) => {

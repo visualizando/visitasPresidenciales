@@ -2,6 +2,7 @@
 
 import type {PersonSummary, SearchFilters} from "./types";
 import {fetchGzipJson} from "./utils/fetchGzipJson";
+import {broadNameShardKeys, exactNameShardKeys} from "./utils/searchShards";
 
 type InitMessage = {type: "init"; baseUrl: string};
 type QueryMessage = {type: "query"; id: number; query: string; filters: SearchFilters};
@@ -9,6 +10,10 @@ type WorkerMessage = InitMessage | QueryMessage;
 
 let dataBaseUrl = "";
 const cache = new Map<string, PersonSummary[]>();
+const inflight = new Map<string, Promise<PersonSummary[]>>();
+let nameShardKeysPromise: Promise<string[]> | null = null;
+let nameFallbackShardKeysPromise: Promise<string[]> | null = null;
+let latestRequestId = 0;
 
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const message = event.data;
@@ -17,15 +22,18 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     self.postMessage({type: "ready"});
     return;
   }
+  latestRequestId = message.id;
   try {
-    const results = await search(message.query, message.filters);
-    self.postMessage({type: "results", id: message.id, results});
+    const results = await search(message.query, message.filters, message.id);
+    if (message.id === latestRequestId) self.postMessage({type: "results", id: message.id, results});
   } catch (error) {
-    self.postMessage({type: "error", id: message.id, message: error instanceof Error ? error.message : "No se pudo buscar"});
+    if (message.id === latestRequestId) {
+      self.postMessage({type: "error", id: message.id, message: error instanceof Error ? error.message : "No se pudo buscar"});
+    }
   }
 };
 
-async function search(query: string, filters: SearchFilters): Promise<PersonSummary[]> {
+async function search(query: string, filters: SearchFilters, requestId: number): Promise<PersonSummary[]> {
   const normalized = fold(query);
   if (normalized.length < 2) return [];
   const prepared = {
@@ -40,13 +48,33 @@ async function search(query: string, filters: SearchFilters): Promise<PersonSumm
       candidates.set(person.entity_id, person);
     }
   } else {
-    const shardKeys = new Set(normalized.split(" ").filter(Boolean).map((token) => safeShard(token[0])));
+    const shardKeys = exactNameShardKeys(prepared.tokens, await nameShardKeys());
     for (const key of shardKeys) {
       for (const person of await load(`search/name/${key}.json.gz`)) {
         candidates.set(person.entity_id, person);
       }
     }
   }
+  let results = rank(candidates, prepared, digits, filters);
+  if (!digits && (results[0]?.score ?? 0) < 0.82 && prepared.tokens.length && requestId === latestRequestId) {
+    self.postMessage({type: "progress", id: requestId, phase: "broadening"});
+    const broadKeys = broadNameShardKeys(prepared.tokens, await nameFallbackShardKeys());
+    for (const key of broadKeys) {
+      for (const person of await load(`search/name-fallback/${key}.json.gz`)) {
+        candidates.set(person.entity_id, person);
+      }
+    }
+    results = rank(candidates, prepared, digits, filters);
+  }
+  return results;
+}
+
+function rank(
+  candidates: Map<string, PersonSummary>,
+  prepared: {value: string; tokens: string[]; trigrams: Set<string>},
+  digits: string,
+  filters: SearchFilters,
+): PersonSummary[] {
   return [...candidates.values()]
     .filter((person) => matchesFilters(person, filters))
     .map((person) => ({...person, score: score(person, prepared, digits)}))
@@ -55,17 +83,43 @@ async function search(query: string, filters: SearchFilters): Promise<PersonSumm
     .slice(0, 50);
 }
 
+async function nameFallbackShardKeys(): Promise<string[]> {
+  if (!nameFallbackShardKeysPromise) {
+    nameFallbackShardKeysPromise = loadSearchMeta().then((meta) => meta.name_fallback_shards ?? []);
+  }
+  return nameFallbackShardKeysPromise;
+}
+
+async function nameShardKeys(): Promise<string[]> {
+  if (!nameShardKeysPromise) {
+    nameShardKeysPromise = loadSearchMeta().then((meta) => meta.name_shards ?? []);
+  }
+  return nameShardKeysPromise;
+}
+
+let searchMetaPromise: Promise<{name_shards?: string[]; name_fallback_shards?: string[]}> | null = null;
+function loadSearchMeta(): Promise<{name_shards?: string[]; name_fallback_shards?: string[]}> {
+  if (!searchMetaPromise) {
+    searchMetaPromise = fetch(new URL("search/meta.json", dataBaseUrl)).then((response) => {
+      if (!response.ok) throw new Error("No se pudo cargar el índice de búsqueda");
+      return response.json();
+    });
+  }
+  return searchMetaPromise;
+}
+
 async function load(path: string): Promise<PersonSummary[]> {
   if (cache.has(path)) return cache.get(path)!;
-  let people: PersonSummary[];
-  try {
-    people = await fetchGzipJson<PersonSummary[]>(new URL(path, dataBaseUrl));
-  } catch {
-    cache.set(path, []);
-    return [];
-  }
-  cache.set(path, people);
-  return people;
+  if (inflight.has(path)) return inflight.get(path)!;
+  const request = fetchGzipJson<PersonSummary[]>(new URL(path, dataBaseUrl))
+    .catch(() => [])
+    .then((people) => {
+      cache.set(path, people);
+      inflight.delete(path);
+      return people;
+    });
+  inflight.set(path, request);
+  return request;
 }
 
 function score(
@@ -108,11 +162,6 @@ function matchesFilters(person: PersonSummary, filters: SearchFilters): boolean 
 
 function fold(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, " ").trim().toUpperCase();
-}
-
-function safeShard(value: string): string {
-  const normalized = value.toLowerCase();
-  return /^[a-z0-9]$/.test(normalized) ? normalized : "_";
 }
 
 export {};
