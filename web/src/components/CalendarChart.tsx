@@ -1,6 +1,6 @@
 import {max} from "d3-array";
 import {scaleSqrt} from "d3-scale";
-import {useId, useMemo} from "react";
+import {useId, useMemo, useState} from "react";
 import type {ComparisonSeries, DailyPoint, Location} from "../types";
 import {PersonLegend} from "./PersonLegend";
 
@@ -29,10 +29,12 @@ interface CalendarPeriod {
 
 type CalendarLocation = Location | "all";
 
-export function CalendarChart({data, location, series = []}: {data: DailyPoint[]; location: CalendarLocation; series?: ComparisonSeries[]}) {
+export function CalendarChart({data, location, series = [], mileiCasaRosadaDays = []}: {data: DailyPoint[]; location: CalendarLocation; series?: ComparisonSeries[]; mileiCasaRosadaDays?: string[]}) {
   const titleId = useId();
+  const [showMileiDays, setShowMileiDays] = useState(true);
   const points = useMemo(() => aggregateDays(data, location), [data, location]);
   const periods = useMemo(() => createPeriods(points), [points]);
+  const mileiDays = useMemo(() => new Set(mileiCasaRosadaDays), [mileiCasaRosadaDays]);
   const maximum = max([...points.values()], (point) => point.records) ?? 1;
   const color = scaleSqrt<string>().domain([0, maximum]).range(["#e9ede8", "#075c70"]);
   const peak = [...points.entries()].sort((left, right) => right[1].records - left[1].records)[0];
@@ -42,6 +44,7 @@ export function CalendarChart({data, location, series = []}: {data: DailyPoint[]
     <figure className="chart-card" aria-labelledby={titleId}>
       <div className="chart-heading"><div><p className="eyebrow">Calendario</p><h3 id={titleId}>Actividad por día</h3></div><span className="chart-context">{locationLabel(location)}</span></div>
       <PersonLegend series={series} />
+      <label className="calendar-overlay-toggle"><input type="checkbox" checked={showMileiDays} onChange={(event) => setShowMileiDays(event.target.checked)} /><span className="calendar-milei-key" aria-hidden="true" />Marcar días con registro de Javier Milei en Casa Rosada</label>
       {series.length > 1 && <p className="comparison-summary"><strong>{formatNumber(sharedDays)}</strong> {sharedDays === 1 ? "día" : "días"} con registros de más de una persona.</p>}
       {periods.length ? <>
         <div className="calendar-scroll" tabIndex={0} aria-label="Calendario anual desplazable horizontalmente">
@@ -51,7 +54,11 @@ export function CalendarChart({data, location, series = []}: {data: DailyPoint[]
               <div className="calendar-months" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.months.map((month) => <span key={`${period.key}-${month.label}`} style={{gridColumnStart: month.column}}>{month.label}</span>)}</div>
               <div className="calendar-body">
                 <div className="calendar-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
-                <div className="calendar-days" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.days.map((day, index) => <span key={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${day.people.length > 1 ? " calendar-day--shared" : ""}`} style={day.inPeriod ? {...dayColor(day, series, color), gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1} : {gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1}} title={day.inPeriod ? dayTitle(day, series) : undefined} />)}</div>
+                <div className="calendar-days" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.days.map((day, index) => {
+                  const mileiPresent = showMileiDays && mileiDays.has(day.key);
+                  const colors = personColors(day, series);
+                  return <span key={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${colors.length > 1 ? " calendar-day--shared" : ""}${mileiPresent ? " calendar-day--milei" : ""}`} style={day.inPeriod ? {...dayColor(day, colors, color), gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1} : {gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1}} title={day.inPeriod ? dayTitle(day, series, mileiPresent) : undefined}>{colors.length > 1 && colors.map((item, colorIndex) => <i className="calendar-day-segment" style={{backgroundColor: item}} key={`${day.key}-${colorIndex}`} />)}</span>;
+                })}</div>
               </div>
             </section>)}
           </div>
@@ -111,19 +118,21 @@ function calendarDescription(activeDays: number, peak: [string, {records: number
   return `${formatNumber(activeDays)} ${activeDays === 1 ? "día" : "días"} con actividad en ${locationLabel(location)}. El máximo fue el ${formatDate(parseDate(peak[0]))}, con ${formatNumber(peak[1].records)} registros.${shared}`;
 }
 
-function dayColor(day: CalendarDay, series: ComparisonSeries[], fallback: (value: number) => string) {
-  if (!series.length || !day.people.length) return {backgroundColor: fallback(day.records)};
-  const colors = day.people.map((person) => series.find((item) => item.entityId === person.entityId)?.color).filter(Boolean) as string[];
-  if (!colors.length) return {backgroundColor: "#e9ede8"};
-  if (colors.length === 1) return {backgroundColor: colors[0]};
-  const step = 100 / colors.length;
-  return {background: `conic-gradient(${colors.map((item, index) => `${item} ${index * step}% ${(index + 1) * step}%`).join(",")})`};
+function personColors(day: CalendarDay, series: ComparisonSeries[]) {
+  if (!series.length || !day.people.length) return [];
+  return day.people.map((person) => series.find((item) => item.entityId === person.entityId)?.color).filter(Boolean) as string[];
 }
 
-function dayTitle(day: CalendarDay, series: ComparisonSeries[]) {
+function dayColor(day: CalendarDay, colors: string[], fallback: (value: number) => string) {
+  if (!colors.length) return {backgroundColor: fallback(day.records)};
+  if (colors.length === 1) return {backgroundColor: colors[0]};
+  return {backgroundColor: "#fff"};
+}
+
+function dayTitle(day: CalendarDay, series: ComparisonSeries[], mileiPresent = false) {
   const detail = day.people.map((person) => {
     const name = series.find((item) => item.entityId === person.entityId)?.name ?? "Persona";
     return `${name}: ${formatNumber(person.records)}`;
   });
-  return `${formatDate(day.date)}: ${formatNumber(day.records)} registros${detail.length ? ` · ${detail.join(" · ")}` : ""}`;
+  return `${formatDate(day.date)}: ${formatNumber(day.records)} registros${detail.length ? ` · ${detail.join(" · ")}` : ""}${mileiPresent ? " · Javier Milei registra actividad en Casa Rosada" : ""}`;
 }

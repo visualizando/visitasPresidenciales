@@ -51,6 +51,34 @@ def test_builds_search_events_analytics_and_csv(tmp_path) -> None:
     assert exports == [{"year": 2023, "records": 1, "path": "2023.csv.gz"}]
 
 
+def test_analytics_marks_only_javier_milei_days_at_casa_rosada(tmp_path) -> None:
+    data = tmp_path / "data"
+    output = tmp_path / "public" / "data"
+    common = {
+        "document_type": None,
+        "document_number": None,
+        "record_type": "movement",
+        "source_id": "src_1",
+        "source_url": "https://example.org/source.pdf",
+        "source_path": "source.pdf",
+        "source_page": 1,
+        "quality": "high",
+        "raw_text": "fila",
+    }
+    records = [
+        AccessRecord(record_id="javier", entity_id="javier", canonical_name="MILEI JAVIER GERARDO", location="casa-rosada", occurred_at=datetime(2024, 1, 2, 9, 0), **common),
+        AccessRecord(record_id="karina", entity_id="karina", canonical_name="MILEI KARINA", location="casa-rosada", occurred_at=datetime(2024, 1, 3, 9, 0), **common),
+        AccessRecord(record_id="olivos", entity_id="javier", canonical_name="MILEI JAVIER", location="olivos", occurred_at=datetime(2024, 1, 4, 9, 0), **common),
+        AccessRecord(record_id="concatenated", entity_id="other", canonical_name="OTRA PERSONA MILEI JAVIER", location="casa-rosada", occurred_at=datetime(2024, 1, 5, 9, 0), **common),
+    ]
+    write_partition(data / "partitions" / "casa-rosada" / "2024" / "01" / "src.parquet", records)
+
+    build_web_data(data, output)
+
+    analytics = json.loads((output / "analytics" / "overview.json").read_text(encoding="utf-8"))
+    assert analytics["milei_casa_rosada_days"] == ["2024-01-02"]
+
+
 def test_builds_deduplicated_cooccurrence_episodes(tmp_path) -> None:
     data = tmp_path / "data"
     output = tmp_path / "public" / "data"

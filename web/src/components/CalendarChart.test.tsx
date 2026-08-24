@@ -1,4 +1,4 @@
-import {render, screen} from "@testing-library/react";
+import {fireEvent, render, screen} from "@testing-library/react";
 import {describe, expect, it} from "vitest";
 import {CalendarChart} from "./CalendarChart";
 
@@ -25,7 +25,18 @@ describe("CalendarChart", () => {
 
     expect(container.querySelector(".comparison-summary")).toHaveTextContent(/1 día con registros de más de una persona/i);
     const shared = container.querySelector<HTMLElement>(".calendar-day--shared");
-    expect(shared?.style.background).toContain("conic-gradient");
+    expect(shared?.querySelectorAll(".calendar-day-segment")).toHaveLength(2);
     expect(shared).toHaveAttribute("title", expect.stringContaining("Ana Pérez: 1"));
+  });
+
+  it("marca los días de Milei y permite ocultar la capa", () => {
+    const {container} = render(<CalendarChart location="casa-rosada" mileiCasaRosadaDays={["2024-01-02"]} data={[
+      {date: "2024-01-02", location: "casa-rosada", record_type: "movement", records: 2, people: 1},
+    ]} />);
+
+    expect(container.querySelector(".calendar-day--milei")).toBeInTheDocument();
+    const checkbox = screen.getByRole("checkbox", {name: /Javier Milei/i});
+    fireEvent.click(checkbox);
+    expect(container.querySelector(".calendar-day--milei")).not.toBeInTheDocument();
   });
 });

@@ -261,11 +261,27 @@ def _build_analytics(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
     coverage = connection.execute(
         f"SELECT min({date_expr}), max({date_expr}) FROM records"
     ).fetchone()
+    milei_casa_rosada_days = [
+        row[0]
+        for row in connection.execute(
+            f"""
+            SELECT DISTINCT strftime({date_expr}, '%Y-%m-%d') AS date
+            FROM records
+            WHERE location = 'casa-rosada'
+              AND {date_expr} IS NOT NULL
+              AND upper(trim(regexp_replace(
+                    strip_accents(canonical_name), '[^A-Za-z]+', ' ', 'g'
+                  ))) IN ('MILEI JAVIER', 'MILEI JAVIER GERARDO')
+            ORDER BY date
+            """
+        ).fetchall()
+    ]
     return {
         "daily": daily,
         "monthly": monthly,
         "heatmap": heatmap,
         "purposes": purposes,
+        "milei_casa_rosada_days": milei_casa_rosada_days,
         "coverage": {
             "first_date": _json_datetime(coverage[0]),
             "last_date": _json_datetime(coverage[1]),
@@ -841,6 +857,7 @@ def _write_empty(output: Path, generated_at: str) -> None:
             "monthly": [],
             "heatmap": [],
             "purposes": [],
+            "milei_casa_rosada_days": [],
             "coverage": {"first_date": None, "last_date": None},
         },
     )
