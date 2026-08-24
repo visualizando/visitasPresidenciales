@@ -8,7 +8,7 @@ const ITEMS = [
   {id: "cobertura", label: "Cobertura"},
 ] as const;
 
-export function SectionNav() {
+export function SectionNav({preserveHash = false}: {preserveHash?: boolean}) {
   const [activeId, setActiveId] = useState<(typeof ITEMS)[number]["id"]>(ITEMS[0].id);
 
   useEffect(() => {
@@ -37,7 +37,11 @@ export function SectionNav() {
 
   return <div className="section-nav-wrap">
     <nav className="section-nav" aria-label="Secciones de la página">
-      {ITEMS.map((item) => <a key={item.id} href={`#${item.id}`} aria-current={activeId === item.id ? "location" : undefined}>{item.label}</a>)}
+      {ITEMS.map((item) => <a key={item.id} href={`#${item.id}`} aria-current={activeId === item.id ? "location" : undefined} onClick={(event) => {
+        if (!preserveHash) return;
+        event.preventDefault();
+        document.getElementById(item.id)?.scrollIntoView({behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start"});
+      }}>{item.label}</a>)}
     </nav>
   </div>;
 }

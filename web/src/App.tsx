@@ -15,6 +15,7 @@ import {useSearch} from "./hooks/useSearch";
 import type {AccessEvent, Analytics, ExportFile, Meta, PersonSummary, SearchFilters} from "./types";
 import {fetchGzipJson} from "./utils/fetchGzipJson";
 import {comparisonSeries} from "./utils/personColors";
+import {buildSelectionHash, parseSelectionHash, selectionIdShard} from "./utils/selectionHash";
 
 const DEFAULT_FILTERS: SearchFilters = {location: "all", year: "all", recordType: "all"};
 
@@ -26,6 +27,8 @@ export default function App() {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   const search = useSearch(query, filters);
   const [selected, setSelected] = useState<PersonSummary[]>([]);
+  const [selectionHashReady, setSelectionHashReady] = useState(false);
+  const [selectionHashError, setSelectionHashError] = useState<string | null>(null);
   const coincidences = useCoincidences(selected);
   const [events, setEvents] = useState<{data: AccessEvent[]; loading: boolean; error: string | null}>({data: [], loading: false, error: null});
   const years = useMemo(() => {
@@ -35,6 +38,61 @@ export default function App() {
   }, [meta.data]);
 
   const selectionKey = selected.map((person) => person.entity_id).sort().join(",");
+  useEffect(() => {
+    let activeController: AbortController | null = null;
+    let disposed = false;
+    const restoreSelection = () => {
+      activeController?.abort();
+      const entityIds = parseSelectionHash(window.location.hash);
+      if (entityIds === null || !entityIds.length) {
+        setSelected([]);
+        setSelectionHashError(null);
+        setSelectionHashReady(true);
+        return;
+      }
+      const controller = new AbortController();
+      activeController = controller;
+      setSelectionHashReady(false);
+      setSelectionHashError(null);
+      const shards = [...new Set(entityIds.map(selectionIdShard))];
+      Promise.all(shards.map((shard) => fetchGzipJson<PersonSummary[]>(new URL(`data/search/id/${shard}.json.gz`, document.baseURI), controller.signal)))
+        .then((groups) => {
+          if (disposed) return;
+          const peopleById = new Map(groups.flat().map((person) => [person.entity_id, person]));
+          const people = entityIds.map((entityId) => peopleById.get(entityId)).filter(Boolean) as PersonSummary[];
+          setSelected(people);
+          if (people.length !== entityIds.length) setSelectionHashError("Algunas personas del enlace ya no están disponibles en la base publicada.");
+        })
+        .catch((error: Error) => {
+          if (error.name !== "AbortError" && !disposed) {
+            setSelected([]);
+            setSelectionHashError("No se pudo reconstruir la selección compartida.");
+          }
+        })
+        .finally(() => {
+          if (!disposed && !controller.signal.aborted) setSelectionHashReady(true);
+        });
+    };
+    restoreSelection();
+    window.addEventListener("hashchange", restoreSelection);
+    return () => {
+      disposed = true;
+      activeController?.abort();
+      window.removeEventListener("hashchange", restoreSelection);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectionHashReady) return;
+    const nextHash = buildSelectionHash(selected.map((person) => person.entity_id));
+    const currentSelection = parseSelectionHash(window.location.hash);
+    if (nextHash && window.location.hash !== nextHash) {
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}${nextHash}`);
+    } else if (!nextHash && currentSelection !== null) {
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+    }
+  }, [selectionHashReady, selectionKey, selected]);
+
   useEffect(() => {
     if (!selected.length) {
       setEvents({data: [], loading: false, error: null});
@@ -89,10 +147,11 @@ export default function App() {
         <div className="hero-copy"><p className="eyebrow">Datos públicos</p><h1 id="page-title">Explorador de accesos a Olivos y Casa Rosada</h1><p>Este explorador se basa en datos obtenidos mediante pedidos de acceso a la información que Poder Ciudadano realiza regularmente.</p></div>
         <dl className="hero-facts" aria-label="Estado y cobertura de la base"><div><dd>{formatNumber(meta.data?.record_count)}</dd><dt>registros</dt></div><div><dd>{formatNumber(meta.data?.people_count)}</dd><dt>personas</dt></div><div><dd>{formatNumber(meta.data?.source_count)}</dd><dt>PDF</dt></div><div><dd>{formatMetricDate(meta.data?.first_date)}</dd><dt>primer registro</dt></div><div><dd>{formatMetricDate(meta.data?.last_date)}</dd><dt>último registro</dt></div></dl>
       </section>
-      <SectionNav />
+      <SectionNav preserveHash={selected.length > 0 || !selectionHashReady} />
 
       <section className="search-section" id="buscar" aria-labelledby="search-title">
         <div className="section-heading"><div><p className="eyebrow">Buscador</p><h2 id="search-title">Encontrá y agrupá personas</h2></div><p>Seleccioná varias coincidencias cuando parezcan ser la misma persona escrita de distintas maneras.</p></div>
+        {selectionHashError && <div className="notice notice--error" role="alert"><strong>El enlace compartido está incompleto.</strong><span>{selectionHashError}</span></div>}
         <div className="search-panel">
           <form className="search-form" role="search" onSubmit={(event) => event.preventDefault()}>
             <label htmlFor="person-query">Nombre, DNI o CUIL</label>

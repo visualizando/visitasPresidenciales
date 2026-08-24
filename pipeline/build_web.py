@@ -38,6 +38,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         "search/name",
         "search/name-fallback",
         "search/document",
+        "search/id",
         "events",
         "cooccurrences",
         "analytics",
@@ -116,6 +117,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
     name_shards: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     name_fallback_shards: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     document_shards: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+    id_shards: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     for person in people:
         summary = {key: value for key, value in person.items() if key != "search_tokens"}
         keys = {_safe_shard(token[:3].lower()) for token in person["search_tokens"] if token}
@@ -127,6 +129,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         document = person.get("document_number") or ""
         if document:
             document_shards[(document[:2] or "_")][person["entity_id"]] = summary
+        id_shards[_safe_shard(person["entity_id"][-2:].lower())][person["entity_id"]] = summary
 
     for key, values in name_shards.items():
         _write_gzip_json(output / "search" / "name" / f"{key}.json.gz", list(values.values()))
@@ -136,6 +139,8 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         )
     for key, values in document_shards.items():
         _write_gzip_json(output / "search" / "document" / f"{key}.json.gz", list(values.values()))
+    for key, values in id_shards.items():
+        _write_gzip_json(output / "search" / "id" / f"{key}.json.gz", list(values.values()))
 
     event_counts: dict[str, int] = {}
     for prefix in sorted({_entity_shard(person["entity_id"]) for person in people}):
@@ -173,6 +178,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         "name_shards": sorted(name_shards),
         "name_fallback_shards": sorted(name_fallback_shards),
         "document_shards": sorted(document_shards),
+        "id_shards": sorted(id_shards),
         "event_shards": event_counts,
     }
     _write_compact(output / "search" / "meta.json", search_meta)
@@ -847,6 +853,7 @@ def _write_empty(output: Path, generated_at: str) -> None:
             "name_shards": [],
             "name_fallback_shards": [],
             "document_shards": [],
+            "id_shards": [],
             "event_shards": {},
         },
     )
