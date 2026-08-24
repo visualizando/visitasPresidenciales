@@ -37,6 +37,7 @@ describe("CalendarChart", () => {
     expect(container.querySelector(".calendar-day--milei")).toBeInTheDocument();
     const checkbox = screen.getByRole("checkbox", {name: /Javier Milei/i});
     fireEvent.click(checkbox);
-    expect(container.querySelector(".calendar-day--milei")).not.toBeInTheDocument();
+    expect(checkbox).not.toBeChecked();
+    expect(container.querySelector(".calendar-day--milei")).toBeInTheDocument();
   });
 });

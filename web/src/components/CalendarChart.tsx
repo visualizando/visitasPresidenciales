@@ -1,6 +1,6 @@
 import {max} from "d3-array";
 import {scaleSqrt} from "d3-scale";
-import {useId, useMemo, useState} from "react";
+import {useId, useMemo} from "react";
 import type {ComparisonSeries, DailyPoint, Location} from "../types";
 import {PersonLegend} from "./PersonLegend";
 
@@ -31,7 +31,6 @@ type CalendarLocation = Location | "all";
 
 export function CalendarChart({data, location, series = [], mileiCasaRosadaDays = []}: {data: DailyPoint[]; location: CalendarLocation; series?: ComparisonSeries[]; mileiCasaRosadaDays?: string[]}) {
   const titleId = useId();
-  const [showMileiDays, setShowMileiDays] = useState(true);
   const points = useMemo(() => aggregateDays(data, location), [data, location]);
   const periods = useMemo(() => createPeriods(points), [points]);
   const mileiDays = useMemo(() => new Set(mileiCasaRosadaDays), [mileiCasaRosadaDays]);
@@ -44,7 +43,7 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
     <figure className="chart-card" aria-labelledby={titleId}>
       <div className="chart-heading"><div><p className="eyebrow">Calendario</p><h3 id={titleId}>Actividad por día</h3></div><span className="chart-context">{locationLabel(location)}</span></div>
       <PersonLegend series={series} />
-      <label className="calendar-overlay-toggle"><input type="checkbox" checked={showMileiDays} onChange={(event) => setShowMileiDays(event.target.checked)} /><span className="calendar-milei-key" aria-hidden="true" />Marcar días con registro de Javier Milei en Casa Rosada</label>
+      <label className="calendar-overlay-toggle"><input type="checkbox" defaultChecked /><span className="calendar-milei-key" aria-hidden="true" />Marcar días con registro de Javier Milei en Casa Rosada</label>
       {series.length > 1 && <p className="comparison-summary"><strong>{formatNumber(sharedDays)}</strong> {sharedDays === 1 ? "día" : "días"} con registros de más de una persona.</p>}
       {periods.length ? <>
         <div className="calendar-scroll" tabIndex={0} aria-label="Calendario anual desplazable horizontalmente">
@@ -55,7 +54,7 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
               <div className="calendar-body">
                 <div className="calendar-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
                 <div className="calendar-days" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.days.map((day, index) => {
-                  const mileiPresent = showMileiDays && mileiDays.has(day.key);
+                  const mileiPresent = mileiDays.has(day.key);
                   const colors = personColors(day, series);
                   return <span key={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${colors.length > 1 ? " calendar-day--shared" : ""}${mileiPresent ? " calendar-day--milei" : ""}`} style={day.inPeriod ? {...dayColor(day, colors, color), gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1} : {gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1}} title={day.inPeriod ? dayTitle(day, series, mileiPresent) : undefined}>{colors.length > 1 && colors.map((item, colorIndex) => <i className="calendar-day-segment" style={{backgroundColor: item}} key={`${day.key}-${colorIndex}`} />)}</span>;
                 })}</div>

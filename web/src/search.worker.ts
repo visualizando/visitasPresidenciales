@@ -19,6 +19,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const message = event.data;
   if (message.type === "init") {
     dataBaseUrl = message.baseUrl;
+    void loadSearchMeta().catch(() => undefined);
     self.postMessage({type: "ready"});
     return;
   }
