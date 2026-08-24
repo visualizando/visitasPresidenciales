@@ -1,6 +1,7 @@
 import {hierarchy, pack} from "d3-hierarchy";
 import {useId, useMemo} from "react";
-import type {Location, PurposePoint} from "../types";
+import type {ComparisonSeries, Location, PurposePoint} from "../types";
+import {PersonLegend} from "./PersonLegend";
 
 const WIDTH = 640;
 const HEIGHT = 360;
@@ -8,38 +9,42 @@ const HEIGHT = 360;
 interface PackDatum {
   label: string;
   location?: Location;
+  entityId?: string;
+  color?: string;
   records?: number;
   children?: PackDatum[];
 }
 
-export function PurposeChart({data}: {data: PurposePoint[]}) {
+export function PurposeChart({data, series = []}: {data: PurposePoint[]; series?: ComparisonSeries[]}) {
   const titleId = useId();
   const points = data.filter((point) => point.records > 0);
-  const layout = useMemo(() => createLayout(points), [points]);
+  const layout = useMemo(() => createLayout(points, series), [points, series]);
 
   return (
     <figure className="chart-card" aria-labelledby={titleId}>
       <div className="chart-heading">
         <div><p className="eyebrow">Contexto</p><h3 id={titleId}>Destinos y motivos</h3></div>
-        {points.length > 0 && <div className="legend" aria-label="Sedes"><span><i className="legend-dot legend-dot--casa-rosada" />Casa Rosada</span><span><i className="legend-dot legend-dot--olivos" />Olivos</span></div>}
+        {!series.length && points.length > 0 && <div className="legend" aria-label="Sedes"><span><i className="legend-dot legend-dot--casa-rosada" />Casa Rosada</span><span><i className="legend-dot legend-dot--olivos" />Olivos</span></div>}
       </div>
+      <PersonLegend series={series} />
       {layout ? (
         <>
           <svg className="pack-chart" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="Circle pack de destinos y motivos. El área de cada círculo representa la cantidad de registros." focusable="false">
-            {layout.children?.map((group) => <g key={group.data.label} className={`pack-group pack-group--${group.data.location}`} aria-hidden="true"><circle cx={group.x} cy={group.y} r={group.r} /><text x={group.x} y={group.y - group.r + 14}>{group.data.label}</text></g>)}
+            {layout.children?.map((group) => <g key={group.data.entityId ?? group.data.label} className={`pack-group pack-group--${group.data.location ?? "person"}`} aria-hidden="true"><circle cx={group.x} cy={group.y} r={group.r} style={group.data.color ? {stroke: group.data.color} : undefined} /><text x={group.x} y={group.y - group.r + 14}>{group.data.label}</text></g>)}
             {layout.leaves().map((leaf) => {
               const location = leaf.data.location ?? "casa-rosada";
               const lines = leaf.r >= 25 ? splitLabel(leaf.data.label, leaf.r) : [];
-              return <g key={`${location}-${leaf.data.label}`} className={`pack-leaf pack-leaf--${location}`} transform={`translate(${leaf.x} ${leaf.y})`} aria-hidden="true">
-                <circle r={leaf.r} />
-                <title>{`${leaf.data.label} · ${locationLabel(location)} · ${formatNumber(leaf.data.records ?? 0)} registros`}</title>
+              const person = series.find((item) => item.entityId === leaf.data.entityId);
+              return <g key={`${leaf.data.entityId ?? location}-${leaf.data.label}`} className={`pack-leaf pack-leaf--${person ? "person" : location}`} transform={`translate(${leaf.x} ${leaf.y})`} aria-hidden="true">
+                <circle r={leaf.r} style={person ? {fill: person.color} : undefined} />
+                <title>{`${leaf.data.label} · ${person?.name ?? locationLabel(location)} · ${formatNumber(leaf.data.records ?? 0)} registros`}</title>
                 {lines.length > 0 && <text className="pack-label">{lines.map((line, index) => <tspan key={line} x="0" y={`${index - (lines.length - 1) / 2 - 0.35}em`}>{line}</tspan>)}<tspan className="pack-value" x="0" y={`${(lines.length - 1) / 2 + 1}em`}>{formatCompact(leaf.data.records ?? 0)}</tspan></text>}
               </g>;
             })}
           </svg>
           <details className="data-table-disclosure">
             <summary>Ver datos del gráfico</summary>
-            <div className="table-scroll"><table><caption>Destinos y motivos por sede</caption><thead><tr><th>Destino o motivo</th><th>Sede</th><th>Registros</th></tr></thead><tbody>{points.map((point) => <tr key={`${point.location}-${point.label}`}><td>{point.label}</td><td>{locationLabel(point.location)}</td><td>{formatNumber(point.records)}</td></tr>)}</tbody></table></div>
+            <div className="table-scroll"><table><caption>Destinos y motivos por {series.length ? "persona" : "sede"}</caption><thead><tr><th>Destino o motivo</th>{series.length > 0 && <th>Persona</th>}<th>Sede</th><th>Registros</th></tr></thead><tbody>{points.map((point) => <tr key={`${point.entity_id ?? point.location}-${point.label}`}><td>{point.label}</td>{series.length > 0 && <td>{series.find((item) => item.entityId === point.entity_id)?.name ?? point.person_name}</td>}<td>{locationLabel(point.location)}</td><td>{formatNumber(point.records)}</td></tr>)}</tbody></table></div>
           </details>
         </>
       ) : <p className="chart-empty-copy">Las fuentes procesadas todavía no incluyen destinos o motivos.</p>}
@@ -47,9 +52,14 @@ export function PurposeChart({data}: {data: PurposePoint[]}) {
   );
 }
 
-function createLayout(points: PurposePoint[]) {
+function createLayout(points: PurposePoint[], series: ComparisonSeries[]) {
   if (!points.length) return null;
-  const groups: PackDatum[] = (["casa-rosada", "olivos"] as Location[]).map((location) => ({
+  const groups: PackDatum[] = series.length ? series.map((person) => ({
+    label: person.name,
+    entityId: person.entityId,
+    color: person.color,
+    children: points.filter((point) => point.entity_id === person.entityId).map((point) => ({...point, entityId: person.entityId})),
+  })).filter((group) => group.children?.length) : (["casa-rosada", "olivos"] as Location[]).map((location) => ({
     label: locationLabel(location),
     location,
     children: points.filter((point) => point.location === location).map((point) => ({...point})),

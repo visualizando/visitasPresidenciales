@@ -1,7 +1,8 @@
 import {max} from "d3-array";
 import {scaleSqrt} from "d3-scale";
 import {useId, useMemo} from "react";
-import type {DailyPoint, Location} from "../types";
+import type {ComparisonSeries, DailyPoint, Location} from "../types";
+import {PersonLegend} from "./PersonLegend";
 
 const DAY_MS = 86_400_000;
 const WEEKDAYS = ["L", "M", "X", "J", "V", "S", "D"];
@@ -14,6 +15,7 @@ interface CalendarDay {
   date: Date;
   key: string;
   records: number;
+  people: {entityId: string; records: number}[];
   inPeriod: boolean;
 }
 
@@ -25,44 +27,54 @@ interface CalendarPeriod {
   days: CalendarDay[];
 }
 
-export function CalendarChart({data, location}: {data: DailyPoint[]; location: Location}) {
+type CalendarLocation = Location | "all";
+
+export function CalendarChart({data, location, series = []}: {data: DailyPoint[]; location: CalendarLocation; series?: ComparisonSeries[]}) {
   const titleId = useId();
   const points = useMemo(() => aggregateDays(data, location), [data, location]);
   const periods = useMemo(() => createPeriods(points), [points]);
-  const maximum = max([...points.values()]) ?? 1;
+  const maximum = max([...points.values()], (point) => point.records) ?? 1;
   const color = scaleSqrt<string>().domain([0, maximum]).range(["#e9ede8", "#075c70"]);
-  const peak = [...points.entries()].sort((left, right) => right[1] - left[1])[0];
+  const peak = [...points.entries()].sort((left, right) => right[1].records - left[1].records)[0];
+  const sharedDays = [...points.values()].filter((point) => point.people.size > 1).length;
 
   return (
     <figure className="chart-card" aria-labelledby={titleId}>
       <div className="chart-heading"><div><p className="eyebrow">Calendario</p><h3 id={titleId}>Actividad por día</h3></div><span className="chart-context">{locationLabel(location)}</span></div>
+      <PersonLegend series={series} />
+      {series.length > 1 && <p className="comparison-summary"><strong>{formatNumber(sharedDays)}</strong> {sharedDays === 1 ? "día" : "días"} con registros de más de una persona.</p>}
       {periods.length ? <>
         <div className="calendar-scroll" tabIndex={0} aria-label="Calendario anual desplazable horizontalmente">
-          <div className="calendar-periods" role="img" aria-label={calendarDescription(points.size, peak, location)}>
+          <div className="calendar-periods" role="img" aria-label={calendarDescription(points.size, peak, location, sharedDays)}>
             {periods.map((period) => <section className="calendar-period" key={period.key} aria-hidden="true">
               <h4>{period.label}</h4>
               <div className="calendar-months" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.months.map((month) => <span key={`${period.key}-${month.label}`} style={{gridColumnStart: month.column}}>{month.label}</span>)}</div>
               <div className="calendar-body">
                 <div className="calendar-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
-                <div className="calendar-days" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.days.map((day, index) => <span key={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}`} style={day.inPeriod ? {backgroundColor: color(day.records), gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1} : {gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1}} title={day.inPeriod ? `${formatDate(day.date)}: ${formatNumber(day.records)} registros` : undefined} />)}</div>
+                <div className="calendar-days" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.days.map((day, index) => <span key={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${day.people.length > 1 ? " calendar-day--shared" : ""}`} style={day.inPeriod ? {...dayColor(day, series, color), gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1} : {gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1}} title={day.inPeriod ? dayTitle(day, series) : undefined} />)}</div>
               </div>
             </section>)}
           </div>
         </div>
-        <div className="calendar-key" aria-hidden="true"><span>Menos</span><i /><span>Más</span></div>
-        <details className="data-table-disclosure"><summary>Ver resumen accesible</summary><p>{calendarDescription(points.size, peak, location)}</p></details>
+        {!series.length && <div className="calendar-key" aria-hidden="true"><span>Menos</span><i /><span>Más</span></div>}
+        <details className="data-table-disclosure"><summary>Ver resumen accesible</summary><p>{calendarDescription(points.size, peak, location, sharedDays)}</p></details>
       </> : <p className="chart-empty-copy">Todavía no hay fechas suficientes para este calendario.</p>}
     </figure>
   );
 }
 
-function aggregateDays(data: DailyPoint[], location: Location) {
-  const result = new Map<string, number>();
-  for (const point of data) if (point.location === location) result.set(point.date, (result.get(point.date) ?? 0) + point.records);
+function aggregateDays(data: DailyPoint[], location: CalendarLocation) {
+  const result = new Map<string, {records: number; people: Map<string, number>}>();
+  for (const point of data) if (location === "all" || point.location === location) {
+    const day = result.get(point.date) ?? {records: 0, people: new Map<string, number>()};
+    day.records += point.records;
+    if (point.entity_id) day.people.set(point.entity_id, (day.people.get(point.entity_id) ?? 0) + point.records);
+    result.set(point.date, day);
+  }
   return result;
 }
 
-function createPeriods(points: Map<string, number>) {
+function createPeriods(points: Map<string, {records: number; people: Map<string, number>}>) {
   if (!points.size) return [];
   const keys = [...points.keys()].sort();
   const first = parseDate(keys[0]);
@@ -76,7 +88,8 @@ function createPeriods(points: Map<string, number>) {
     const days = Array.from({length: weeks * 7}, (_, index) => {
       const date = addDays(gridStart, index);
       const key = date.toISOString().slice(0, 10);
-      return {date, key, records: points.get(key) ?? 0, inPeriod: date >= start && date < end};
+      const point = points.get(key);
+      return {date, key, records: point?.records ?? 0, people: [...(point?.people ?? new Map()).entries()].map(([entityId, records]) => ({entityId, records})), inPeriod: date >= start && date < end};
     });
     const months = Array.from({length: 12}, (_, month) => {
       const date = new Date(Date.UTC(year, month, 1));
@@ -91,8 +104,26 @@ function parseDate(value: string) { return new Date(`${value}T00:00:00Z`); }
 function addDays(date: Date, amount: number) { return new Date(date.valueOf() + amount * DAY_MS); }
 function formatNumber(value: number) { return Intl.NumberFormat("es-AR").format(value); }
 function formatDate(date: Date) { return new Intl.DateTimeFormat("es-AR", {day: "numeric", month: "short", year: "numeric", timeZone: "UTC"}).format(date); }
-function locationLabel(value: Location) { return value === "casa-rosada" ? "Casa Rosada" : "Olivos"; }
-function calendarDescription(activeDays: number, peak: [string, number] | undefined, location: Location) {
+function locationLabel(value: CalendarLocation) { return value === "all" ? "Ambas sedes" : value === "casa-rosada" ? "Casa Rosada" : "Olivos"; }
+function calendarDescription(activeDays: number, peak: [string, {records: number}] | undefined, location: CalendarLocation, sharedDays = 0) {
   if (!peak) return `No hay actividad diaria disponible para ${locationLabel(location)}.`;
-  return `${formatNumber(activeDays)} ${activeDays === 1 ? "día" : "días"} con actividad en ${locationLabel(location)}. El máximo fue el ${formatDate(parseDate(peak[0]))}, con ${formatNumber(peak[1])} registros.`;
+  const shared = sharedDays ? ` ${formatNumber(sharedDays)} ${sharedDays === 1 ? "día tiene" : "días tienen"} registros de más de una persona seleccionada.` : "";
+  return `${formatNumber(activeDays)} ${activeDays === 1 ? "día" : "días"} con actividad en ${locationLabel(location)}. El máximo fue el ${formatDate(parseDate(peak[0]))}, con ${formatNumber(peak[1].records)} registros.${shared}`;
+}
+
+function dayColor(day: CalendarDay, series: ComparisonSeries[], fallback: (value: number) => string) {
+  if (!series.length || !day.people.length) return {backgroundColor: fallback(day.records)};
+  const colors = day.people.map((person) => series.find((item) => item.entityId === person.entityId)?.color).filter(Boolean) as string[];
+  if (!colors.length) return {backgroundColor: "#e9ede8"};
+  if (colors.length === 1) return {backgroundColor: colors[0]};
+  const step = 100 / colors.length;
+  return {background: `conic-gradient(${colors.map((item, index) => `${item} ${index * step}% ${(index + 1) * step}%`).join(",")})`};
+}
+
+function dayTitle(day: CalendarDay, series: ComparisonSeries[]) {
+  const detail = day.people.map((person) => {
+    const name = series.find((item) => item.entityId === person.entityId)?.name ?? "Persona";
+    return `${name}: ${formatNumber(person.records)}`;
+  });
+  return `${formatDate(day.date)}: ${formatNumber(day.records)} registros${detail.length ? ` · ${detail.join(" · ")}` : ""}`;
 }

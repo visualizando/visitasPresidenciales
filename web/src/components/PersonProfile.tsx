@@ -3,6 +3,7 @@ import {useEffect, useMemo, useRef, useState} from "react";
 import type {AccessEvent, CoincidenceResult, PersonSummary} from "../types";
 import {CoincidenceRanking} from "./CoincidenceRanking";
 import {locationLabel, titleCase} from "./SearchResults";
+import {comparisonSeries} from "../utils/personColors";
 
 type SortKey = "date" | "person" | "location" | "type" | "detail" | "exit" | "quality";
 type SortDirection = "asc" | "desc";
@@ -22,6 +23,8 @@ type PersonProfileProps = {
 export function PersonProfile({people, events, loading, error, coincidences, coincidencesLoading, coincidencesError, onRemove, onClear}: PersonProfileProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [sort, setSort] = useState<{key: SortKey; direction: SortDirection}>({key: "date", direction: "desc"});
+  const series = useMemo(() => comparisonSeries(people), [people]);
+  const colors = useMemo(() => new Map(series.map((person) => [person.entityId, person.color])), [series]);
   useEffect(() => { headingRef.current?.focus(); }, [people.length]);
 
   const sortedEvents = useMemo(() => [...events].sort((a, b) => {
@@ -41,11 +44,11 @@ export function PersonProfile({people, events, loading, error, coincidences, coi
 
   return <section className="profile" aria-labelledby="profile-title">
     <div className="profile-header">
-      <div><p className="eyebrow">Selección agrupada</p><h2 id="profile-title" ref={headingRef} tabIndex={-1}>{people.length === 1 ? titleCase(people[0].canonical_name) : `${people.length} variantes de una persona`}</h2><p className="profile-description">Los registros se combinan sólo para esta consulta; las identidades originales no se modifican.</p></div>
+      <div><p className="eyebrow">Selección comparada</p><h2 id="profile-title" ref={headingRef} tabIndex={-1}>{people.length === 1 ? titleCase(people[0].canonical_name) : `${people.length} personas o variantes seleccionadas`}</h2><p className="profile-description">Cada selección conserva su color en la tabla y los gráficos. Las identidades originales no se modifican.</p></div>
       <button className="text-button" type="button" onClick={onClear}>Limpiar selección</button>
     </div>
 
-    <div className="selected-people" aria-label="Personas seleccionadas">{people.map((person) => <div className="person-chip" key={person.entity_id}><span><strong>{titleCase(person.canonical_name)}</strong><small>{person.document_type ?? "Documento"} <bdi>{person.document_number ?? "no informado"}</bdi></small></span><button type="button" onClick={() => onRemove(person.entity_id)} aria-label={`Quitar ${titleCase(person.canonical_name)}`}><X aria-hidden="true" /></button></div>)}</div>
+    <div className="selected-people" aria-label="Personas seleccionadas">{people.map((person) => <div className="person-chip" key={person.entity_id} style={{borderColor: colors.get(person.entity_id)}}><i className="person-color" style={{backgroundColor: colors.get(person.entity_id)}} aria-hidden="true" /><span><strong>{titleCase(person.canonical_name)}</strong><small>{person.document_type ?? "Documento"} <bdi>{person.document_number ?? "no informado"}</bdi></small></span><button type="button" onClick={() => onRemove(person.entity_id)} aria-label={`Quitar ${titleCase(person.canonical_name)}`}><X aria-hidden="true" /></button></div>)}</div>
 
     <div className="profile-stats"><span><strong>{events.length.toLocaleString("es-AR")}</strong> registros cargados</span><span><strong>{locations.map(locationLabel).join(" y ")}</strong> sedes</span><span><strong>{formatDate(latest)}</strong> última aparición</span></div>
     <p className="privacy-note"><strong>Dato publicado por la fuente.</strong> Verificá el PDF indicado antes de reutilizarlo.</p>
@@ -63,7 +66,7 @@ export function PersonProfile({people, events, loading, error, coincidences, coi
       <SortableHeader label="Salida" column="exit" sort={sort} onSort={changeSort} />
       <SortableHeader label="Calidad" column="quality" sort={sort} onSort={changeSort} />
       <th scope="col">Fuente</th>
-    </tr></thead><tbody>{sortedEvents.map((event) => <tr key={event.record_id}><td><time dateTime={primaryDate(event) ?? undefined}>{formatDateTime(primaryDate(event))}</time></td><td><strong>{titleCase(event.canonical_name)}</strong></td><td>{locationLabel(event.location)}</td><td>{recordLabel(event)}</td><td className="detail-cell" title={eventDetail(event)}>{eventDetail(event)}</td><td>{formatTime(event.exited_at)}</td><td><span className={`quality quality--${event.quality}`}>{qualityLabel(event.quality)}</span></td><td><SourceCell event={event} /></td></tr>)}</tbody></table></div> : <p className="selection-empty">No hay eventos publicados para esta selección.</p>}</div>}
+    </tr></thead><tbody>{sortedEvents.map((event) => <tr key={event.record_id}><td><time dateTime={primaryDate(event) ?? undefined}>{formatDateTime(primaryDate(event))}</time></td><td><span className="record-person"><i className="person-color" style={{backgroundColor: colors.get(event.entity_id)}} aria-hidden="true" /><strong>{titleCase(event.canonical_name)}</strong></span></td><td>{locationLabel(event.location)}</td><td>{recordLabel(event)}</td><td className="detail-cell" title={eventDetail(event)}>{eventDetail(event)}</td><td>{formatTime(event.exited_at)}</td><td><span className={`quality quality--${event.quality}`}>{qualityLabel(event.quality)}</span></td><td><SourceCell event={event} /></td></tr>)}</tbody></table></div> : <p className="selection-empty">No hay eventos publicados para esta selección.</p>}</div>}
   </section>;
 }
 

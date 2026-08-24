@@ -69,6 +69,8 @@ export interface DailyPoint {
   record_type: RecordType;
   records: number;
   people: number;
+  entity_id?: string;
+  person_name?: string;
 }
 
 export interface MonthlyPoint {
@@ -76,6 +78,8 @@ export interface MonthlyPoint {
   location: Location;
   records: number;
   people: number;
+  entity_id?: string;
+  person_name?: string;
 }
 
 export interface HeatmapPoint {
@@ -83,12 +87,22 @@ export interface HeatmapPoint {
   weekday: number;
   hour: number;
   records: number;
+  entity_id?: string;
+  person_name?: string;
 }
 
 export interface PurposePoint {
   location: Location;
   label: string;
   records: number;
+  entity_id?: string;
+  person_name?: string;
+}
+
+export interface ComparisonSeries {
+  entityId: string;
+  name: string;
+  color: string;
 }
 
 export interface Analytics {

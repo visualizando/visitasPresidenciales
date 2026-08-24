@@ -14,6 +14,7 @@ import {useCoincidences} from "./hooks/useCoincidences";
 import {useSearch} from "./hooks/useSearch";
 import type {AccessEvent, Analytics, ExportFile, Meta, PersonSummary, SearchFilters} from "./types";
 import {fetchGzipJson} from "./utils/fetchGzipJson";
+import {comparisonSeries} from "./utils/personColors";
 
 const DEFAULT_FILTERS: SearchFilters = {location: "all", year: "all", recordType: "all"};
 
@@ -59,6 +60,7 @@ export default function App() {
   }, [selectionKey]);
 
   const selectedIds = useMemo(() => new Set(selected.map((person) => person.entity_id)), [selected]);
+  const personSeries = useMemo(() => comparisonSeries(selected), [selected]);
   const selectionAnalytics = useMemo(() => aggregateEvents(events.data), [events.data]);
   const activeAnalytics = selected.length ? selectionAnalytics : analytics.data;
   const heatmapLocation = useMemo(() => {
@@ -75,7 +77,7 @@ export default function App() {
   }
 
   const statusMessage = search.loading ? "Buscando…" : query.trim().length >= 2 ? `${search.results.length} resultados para ${query}` : "";
-  const selectedLabel = selected.length === 1 ? selected[0].canonical_name : `${selected.length} variantes seleccionadas`;
+  const selectedLabel = selected.length === 1 ? selected[0].canonical_name : `${selected.length} personas o variantes seleccionadas`;
 
   return <>
     <a className="skip-link" href="#main">Saltar al contenido</a>
@@ -111,7 +113,7 @@ export default function App() {
         <div className="section-heading"><div><p className="eyebrow">Gráficos</p><h2 id="dashboard-title">Actividad</h2></div><p>{selected.length ? `Vista filtrada por ${selectedLabel}. Limpiá la selección para volver al total.` : "Panorama general de todos los registros publicados."}</p></div>
         {dashboardLoading && <p role="status">Cargando gráficos…</p>}
         {dashboardError && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los gráficos.</strong><span>{dashboardError}</span></div>}
-        {activeAnalytics && !dashboardLoading && !dashboardError && <div className="dashboard-grid"><div className="dashboard-wide"><CalendarChart data={activeAnalytics.daily} location={heatmapLocation} /></div><HeatmapChart data={activeAnalytics.heatmap} location={heatmapLocation} /><PurposeChart data={activeAnalytics.purposes} /><div className="dashboard-wide"><TrendChart data={activeAnalytics.monthly} /></div></div>}
+        {activeAnalytics && !dashboardLoading && !dashboardError && <div className="dashboard-grid"><div className="dashboard-wide"><CalendarChart data={activeAnalytics.daily} location={selected.length ? "all" : heatmapLocation} series={personSeries} /></div><HeatmapChart data={activeAnalytics.heatmap} location={heatmapLocation} series={personSeries} /><PurposeChart data={activeAnalytics.purposes} series={personSeries} /><div className="dashboard-wide"><TrendChart data={activeAnalytics.monthly} series={personSeries} /></div></div>}
       </section>
 
       <section className="downloads-section" id="descargas" aria-labelledby="downloads-title">
@@ -137,10 +139,10 @@ export default function App() {
 }
 
 function aggregateEvents(events: AccessEvent[]): Analytics {
-  const daily = new Map<string, {date: string; location: AccessEvent["location"]; record_type: AccessEvent["record_type"]; records: number; people: Set<string>}>();
-  const monthly = new Map<string, {month: string; location: AccessEvent["location"]; records: number; people: Set<string>}>();
-  const heatmap = new Map<string, {location: AccessEvent["location"]; weekday: number; hour: number; records: number}>();
-  const purposes = new Map<string, {location: AccessEvent["location"]; label: string; records: number}>();
+  const daily = new Map<string, {date: string; location: AccessEvent["location"]; record_type: AccessEvent["record_type"]; records: number; people: Set<string>; entity_id: string; person_name: string}>();
+  const monthly = new Map<string, {month: string; location: AccessEvent["location"]; records: number; people: Set<string>; entity_id: string; person_name: string}>();
+  const heatmap = new Map<string, {location: AccessEvent["location"]; weekday: number; hour: number; records: number; entity_id: string; person_name: string}>();
+  const purposes = new Map<string, {location: AccessEvent["location"]; label: string; records: number; entity_id: string; person_name: string}>();
 
   for (const event of events) {
     const dateValue = event.occurred_at ?? event.entered_at ?? event.exited_at;
@@ -148,27 +150,27 @@ function aggregateEvents(events: AccessEvent[]): Analytics {
       const date = new Date(dateValue);
       if (!Number.isNaN(date.valueOf())) {
         const day = date.toISOString().slice(0, 10);
-        const dayKey = `${day}|${event.location}|${event.record_type}`;
-        const dayPoint = daily.get(dayKey) ?? {date: day, location: event.location, record_type: event.record_type, records: 0, people: new Set<string>()};
+        const dayKey = `${day}|${event.location}|${event.record_type}|${event.entity_id}`;
+        const dayPoint = daily.get(dayKey) ?? {date: day, location: event.location, record_type: event.record_type, records: 0, people: new Set<string>(), entity_id: event.entity_id, person_name: event.canonical_name};
         dayPoint.records += 1;
         dayPoint.people.add(event.entity_id);
         daily.set(dayKey, dayPoint);
         const month = date.toISOString().slice(0, 7);
-        const monthKey = `${month}|${event.location}`;
-        const monthPoint = monthly.get(monthKey) ?? {month, location: event.location, records: 0, people: new Set<string>()};
+        const monthKey = `${month}|${event.location}|${event.entity_id}`;
+        const monthPoint = monthly.get(monthKey) ?? {month, location: event.location, records: 0, people: new Set<string>(), entity_id: event.entity_id, person_name: event.canonical_name};
         monthPoint.records += 1;
         monthPoint.people.add(event.entity_id);
         monthly.set(monthKey, monthPoint);
-        const heatmapKey = `${event.location}|${date.getDay()}|${date.getHours()}`;
-        const heatmapPoint = heatmap.get(heatmapKey) ?? {location: event.location, weekday: date.getDay(), hour: date.getHours(), records: 0};
+        const heatmapKey = `${event.location}|${date.getDay()}|${date.getHours()}|${event.entity_id}`;
+        const heatmapPoint = heatmap.get(heatmapKey) ?? {location: event.location, weekday: date.getDay(), hour: date.getHours(), records: 0, entity_id: event.entity_id, person_name: event.canonical_name};
         heatmapPoint.records += 1;
         heatmap.set(heatmapKey, heatmapPoint);
       }
     }
     const label = event.destination ?? event.purpose ?? event.activity;
     if (label) {
-      const purposeKey = `${event.location}|${label}`;
-      const purposePoint = purposes.get(purposeKey) ?? {location: event.location, label, records: 0};
+      const purposeKey = `${event.location}|${label}|${event.entity_id}`;
+      const purposePoint = purposes.get(purposeKey) ?? {location: event.location, label, records: 0, entity_id: event.entity_id, person_name: event.canonical_name};
       purposePoint.records += 1;
       purposes.set(purposeKey, purposePoint);
     }
