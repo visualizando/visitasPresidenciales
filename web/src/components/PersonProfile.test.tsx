@@ -21,4 +21,13 @@ describe("PersonProfile", () => {
     expect(within(rows[0]).getByText("Ana Perez")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", {name: /Persona/i})).toHaveAttribute("aria-sort", "ascending");
   });
+
+  it("muestra tablas largas de forma progresiva", () => {
+    const events = Array.from({length: 101}, (_, index) => event(`${index}`, "one", "PEREZ ANA", `2024-01-${String(index % 28 + 1).padStart(2, "0")}T10:00:00Z`));
+    const {container} = render(<PersonProfile people={[people[0]]} events={events} loading={false} error={null} coincidences={[]} coincidencesLoading={false} coincidencesError={null} onRemove={vi.fn()} onClear={vi.fn()} />);
+
+    expect(container.querySelectorAll(".records-table tbody tr")).toHaveLength(100);
+    fireEvent.click(screen.getByRole("button", {name: "Mostrar 1 más"}));
+    expect(container.querySelectorAll(".records-table tbody tr")).toHaveLength(101);
+  });
 });

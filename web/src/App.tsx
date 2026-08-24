@@ -1,5 +1,5 @@
 import {Database, Download, Search} from "lucide-react";
-import {useEffect, useMemo, useState} from "react";
+import {useDeferredValue, useEffect, useMemo, useState} from "react";
 import {CalendarChart} from "./components/CalendarChart";
 import {CoverageReport} from "./components/CoverageReport";
 import {HeatmapChart} from "./components/HeatmapChart";
@@ -23,20 +23,11 @@ export default function App() {
   const meta = useData<Meta>("meta.json");
   const analytics = useData<Analytics>("analytics/overview.json");
   const exportsData = useData<ExportFile[]>("exports/index.json");
-  const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
-  const search = useSearch(query, filters);
   const [selected, setSelected] = useState<PersonSummary[]>([]);
   const [selectionHashReady, setSelectionHashReady] = useState(false);
   const [selectionHashError, setSelectionHashError] = useState<string | null>(null);
   const coincidences = useCoincidences(selected);
   const [events, setEvents] = useState<{data: AccessEvent[]; loading: boolean; error: string | null}>({data: [], loading: false, error: null});
-  const years = useMemo(() => {
-    const first = meta.data?.first_date ? new Date(meta.data.first_date).getUTCFullYear() : 2023;
-    const last = meta.data?.last_date ? new Date(meta.data.last_date).getUTCFullYear() : new Date().getFullYear();
-    return Array.from({length: Math.max(1, last - first + 1)}, (_, index) => last - index);
-  }, [meta.data]);
-
   const selectionKey = selected.map((person) => person.entity_id).sort().join(",");
   useEffect(() => {
     let activeController: AbortController | null = null;
@@ -134,7 +125,6 @@ export default function App() {
       : [...current, person]);
   }
 
-  const statusMessage = search.loading ? "Buscando…" : query.trim().length >= 2 ? `${search.results.length} resultados para ${query}` : "";
   const selectedLabel = selected.length === 1 ? selected[0].canonical_name : `${selected.length} personas o variantes seleccionadas`;
 
   return <>
@@ -152,19 +142,7 @@ export default function App() {
       <section className="search-section" id="buscar" aria-labelledby="search-title">
         <div className="section-heading"><div><p className="eyebrow">Buscador</p><h2 id="search-title">Encontrá y agrupá personas</h2></div><p>Seleccioná varias coincidencias cuando parezcan ser la misma persona escrita de distintas maneras.</p></div>
         {selectionHashError && <div className="notice notice--error" role="alert"><strong>El enlace compartido está incompleto.</strong><span>{selectionHashError}</span></div>}
-        <div className="search-panel">
-          <form className="search-form" role="search" onSubmit={(event) => event.preventDefault()}>
-            <label htmlFor="person-query">Nombre, DNI o CUIL</label>
-            <div className="search-input-wrap"><Search aria-hidden="true" /><input id="person-query" name="query" type="search" autoComplete="off" spellCheck="false" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ej.: Ana Pérez o 20.123.456" /></div>
-            <div className="filters" aria-label="Filtros de búsqueda">
-              <label>Sede<select value={filters.location} onChange={(event) => setFilters({...filters, location: event.target.value as SearchFilters["location"]})}><option value="all">Todas</option><option value="casa-rosada">Casa Rosada</option><option value="olivos">Olivos</option></select></label>
-              <label>Año<select value={filters.year} onChange={(event) => setFilters({...filters, year: event.target.value === "all" ? "all" : Number(event.target.value)})}><option value="all">Todos</option>{years.map((year) => <option value={year} key={year}>{year}</option>)}</select></label>
-              <label>Tipo<select value={filters.recordType} onChange={(event) => setFilters({...filters, recordType: event.target.value as SearchFilters["recordType"]})}><option value="all">Todos</option><option value="movement">Movimiento</option><option value="person">Persona</option><option value="vehicle">Vehículo</option><option value="visitor">Visita</option></select></label>
-              {JSON.stringify(filters) !== JSON.stringify(DEFAULT_FILTERS) && <button type="button" className="text-button" onClick={() => setFilters(DEFAULT_FILTERS)}>Limpiar filtros</button>}
-            </div>
-          </form>
-          <div className="results-region" aria-busy={search.loading}><div className="sr-only" role="status" aria-live="polite">{statusMessage}</div><SearchResults query={query} results={search.results} selectedIds={selectedIds} loading={search.loading} phase={search.phase} error={search.error} onToggle={togglePerson} /></div>
-        </div>
+        <SearchExplorer firstDate={meta.data?.first_date} lastDate={meta.data?.last_date} selectedIds={selectedIds} onToggle={togglePerson} />
         {selected.length > 0 && <PersonProfile people={selected} events={events.data} loading={events.loading} error={events.error} coincidences={coincidences.data} coincidencesLoading={coincidences.loading} coincidencesError={coincidences.error} onRemove={(entityId) => setSelected((current) => current.filter((person) => person.entity_id !== entityId))} onClear={() => setSelected([])} />}
       </section>
 
@@ -195,6 +173,40 @@ export default function App() {
       </div>
     </footer>
   </>;
+}
+
+function SearchExplorer({firstDate, lastDate, selectedIds, onToggle}: {
+  firstDate?: string | null;
+  lastDate?: string | null;
+  selectedIds: Set<string>;
+  onToggle: (person: PersonSummary) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
+  const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
+  const search = useSearch(deferredQuery, filters);
+  const inputPending = query !== deferredQuery;
+  const loading = inputPending || search.loading;
+  const years = useMemo(() => {
+    const first = firstDate ? new Date(firstDate).getUTCFullYear() : 2023;
+    const last = lastDate ? new Date(lastDate).getUTCFullYear() : new Date().getFullYear();
+    return Array.from({length: Math.max(1, last - first + 1)}, (_, index) => last - index);
+  }, [firstDate, lastDate]);
+  const statusMessage = loading ? "Buscando…" : query.trim().length >= 2 ? `${search.results.length} resultados para ${query}` : "";
+
+  return <div className="search-panel">
+    <form className="search-form" role="search" onSubmit={(event) => event.preventDefault()}>
+      <label htmlFor="person-query">Nombre, DNI o CUIL</label>
+      <div className="search-input-wrap"><Search aria-hidden="true" /><input id="person-query" name="query" type="search" autoComplete="off" spellCheck="false" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ej.: Ana Pérez o 20.123.456" /></div>
+      <div className="filters" aria-label="Filtros de búsqueda">
+        <label>Sede<select value={filters.location} onChange={(event) => setFilters({...filters, location: event.target.value as SearchFilters["location"]})}><option value="all">Todas</option><option value="casa-rosada">Casa Rosada</option><option value="olivos">Olivos</option></select></label>
+        <label>Año<select value={filters.year} onChange={(event) => setFilters({...filters, year: event.target.value === "all" ? "all" : Number(event.target.value)})}><option value="all">Todos</option>{years.map((year) => <option value={year} key={year}>{year}</option>)}</select></label>
+        <label>Tipo<select value={filters.recordType} onChange={(event) => setFilters({...filters, recordType: event.target.value as SearchFilters["recordType"]})}><option value="all">Todos</option><option value="movement">Movimiento</option><option value="person">Persona</option><option value="vehicle">Vehículo</option><option value="visitor">Visita</option></select></label>
+        {JSON.stringify(filters) !== JSON.stringify(DEFAULT_FILTERS) && <button type="button" className="text-button" onClick={() => setFilters(DEFAULT_FILTERS)}>Limpiar filtros</button>}
+      </div>
+    </form>
+    <div className="results-region" aria-busy={loading}><div className="sr-only" role="status" aria-live="polite">{statusMessage}</div><SearchResults query={query} results={search.results} selectedIds={selectedIds} loading={loading} phase={search.phase} error={search.error} onToggle={onToggle} /></div>
+  </div>;
 }
 
 function aggregateEvents(events: AccessEvent[]): Analytics {
