@@ -1,4 +1,4 @@
-import {Database, Download, Search} from "lucide-react";
+import {ChevronDown, Database, Download, Search} from "lucide-react";
 import {useDeferredValue, useEffect, useMemo, useState} from "react";
 import {CalendarChart} from "./components/CalendarChart";
 import {CoverageReport} from "./components/CoverageReport";
@@ -133,35 +133,36 @@ export default function App() {
     </header>
     <main id="main">
       <section className="hero" aria-labelledby="page-title">
-        <div className="hero-copy"><p className="eyebrow">Datos públicos</p><h1 id="page-title">Explorador de accesos a Olivos y Casa Rosada</h1><p>Este explorador se basa en datos obtenidos mediante pedidos de acceso a la información que Poder Ciudadano realiza regularmente.</p></div>
+        <div className="hero-copy"><h1 id="page-title">Explorador de accesos a Olivos y Casa Rosada</h1><p>Buscá personas y consultá sus ingresos, horarios y destinos.</p></div>
         <dl className="hero-facts" aria-label="Estado y cobertura de la base"><div><dd>{formatNumber(meta.data?.record_count)}</dd><dt>registros</dt></div><div><dd>{formatNumber(meta.data?.people_count)}</dd><dt>personas</dt></div><div><dd>{formatNumber(meta.data?.source_count)}</dd><dt>PDF</dt></div><div><dd>{formatMetricDate(meta.data?.first_date)}</dd><dt>primer registro</dt></div><div><dd>{formatMetricDate(meta.data?.last_date)}</dd><dt>último registro</dt></div></dl>
       </section>
       <SectionNav preserveHash={selected.length > 0 || !selectionHashReady} />
 
       <section className="search-section" id="buscar" aria-labelledby="search-title">
-        <div className="section-heading"><div><p className="eyebrow">Buscador</p><h2 id="search-title">Encontrá y agrupá personas</h2></div><p>Seleccioná varias coincidencias cuando parezcan ser la misma persona escrita de distintas maneras.</p></div>
+        <div className="section-heading"><div><h2 id="search-title">Buscá una persona</h2></div><p>Podés seleccionar varias formas del mismo nombre.</p></div>
         {selectionHashError && <div className="notice notice--error" role="alert"><strong>El enlace compartido está incompleto.</strong><span>{selectionHashError}</span></div>}
         <SearchExplorer firstDate={meta.data?.first_date} lastDate={meta.data?.last_date} selectedIds={selectedIds} onToggle={togglePerson} />
-        {selected.length > 0 && <PersonProfile people={selected} events={events.data} loading={events.loading} error={events.error} coincidences={coincidences.data} coincidencesLoading={coincidences.loading} coincidencesError={coincidences.error} onRemove={(entityId) => setSelected((current) => current.filter((person) => person.entity_id !== entityId))} onClear={() => setSelected([])} />}
+        {selected.length > 0 && <PersonProfile people={selected} events={events.data} loading={events.loading} error={events.error} coincidences={coincidences.data} onRemove={(entityId) => setSelected((current) => current.filter((person) => person.entity_id !== entityId))} onClear={() => setSelected([])} />}
       </section>
 
       <section className="dashboard-section" id="panorama" aria-labelledby="dashboard-title">
-        <div className="section-heading"><div><p className="eyebrow">Gráficos</p><h2 id="dashboard-title">Actividad</h2></div><p>{selected.length ? `Vista filtrada por ${selectedLabel}. Limpiá la selección para volver al total.` : "Panorama general de todos los registros publicados."}</p></div>
+        <div className="section-heading"><div><h2 id="dashboard-title">Actividad</h2></div><p>{selected.length ? selectedLabel : "Todos los registros"}</p></div>
         {dashboardLoading && <p role="status">Cargando gráficos…</p>}
         {dashboardError && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los gráficos.</strong><span>{dashboardError}</span></div>}
         {activeAnalytics && !dashboardLoading && !dashboardError && <div className="dashboard-grid"><div className="dashboard-wide"><CalendarChart data={activeAnalytics.daily} location={selected.length ? "all" : heatmapLocation} series={personSeries} mileiCasaRosadaDays={analytics.data?.milei_casa_rosada_days} /></div><HeatmapChart data={activeAnalytics.heatmap} location={heatmapLocation} series={personSeries} /><PurposeChart data={activeAnalytics.purposes} series={personSeries} /></div>}
       </section>
 
       <section className="downloads-section" id="descargas" aria-labelledby="downloads-title">
-        <div className="downloads-intro"><p className="eyebrow">Datos abiertos</p><h2 id="downloads-title">Descargá los registros</h2><p>Un CSV comprimido por año con los registros de Olivos y Casa Rosada.</p></div>
+        <div className="downloads-intro"><h2 id="downloads-title">Descargar datos</h2><p>Archivos CSV por año.</p></div>
         <div className="download-list">{exportsData.data?.length ? [...exportsData.data].sort((left, right) => right.year - left.year).map((file) => <a className="download-row" key={file.year} href={new URL(`data/exports/${file.path}`, document.baseURI).href} download><span><strong>{file.year}</strong><small>{file.records.toLocaleString("es-AR")} registros</small></span><Download aria-hidden="true" /></a>) : <p className="empty-state">Los CSV aparecerán después de la primera actualización de datos.</p>}</div>
       </section>
 
-      <section className="rankings-section" id="rankings" aria-labelledby="rankings-title">
-        <Rankings />
-      </section>
-      <section className="coverage-section" id="cobertura" aria-labelledby="coverage-title">
-        <CoverageReport />
+      <section className="more-section" id="mas" aria-labelledby="more-title">
+        <div className="section-heading"><div><h2 id="more-title">Más información</h2></div></div>
+        <div className="more-disclosures">
+          <details><summary><span><strong>Rankings generales</strong><small>Personas con más días registrados</small></span><ChevronDown aria-hidden="true" /></summary><div className="more-content"><Rankings compact /></div></details>
+          <details><summary><span><strong>Cobertura de los datos</strong><small>Períodos y archivos faltantes</small></span><ChevronDown aria-hidden="true" /></summary><div className="more-content"><CoverageReport compact /></div></details>
+        </div>
       </section>
     </main>
     <footer>

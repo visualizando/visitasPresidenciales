@@ -8,7 +8,7 @@ const LOCATION_LABELS: Record<RankingLocation, string> = {
   olivos: "Olivos",
 };
 
-export function Rankings() {
+export function Rankings({compact = false}: {compact?: boolean}) {
   const rankings = useData<RankingsData>("analytics/rankings.json");
   const [grouping, setGrouping] = useState<RankingGrouping>("presidency");
   const [location, setLocation] = useState<RankingLocation>("all");
@@ -29,10 +29,10 @@ export function Rankings() {
   );
 
   return <>
-    <div className="section-heading rankings-heading">
+    {!compact && <div className="section-heading rankings-heading">
       <div><p className="eyebrow">Rankings</p><h2 id="rankings-title">Quiénes aparecen más días</h2></div>
       <p>Contamos una sola presencia por persona, fecha y sede, aunque tenga varias entradas o salidas ese día. No implica una reunión presidencial.</p>
-    </div>
+    </div>}
     <div className="rankings-panel">
       <form className="ranking-filters" onSubmit={(event) => event.preventDefault()}>
         <fieldset>

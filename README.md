@@ -189,11 +189,13 @@ La herramienta escucha sólo en `http://127.0.0.1:8765`. Permite filtrar candida
 
 Una co-presencia se calcula sólo cuando dos registros:
 
-- Tienen entrada y salida válidas.
-- Comparten sede, fecha y destino normalizado.
-- Superponen sus intervalos durante al menos 10 minutos.
+- Tienen entrada y salida completas, válidas y de calidad alta.
+- Comparten sede, fecha y un destino específico normalizado.
+- Sus entradas difieren como máximo 15 minutos y sus salidas, otros 15 minutos.
+- Superponen sus intervalos durante al menos 5 minutos.
+- Ninguna identidad tiene intervalos incompletos ni 80 o más días de actividad en un año.
 
-Los episodios repetidos se deduplican y el ranking prioriza días distintos, destinos específicos y minutos superpuestos. Es una señal de presencia compatible en los registros: **no demuestra un encuentro ni una interacción entre personas**.
+Los episodios repetidos se deduplican y sólo se muestran hasta cinco resultados. Es una señal de presencia compatible en los registros: **no demuestra un encuentro ni una interacción entre personas**.
 
 Los datos personales y documentos visibles reproducen información publicada en las fuentes oficiales. La interfaz conserva referencias al archivo y la página de origen para facilitar la auditoría.
 

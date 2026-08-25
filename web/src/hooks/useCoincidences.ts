@@ -68,5 +68,5 @@ export function aggregateCoincidences(owners: Map<string, RawCoincidenceOwner>, 
     result.days = new Set(result.evidence.map((item) => item.date)).size;
     result.evidence.sort((a, b) => b.date.localeCompare(a.date) || b.overlapMinutes - a.overlapMinutes);
   }
-  return [...grouped.values()].sort((a, b) => b.days - a.days || b.specificEpisodes - a.specificEpisodes || b.overlapMinutes - a.overlapMinutes || a.canonicalName.localeCompare(b.canonicalName, "es")).slice(0, 10);
+  return [...grouped.values()].sort((a, b) => b.days - a.days || b.overlapMinutes - a.overlapMinutes || a.canonicalName.localeCompare(b.canonicalName, "es")).slice(0, 5);
 }

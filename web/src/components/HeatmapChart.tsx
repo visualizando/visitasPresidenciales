@@ -9,7 +9,7 @@ export function HeatmapChart({data, location, series = []}: {data: HeatmapPoint[
   const points = data.filter((point) => series.length ? true : point.location === location);
   return (
     <figure className="chart-card" aria-labelledby="heatmap-title">
-      <div className="chart-heading"><div><p className="eyebrow">Ritmos</p><h3 id="heatmap-title">Días y horarios</h3></div><span className="chart-context">{series.length ? "Ambas sedes" : location === "casa-rosada" ? "Casa Rosada" : "Olivos"}</span></div>
+      <div className="chart-heading"><h3 id="heatmap-title">Días y horarios</h3><span className="chart-context">{series.length ? "Ambas sedes" : location === "casa-rosada" ? "Casa Rosada" : "Olivos"}</span></div>
       <PersonLegend series={series} />
       {points.length ? (
         <div className={`heatmap-comparison${series.length ? " heatmap-comparison--people" : ""}`}>{series.length

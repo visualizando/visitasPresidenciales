@@ -3,14 +3,14 @@ import type {CoverageData, CoverageGap, Location} from "../types";
 
 const LOCATION_LABELS: Record<Location, string> = {"casa-rosada": "Casa Rosada", olivos: "Olivos"};
 
-export function CoverageReport() {
+export function CoverageReport({compact = false}: {compact?: boolean}) {
   const coverage = useData<CoverageData>("analytics/coverage.json");
   const data = coverage.data;
   return <>
-    <div className="section-heading coverage-heading">
+    {!compact && <div className="section-heading coverage-heading">
       <div><p className="eyebrow">Cobertura</p><h2 id="coverage-title">Qué falta y por qué</h2></div>
       <p>Este informe distingue los períodos sin registros de los archivos que no pudieron incorporarse. Un hueco no demuestra que no haya habido accesos.</p>
-    </div>
+    </div>}
     <div className="coverage-panel">
       {coverage.loading && <p className="coverage-status" role="status">Cargando informe de cobertura…</p>}
       {coverage.error && <div className="notice notice--error" role="alert"><strong>No se pudo cargar el informe de cobertura.</strong><span>{coverage.error}</span></div>}

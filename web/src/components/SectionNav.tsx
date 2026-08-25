@@ -4,8 +4,7 @@ const ITEMS = [
   {id: "buscar", label: "Buscar"},
   {id: "panorama", label: "Actividad"},
   {id: "descargas", label: "Descargas"},
-  {id: "rankings", label: "Rankings"},
-  {id: "cobertura", label: "Cobertura"},
+  {id: "mas", label: "Más"},
 ] as const;
 
 export function SectionNav({preserveHash = false}: {preserveHash?: boolean}) {

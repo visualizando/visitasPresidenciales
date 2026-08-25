@@ -14,8 +14,8 @@ function event(record_id: string, entity_id: string, canonical_name: string, occ
 
 describe("PersonProfile", () => {
   it("agrupa variantes y ordena la tabla por persona", () => {
-    render(<PersonProfile people={people} events={[event("1", "one", "PEREZ ANA", "2024-01-01T10:00:00Z"), event("2", "two", "ANA PEREZ", "2024-02-01T10:00:00Z")]} loading={false} error={null} coincidences={[]} coincidencesLoading={false} coincidencesError={null} onRemove={vi.fn()} onClear={vi.fn()} />);
-    expect(screen.getByRole("heading", {name: /2 personas o variantes/i})).toBeInTheDocument();
+    render(<PersonProfile people={people} events={[event("1", "one", "PEREZ ANA", "2024-01-01T10:00:00Z"), event("2", "two", "ANA PEREZ", "2024-02-01T10:00:00Z")]} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={vi.fn()} />);
+    expect(screen.getByRole("heading", {name: /2 variantes seleccionadas/i})).toBeInTheDocument();
     expect(screen.getByRole("button", {name: /Descargar 2 registros de la selección en CSV/i})).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", {name: "Persona"}));
     const rows = screen.getAllByRole("row").slice(1);
@@ -25,7 +25,7 @@ describe("PersonProfile", () => {
 
   it("muestra tablas largas de forma progresiva", () => {
     const events = Array.from({length: 101}, (_, index) => event(`${index}`, "one", "PEREZ ANA", `2024-01-${String(index % 28 + 1).padStart(2, "0")}T10:00:00Z`));
-    const {container} = render(<PersonProfile people={[people[0]]} events={events} loading={false} error={null} coincidences={[]} coincidencesLoading={false} coincidencesError={null} onRemove={vi.fn()} onClear={vi.fn()} />);
+    const {container} = render(<PersonProfile people={[people[0]]} events={events} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={vi.fn()} />);
 
     expect(container.querySelectorAll(".records-table tbody tr")).toHaveLength(100);
     fireEvent.click(screen.getByRole("button", {name: "Mostrar 1 más"}));
@@ -36,7 +36,7 @@ describe("PersonProfile", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {value: {writeText}, configurable: true});
     const detailed = {...event("detail", "one", "PEREZ ANA", "2024-05-24T08:33:00Z"), entered_at: "2024-05-24T08:33:00Z", exited_at: "2024-05-24T17:12:00Z", destination: "Jefatura", purpose: "Reunión", raw_text: "Observación original", sources: [{url: "https://example.org/olivos-2024.pdf", path: "olivos/2024.pdf", page: 7}]} satisfies AccessEvent;
-    render(<PersonProfile people={[people[0]]} events={[detailed]} loading={false} error={null} coincidences={[]} coincidencesLoading={false} coincidencesError={null} onRemove={vi.fn()} onClear={vi.fn()} />);
+    render(<PersonProfile people={[people[0]]} events={[detailed]} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", {name: /Ver detalle del registro/i}));
     expect(screen.getByRole("dialog", {name: "Detalle para citar"})).toBeInTheDocument();

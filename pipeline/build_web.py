@@ -18,6 +18,11 @@ from pipeline.identity_candidates import write_identity_candidates
 from pipeline.normalize import fold_text
 from pipeline.storage import load_json, utc_now
 
+COINCIDENCE_MAX_TIME_DIFFERENCE_MINUTES = 15
+COINCIDENCE_MINIMUM_OVERLAP_MINUTES = 5
+COINCIDENCE_MAX_INTERVAL_MINUTES = 720
+COINCIDENCE_MAX_ANNUAL_DAYS = 80
+
 
 def build_web_data(data_dir: Path, output_dir: Path) -> dict[str, int]:
     partitions = sorted((data_dir / "partitions").rglob("*.parquet"))
@@ -591,7 +596,44 @@ def _empty_coverage(files: list[dict[str, Any]] | None = None) -> dict[str, Any]
 
 def _write_cooccurrences(connection: duckdb.DuckDBPyConnection, directory: Path) -> None:
     connection.execute(
+        f"""
+        CREATE TEMP TABLE eligible_cooccurrence_people AS
+        WITH interval_quality AS (
+          SELECT
+            entity_id,
+            count(*) FILTER (
+              WHERE (entered_at IS NOT NULL OR exited_at IS NOT NULL)
+                AND (
+                  entered_at IS NULL OR exited_at IS NULL
+                  OR datediff('minute', entered_at, exited_at) <= 0
+                  OR datediff('minute', entered_at, exited_at) > {COINCIDENCE_MAX_INTERVAL_MINUTES}
+                )
+            ) AS invalid_intervals
+          FROM records
+          WHERE entity_id IS NOT NULL
+          GROUP BY entity_id
+        ), annual_activity AS (
+          SELECT entity_id, year(activity_at) AS activity_year,
+                 count(DISTINCT cast(activity_at AS DATE)) AS active_days
+          FROM (
+            SELECT entity_id, coalesce(occurred_at, entered_at, exited_at) AS activity_at
+            FROM records WHERE entity_id IS NOT NULL
+          )
+          WHERE activity_at IS NOT NULL
+          GROUP BY entity_id, activity_year
+        ), activity_summary AS (
+          SELECT entity_id, max(active_days) AS maximum_annual_days
+          FROM annual_activity GROUP BY entity_id
+        )
+        SELECT quality.entity_id
+        FROM interval_quality quality
+        LEFT JOIN activity_summary activity USING (entity_id)
+        WHERE quality.invalid_intervals = 0
+          AND coalesce(activity.maximum_annual_days, 0) < {COINCIDENCE_MAX_ANNUAL_DAYS}
         """
+    )
+    connection.execute(
+        f"""
         CREATE TEMP TABLE valid_cooccurrence_intervals AS
         SELECT * FROM (
           SELECT
@@ -608,17 +650,24 @@ def _write_cooccurrences(connection: duckdb.DuckDBPyConnection, directory: Path)
             exited_at,
             cast(entered_at AS DATE) AS access_date
           FROM records
+          JOIN eligible_cooccurrence_people USING (entity_id)
           WHERE entity_id IS NOT NULL
             AND destination IS NOT NULL
             AND entered_at IS NOT NULL
             AND exited_at IS NOT NULL
+            AND quality = 'high'
             AND datediff('minute', entered_at, exited_at) > 0
-            AND datediff('minute', entered_at, exited_at) <= 1440
+            AND datediff('minute', entered_at, exited_at) <= {COINCIDENCE_MAX_INTERVAL_MINUTES}
         ) WHERE destination_key <> ''
+            AND destination_key NOT IN (
+              'BALCARCE 24', 'RIVADAVIA 250', 'YRIGOYEN 219', 'SP',
+              'S P', 'CASA ROSADA', 'QUINTA DE OLIVOS'
+            )
+            AND length(destination_key) > 3
         """
     )
     connection.execute(
-        """
+        f"""
         CREATE TEMP TABLE coincidence_episodes AS
         WITH interval_matches AS (
           SELECT
@@ -644,11 +693,13 @@ def _write_cooccurrences(connection: duckdb.DuckDBPyConnection, directory: Path)
            AND a.entity_id < b.entity_id
            AND a.entered_at < b.exited_at
            AND b.entered_at < a.exited_at
+           AND abs(datediff('minute', a.entered_at, b.entered_at)) <= {COINCIDENCE_MAX_TIME_DIFFERENCE_MINUTES}
+           AND abs(datediff('minute', a.exited_at, b.exited_at)) <= {COINCIDENCE_MAX_TIME_DIFFERENCE_MINUTES}
           WHERE datediff(
             'minute',
             greatest(a.entered_at, b.entered_at),
             least(a.exited_at, b.exited_at)
-          ) >= 10
+          ) >= {COINCIDENCE_MINIMUM_OVERLAP_MINUTES}
         )
         SELECT
           left_id,
@@ -660,12 +711,7 @@ def _write_cooccurrences(connection: duckdb.DuckDBPyConnection, directory: Path)
           max(overlap_minutes)::INTEGER AS overlap_minutes,
           arg_max(overlap_start, overlap_minutes) AS overlap_start,
           arg_max(overlap_end, overlap_minutes) AS overlap_end,
-          (
-            destination_key NOT IN (
-              'BALCARCE 24', 'RIVADAVIA 250', 'YRIGOYEN 219', 'SP',
-              'S P', 'CASA ROSADA', 'QUINTA DE OLIVOS'
-            ) AND length(destination_key) > 3
-          ) AS specific_destination
+          true AS specific_destination
         FROM interval_matches
         GROUP BY left_id, right_id, access_date, location, destination_key
         """
@@ -782,11 +828,13 @@ def _write_cooccurrences(connection: duckdb.DuckDBPyConnection, directory: Path)
     _write_compact(
         directory / "meta.json",
         {
-            "version": 1,
+            "version": 2,
             "episode_count": episode_count,
             "people_count": people_count,
-            "minimum_overlap_minutes": 10,
-            "maximum_interval_minutes": 1440,
+            "minimum_overlap_minutes": COINCIDENCE_MINIMUM_OVERLAP_MINUTES,
+            "maximum_time_difference_minutes": COINCIDENCE_MAX_TIME_DIFFERENCE_MINUTES,
+            "maximum_interval_minutes": COINCIDENCE_MAX_INTERVAL_MINUTES,
+            "maximum_annual_days": COINCIDENCE_MAX_ANNUAL_DAYS,
             "shards": shard_counts,
         },
     )
@@ -832,7 +880,7 @@ def _write_empty(output: Path, generated_at: str) -> None:
     _write_compact(
         output / "meta.json",
         {
-            "version": 1,
+            "version": 2,
             "generated_at": generated_at,
             "record_count": 0,
             "people_count": 0,
@@ -874,11 +922,13 @@ def _write_empty(output: Path, generated_at: str) -> None:
     _write_compact(
         output / "cooccurrences" / "meta.json",
         {
-            "version": 1,
+            "version": 2,
             "episode_count": 0,
             "people_count": 0,
-            "minimum_overlap_minutes": 10,
-            "maximum_interval_minutes": 1440,
+            "minimum_overlap_minutes": COINCIDENCE_MINIMUM_OVERLAP_MINUTES,
+            "maximum_time_difference_minutes": COINCIDENCE_MAX_TIME_DIFFERENCE_MINUTES,
+            "maximum_interval_minutes": COINCIDENCE_MAX_INTERVAL_MINUTES,
+            "maximum_annual_days": COINCIDENCE_MAX_ANNUAL_DAYS,
             "shards": {},
         },
     )

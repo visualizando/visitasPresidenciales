@@ -1,6 +1,6 @@
 import gzip
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -110,8 +110,8 @@ def test_builds_deduplicated_cooccurrence_episodes(tmp_path) -> None:
             record_id="rec_2",
             entity_id="per_2",
             canonical_name="GOMEZ LUIS",
-            entered_at=datetime(2023, 1, 2, 9, 30),
-            exited_at=datetime(2023, 1, 2, 10, 30),
+            entered_at=datetime(2023, 1, 2, 9, 10),
+            exited_at=datetime(2023, 1, 2, 10, 10),
             destination="SECRETARIA GENERAL - BALCARCE 24",
             **common,
         ),
@@ -124,7 +124,46 @@ def test_builds_deduplicated_cooccurrence_episodes(tmp_path) -> None:
             destination="RIVADAVIA 250",
             **common,
         ),
+        AccessRecord(
+            record_id="rec_incomplete_person_valid",
+            entity_id="per_incomplete",
+            canonical_name="PERSONA INCOMPLETA",
+            entered_at=datetime(2023, 1, 2, 9, 5),
+            exited_at=datetime(2023, 1, 2, 10, 5),
+            destination="SECRETARIA GENERAL · BALCARCE 24",
+            **common,
+        ),
+        AccessRecord(
+            record_id="rec_incomplete_person_error",
+            entity_id="per_incomplete",
+            canonical_name="PERSONA INCOMPLETA",
+            entered_at=datetime(2023, 1, 3, 9, 0),
+            exited_at=None,
+            destination="SECRETARIA GENERAL · BALCARCE 24",
+            **common,
+        ),
+        AccessRecord(
+            record_id="rec_different_exit",
+            entity_id="per_different_exit",
+            canonical_name="PERSONA SALIDA DISTINTA",
+            entered_at=datetime(2023, 1, 2, 9, 5),
+            exited_at=datetime(2023, 1, 2, 12, 0),
+            destination="SECRETARIA GENERAL · BALCARCE 24",
+            **common,
+        ),
     ]
+    records.extend(
+        AccessRecord(
+            record_id=f"routine_{index}",
+            entity_id="per_routine",
+            canonical_name="PERSONA HABITUAL",
+            entered_at=datetime(2023, 1, 1, 9, 0) + timedelta(days=index),
+            exited_at=datetime(2023, 1, 1, 10, 0) + timedelta(days=index),
+            destination="SECRETARIA GENERAL · BALCARCE 24",
+            **common,
+        )
+        for index in range(80)
+    )
     write_partition(
         data / "partitions" / "casa-rosada" / "2023" / "01" / "src.parquet",
         records,
@@ -139,9 +178,13 @@ def test_builds_deduplicated_cooccurrence_episodes(tmp_path) -> None:
     owner = next(shard["per_1"] for shard in shards if "per_1" in shard)
     assert owner["p"]["per_2"][0] == "GOMEZ LUIS"
     assert "per_3" not in owner["p"]
-    assert owner["e"] == [["per_2", "2023-01-02", 0, 0, 30, 1, "09:30", "10:00"]]
+    assert "per_incomplete" not in owner["p"]
+    assert "per_different_exit" not in owner["p"]
+    assert "per_routine" not in owner["p"]
+    assert owner["e"] == [["per_2", "2023-01-02", 0, 0, 50, 1, "09:10", "10:00"]]
     meta = json.loads((output / "cooccurrences" / "meta.json").read_text(encoding="utf-8"))
     assert meta["episode_count"] == 1
+    assert meta["maximum_time_difference_minutes"] == 15
 
 
 def test_builds_person_summary_when_record_has_no_timestamp(tmp_path) -> None:

@@ -6,7 +6,7 @@ export default defineConfig(({command}) => ({
   base: "./",
   // Development serves the generated datasets directly. Production copies
   // them after Vite builds the app so large shards stay out of its build step.
-  publicDir: command === "serve" ? "public" : false,
+  publicDir: command === "serve" && !process.env.VITEST ? "public" : false,
   test: {
     include: ["src/**/*.test.{ts,tsx}"],
     environment: "jsdom",

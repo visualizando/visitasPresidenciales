@@ -23,7 +23,7 @@ export function PurposeChart({data, series = []}: {data: PurposePoint[]; series?
   return (
     <figure className="chart-card" aria-labelledby={titleId}>
       <div className="chart-heading">
-        <div><p className="eyebrow">Contexto</p><h3 id={titleId}>Destinos y motivos</h3></div>
+        <h3 id={titleId}>Destinos y motivos</h3>
         {!series.length && points.length > 0 && <div className="legend" aria-label="Sedes"><span><i className="legend-dot legend-dot--casa-rosada" />Casa Rosada</span><span><i className="legend-dot legend-dot--olivos" />Olivos</span></div>}
       </div>
       <PersonLegend series={series} />

@@ -22,13 +22,11 @@ type PersonProfileProps = {
   loading: boolean;
   error: string | null;
   coincidences: CoincidenceResult[];
-  coincidencesLoading: boolean;
-  coincidencesError: string | null;
   onRemove: (entityId: string) => void;
   onClear: () => void;
 };
 
-export function PersonProfile({people, events, loading, error, coincidences, coincidencesLoading, coincidencesError, onRemove, onClear}: PersonProfileProps) {
+export function PersonProfile({people, events, loading, error, coincidences, onRemove, onClear}: PersonProfileProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [detailEvent, setDetailEvent] = useState<AccessEvent | null>(null);
@@ -80,17 +78,13 @@ export function PersonProfile({people, events, loading, error, coincidences, coi
 
   return <section className="profile" aria-labelledby="profile-title">
     <div className="profile-header">
-      <div><p className="eyebrow">Selección comparada</p><h2 id="profile-title" ref={headingRef} tabIndex={-1}>{people.length === 1 ? titleCase(people[0].canonical_name) : `${people.length} personas o variantes seleccionadas`}</h2><p className="profile-description">Cada selección conserva su color en la tabla y los gráficos. Las identidades originales no se modifican.</p></div>
+      <h2 id="profile-title" ref={headingRef} tabIndex={-1}>{people.length === 1 ? titleCase(people[0].canonical_name) : `${people.length} variantes seleccionadas`}</h2>
       <button className="text-button" type="button" onClick={onClear}>Limpiar selección</button>
     </div>
 
     <div className="selected-people" aria-label="Personas seleccionadas">{people.map((person) => <div className="person-chip" key={person.entity_id} style={{borderColor: colors.get(person.entity_id)}}><i className="person-color" style={{backgroundColor: colors.get(person.entity_id)}} aria-hidden="true" /><span><strong>{titleCase(person.canonical_name)}</strong><small>{person.document_type ?? "Documento"} <bdi>{person.document_number ?? "no informado"}</bdi></small></span><button type="button" onClick={() => onRemove(person.entity_id)} aria-label={`Quitar ${titleCase(person.canonical_name)}`}><X aria-hidden="true" /></button></div>)}</div>
 
     <div className="profile-stats"><span><strong>{events.length.toLocaleString("es-AR")}</strong> registros cargados</span><span><strong>{locations.map(locationLabel).join(" y ")}</strong> sedes</span><span><strong>{formatDate(latest)}</strong> última aparición</span></div>
-    <p className="privacy-note"><strong>Dato publicado por la fuente.</strong> Verificá el PDF indicado antes de reutilizarlo.</p>
-
-    <CoincidenceRanking results={coincidences} loading={coincidencesLoading} error={coincidencesError} />
-
     {loading && <p role="status">Cargando registros…</p>}
     {error && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los registros.</strong><span>{error}</span></div>}
     {!loading && !error && <div className="records-section"><div className="records-heading"><h3>Entradas y movimientos</h3><div className="records-heading-actions"><span>{visibleEvents.length.toLocaleString("es-AR")} de {events.length.toLocaleString("es-AR")} filas</span>{events.length > 0 && <button className="selection-download" type="button" onClick={downloadSelection} aria-label={`Descargar ${events.length.toLocaleString("es-AR")} ${events.length === 1 ? "registro" : "registros"} de la selección en CSV`}><Download aria-hidden="true" />Descargar CSV</button>}</div></div>{events.length ? <><div className="records-table-wrap"><table className="records-table"><caption className="sr-only">Entradas y movimientos de las personas seleccionadas</caption><thead><tr>
@@ -104,6 +98,7 @@ export function PersonProfile({people, events, loading, error, coincidences, coi
       <th scope="col">Fuente</th>
       <th scope="col"><span className="sr-only">Acciones</span></th>
     </tr></thead><tbody>{visibleEvents.map((event) => <tr key={event.record_id}><td><time dateTime={primaryDate(event) ?? undefined}>{formatDateTime(primaryDate(event))}</time></td><td><span className="record-person"><i className="person-color" style={{backgroundColor: colors.get(event.entity_id)}} aria-hidden="true" /><strong>{titleCase(event.canonical_name)}</strong></span></td><td>{locationLabel(event.location)}</td><td>{recordLabel(event)}</td><td className="detail-cell" title={eventDetail(event)}>{eventDetail(event)}</td><td>{formatTime(event.exited_at)}</td><td><span className={`quality quality--${event.quality}`}>{qualityLabel(event.quality)}</span></td><td><SourceCell event={event} /></td><td><button className="record-detail-trigger" type="button" onClick={(browserEvent) => openEventDetail(event, browserEvent.currentTarget)} aria-label={`Ver detalle del registro de ${titleCase(event.canonical_name)} del ${formatDate(primaryDate(event))}`}><Search aria-hidden="true" /></button></td></tr>)}</tbody></table></div>{visibleEvents.length < sortedEvents.length && <button className="text-button records-more" type="button" onClick={() => setEventWindow({peopleKey, count: visibleEventCount + EVENT_PAGE_SIZE})}>Mostrar {Math.min(EVENT_PAGE_SIZE, sortedEvents.length - visibleEvents.length).toLocaleString("es-AR")} más</button>}</> : <p className="selection-empty">No hay eventos publicados para esta selección.</p>}</div>}
+    <CoincidenceRanking results={coincidences} />
     {detailEvent && <RecordDetailDialog event={detailEvent} onClose={closeEventDetail} />}
   </section>;
 }

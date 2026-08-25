@@ -25,7 +25,7 @@ describe("CalendarChart", () => {
       {date: "2025-01-02", location: "olivos", record_type: "person", records: 2, people: 1, entity_id: "two"},
     ]} />);
 
-    expect(container.querySelector(".comparison-summary")).toHaveTextContent(/1 día con registros de más de una persona/i);
+    expect(container.querySelector(".comparison-summary")).toHaveTextContent(/1 día compartido/i);
     const shared = container.querySelector<HTMLElement>(".calendar-day--shared");
     expect(shared?.querySelectorAll(".calendar-day-segment")).toHaveLength(2);
     expect(shared).toHaveAttribute("aria-label", expect.stringContaining("Ana Pérez: 1"));
@@ -45,6 +45,6 @@ describe("CalendarChart", () => {
     const checkbox = screen.getByRole("checkbox", {name: /Javier Milei/i});
     fireEvent.click(checkbox);
     expect(checkbox).not.toBeChecked();
-    expect(container.querySelector(".calendar-day--milei")).toBeInTheDocument();
+    expect(container.querySelector(".calendar-day--milei")).not.toBeInTheDocument();
   });
 });
