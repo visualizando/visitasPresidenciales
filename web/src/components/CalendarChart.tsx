@@ -5,6 +5,7 @@ import type {ComparisonSeries, DailyPoint, Location} from "../types";
 import {PersonLegend} from "./PersonLegend";
 
 const DAY_MS = 86_400_000;
+const MONTH_GAP_PX = 1;
 const WEEKDAYS = ["L", "M", "X", "J", "V", "S", "D"];
 const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
@@ -52,19 +53,20 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
           <div className="calendar-periods" role={series.length ? "group" : "img"} aria-label={calendarDescription(points.size, peak, location, sharedDays)}>
             {periods.map((period) => <section className="calendar-period" key={period.key} aria-hidden={series.length ? undefined : "true"}>
               <h4>{period.label}</h4>
-              <div className="calendar-months" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.months.map((month) => <span key={`${period.key}-${month.label}`} style={{gridColumnStart: month.column}}>{month.label}</span>)}</div>
+              <div className="calendar-months" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.months.map((month, monthIndex) => <span key={`${period.key}-${month.label}`} style={{gridColumnStart: month.column, transform: `translateX(${monthIndex * MONTH_GAP_PX}px)`}}>{month.label}</span>)}</div>
               <div className="calendar-body">
                 <div className="calendar-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
                 <div className="calendar-days" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.days.map((day, index) => {
                   const mileiPresent = mileiDays.has(day.key);
                   const colors = personColors(day, series);
                   const canFocus = day.inPeriod && day.records > 0 && series.length > 0;
+                  const position = {gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1, transform: `translateX(${day.date.getUTCMonth() * MONTH_GAP_PX}px)`};
                   const showTooltip = (target: HTMLElement) => {
                     const bounds = target.getBoundingClientRect();
                     const center = bounds.left + bounds.width / 2;
                     setTooltip({day, mileiPresent, x: Math.min(Math.max(center, 112), window.innerWidth - 112), y: bounds.top});
                   };
-                  return <span key={day.key} data-date={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${day.records ? " calendar-day--active" : " calendar-day--empty"}${colors.length > 1 ? " calendar-day--shared" : ""}${mileiPresent ? " calendar-day--milei" : ""}`} style={day.inPeriod ? {...dayColor(day, colors, color), gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1} : {gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1}} tabIndex={canFocus ? 0 : undefined} aria-label={canFocus ? dayTitle(day, series, mileiPresent) : undefined} aria-describedby={canFocus && tooltip?.day.key === day.key ? tooltipId : undefined} onPointerEnter={(browserEvent) => day.inPeriod && showTooltip(browserEvent.currentTarget)} onPointerLeave={() => setTooltip(null)} onFocus={(browserEvent) => canFocus && showTooltip(browserEvent.currentTarget)} onBlur={() => setTooltip(null)}>
+                  return <span key={day.key} data-date={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${day.records ? " calendar-day--active" : " calendar-day--empty"}${colors.length > 1 ? " calendar-day--shared" : ""}${mileiPresent ? " calendar-day--milei" : ""}`} style={day.inPeriod ? {...dayColor(day, colors, color), ...position} : position} tabIndex={canFocus ? 0 : undefined} aria-label={canFocus ? dayTitle(day, series, mileiPresent) : undefined} aria-describedby={canFocus && tooltip?.day.key === day.key ? tooltipId : undefined} onPointerEnter={(browserEvent) => day.inPeriod && showTooltip(browserEvent.currentTarget)} onPointerLeave={() => setTooltip(null)} onFocus={(browserEvent) => canFocus && showTooltip(browserEvent.currentTarget)} onBlur={() => setTooltip(null)}>
                     {colors.length > 1 && colors.map((item, colorIndex) => <i className="calendar-day-segment" style={{backgroundColor: item}} key={`${day.key}-${colorIndex}`} />)}
                     {day.inPeriod && <b className="calendar-day-number" aria-hidden="true">{day.date.getUTCDate()}</b>}
                   </span>;
