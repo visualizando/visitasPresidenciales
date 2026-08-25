@@ -1,4 +1,4 @@
-import {render, screen} from "@testing-library/react";
+import {render, screen, within} from "@testing-library/react";
 import {describe, expect, it} from "vitest";
 import {PurposeChart} from "./PurposeChart";
 
@@ -13,5 +13,12 @@ describe("PurposeChart", () => {
     expect(screen.getByRole("img", {name: /Circle pack de destinos y motivos/})).toBeInTheDocument();
     expect(container.querySelectorAll(".pack-leaf")).toHaveLength(3);
     expect(screen.getByRole("table", {name: "Destinos y motivos por sede"})).toBeInTheDocument();
+  });
+
+  it("muestra en la leyenda sólo las sedes presentes", () => {
+    render(<PurposeChart data={[{location: "olivos", label: "Actividad oficial", records: 5}]} />);
+    const legend = screen.getByLabelText("Sedes");
+    expect(within(legend).getByText("Olivos")).toBeInTheDocument();
+    expect(within(legend).queryByText("Casa Rosada")).not.toBeInTheDocument();
   });
 });

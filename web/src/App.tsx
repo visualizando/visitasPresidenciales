@@ -1,6 +1,7 @@
 import {ChevronDown, Database, Search} from "lucide-react";
 import {useDeferredValue, useEffect, useMemo, useState} from "react";
 import {CalendarChart} from "./components/CalendarChart";
+import {ChartLocationFilter} from "./components/ChartLocationFilter";
 import {CoverageReport} from "./components/CoverageReport";
 import {HeatmapChart} from "./components/HeatmapChart";
 import {PersonProfile} from "./components/PersonProfile";
@@ -11,7 +12,7 @@ import {SectionNav} from "./components/SectionNav";
 import {useData} from "./hooks/useData";
 import {useCoincidences} from "./hooks/useCoincidences";
 import {useSearch} from "./hooks/useSearch";
-import type {AccessEvent, Analytics, ExportFile, Meta, PersonSummary, SearchFilters} from "./types";
+import type {AccessEvent, Analytics, ExportFile, Location, Meta, PersonSummary, SearchFilters} from "./types";
 import {fetchGzipJson} from "./utils/fetchGzipJson";
 import {comparisonSeries} from "./utils/personColors";
 import {buildSelectionHash, parseSelectionHash, selectionIdShard} from "./utils/selectionHash";
@@ -23,6 +24,7 @@ export default function App() {
   const analytics = useData<Analytics>("analytics/overview.json");
   const exportsData = useData<ExportFile[]>("exports/index.json");
   const [selected, setSelected] = useState<PersonSummary[]>([]);
+  const [chartLocations, setChartLocations] = useState<Location[]>(["casa-rosada", "olivos"]);
   const [selectionHashReady, setSelectionHashReady] = useState(false);
   const [selectionHashError, setSelectionHashError] = useState<string | null>(null);
   const coincidences = useCoincidences(selected);
@@ -111,10 +113,8 @@ export default function App() {
   const personSeries = useMemo(() => comparisonSeries(selected), [selected]);
   const selectionAnalytics = useMemo(() => aggregateEvents(events.data), [events.data]);
   const activeAnalytics = selected.length ? selectionAnalytics : analytics.data;
-  const heatmapLocation = useMemo(() => {
-    const totals = (activeAnalytics?.heatmap ?? []).reduce((result, point) => ({...result, [point.location]: result[point.location] + point.records}), {"casa-rosada": 0, olivos: 0});
-    return totals.olivos > totals["casa-rosada"] ? "olivos" : "casa-rosada";
-  }, [activeAnalytics]);
+  const chartLocation = chartLocations.length === 2 ? "all" : chartLocations[0];
+  const purposeData = useMemo(() => (activeAnalytics?.purposes ?? []).filter((point) => chartLocations.includes(point.location)), [activeAnalytics, chartLocations]);
   const dashboardLoading = selected.length ? events.loading : analytics.loading;
   const dashboardError = selected.length ? events.error : analytics.error;
 
@@ -146,10 +146,10 @@ export default function App() {
       </section>
 
       <section className="dashboard-section" id="panorama" aria-labelledby="dashboard-title">
-        <div className="section-heading"><div><h2 id="dashboard-title">Actividad</h2></div><p>{selected.length ? selectedLabel : "Todos los registros"}</p></div>
+        <div className="section-heading dashboard-heading"><div><h2 id="dashboard-title">Actividad</h2><p>{selected.length ? selectedLabel : "Todos los registros"}</p></div><ChartLocationFilter value={chartLocations} onChange={setChartLocations} /></div>
         {dashboardLoading && <p role="status">Cargando gráficos…</p>}
         {dashboardError && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los gráficos.</strong><span>{dashboardError}</span></div>}
-        {activeAnalytics && !dashboardLoading && !dashboardError && <div className="dashboard-grid"><div className="dashboard-wide"><CalendarChart data={activeAnalytics.daily} location={selected.length ? "all" : heatmapLocation} series={personSeries} mileiCasaRosadaDays={analytics.data?.milei_casa_rosada_days} /></div><HeatmapChart data={activeAnalytics.heatmap} location={heatmapLocation} series={personSeries} /><PurposeChart data={activeAnalytics.purposes} series={personSeries} /></div>}
+        {activeAnalytics && !dashboardLoading && !dashboardError && <div className="dashboard-grid"><div className="dashboard-wide"><CalendarChart data={activeAnalytics.daily} location={chartLocation} series={personSeries} mileiCasaRosadaDays={chartLocations.includes("casa-rosada") ? analytics.data?.milei_casa_rosada_days : []} /></div><HeatmapChart data={activeAnalytics.heatmap} location={chartLocation} series={personSeries} /><PurposeChart data={purposeData} series={personSeries} /></div>}
       </section>
 
       <section className="downloads-section" id="descargas" aria-label="Descargar datos">

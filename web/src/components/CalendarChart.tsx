@@ -47,7 +47,7 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
     <figure className="chart-card" aria-labelledby={titleId}>
       <div className="chart-heading"><h3 id={titleId}>Actividad por día</h3><span className="chart-context">{locationLabel(location)}</span></div>
       <PersonLegend series={series} />
-      <label className="calendar-overlay-toggle"><input type="checkbox" checked={showMilei} onChange={(event) => setShowMilei(event.currentTarget.checked)} /><span className="calendar-milei-key" aria-hidden="true" />Actividad de Javier Milei en Casa Rosada</label>
+      {location !== "olivos" && mileiCasaRosadaDays.length > 0 && <label className="calendar-overlay-toggle"><input type="checkbox" checked={showMilei} onChange={(event) => setShowMilei(event.currentTarget.checked)} /><span className="calendar-milei-key" aria-hidden="true" />Actividad de Javier Milei en Casa Rosada</label>}
       {series.length > 1 && <p className="comparison-summary"><span className="calendar-shared-key" aria-hidden="true" /><strong>{formatNumber(sharedDays)}</strong> {sharedDays === 1 ? "día compartido" : "días compartidos"}</p>}
       {periods.length ? <>
         <div className="calendar-scroll" tabIndex={0} aria-label="Calendario anual desplazable horizontalmente" onScroll={() => setTooltip(null)}>

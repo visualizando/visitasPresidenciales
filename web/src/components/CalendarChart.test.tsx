@@ -39,7 +39,7 @@ describe("CalendarChart", () => {
   });
 
   it("marca los días de Milei y permite ocultar la capa", () => {
-    const {container} = render(<CalendarChart location="casa-rosada" mileiCasaRosadaDays={["2024-01-02"]} data={[
+    const {container, rerender} = render(<CalendarChart location="casa-rosada" mileiCasaRosadaDays={["2024-01-02"]} data={[
       {date: "2024-01-02", location: "casa-rosada", record_type: "movement", records: 2, people: 1},
     ]} />);
 
@@ -48,5 +48,8 @@ describe("CalendarChart", () => {
     fireEvent.click(checkbox);
     expect(checkbox).not.toBeChecked();
     expect(container.querySelector(".calendar-day--milei")).not.toBeInTheDocument();
+
+    rerender(<CalendarChart location="olivos" mileiCasaRosadaDays={["2024-01-02"]} data={[{date: "2024-01-02", location: "olivos", record_type: "person", records: 1, people: 1}]} />);
+    expect(screen.queryByRole("checkbox", {name: /Javier Milei/i})).not.toBeInTheDocument();
   });
 });

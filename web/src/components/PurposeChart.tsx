@@ -18,13 +18,14 @@ interface PackDatum {
 export function PurposeChart({data, series = []}: {data: PurposePoint[]; series?: ComparisonSeries[]}) {
   const titleId = useId();
   const points = data.filter((point) => point.records > 0);
+  const locations = new Set(points.map((point) => point.location));
   const layout = useMemo(() => createLayout(points, series), [points, series]);
 
   return (
     <figure className="chart-card" aria-labelledby={titleId}>
       <div className="chart-heading">
         <h3 id={titleId}>Destinos y motivos</h3>
-        {!series.length && points.length > 0 && <div className="legend" aria-label="Sedes"><span><i className="legend-dot legend-dot--casa-rosada" />Casa Rosada</span><span><i className="legend-dot legend-dot--olivos" />Olivos</span></div>}
+        {!series.length && points.length > 0 && <div className="legend" aria-label="Sedes">{locations.has("casa-rosada") && <span><i className="legend-dot legend-dot--casa-rosada" />Casa Rosada</span>}{locations.has("olivos") && <span><i className="legend-dot legend-dot--olivos" />Olivos</span>}</div>}
       </div>
       <PersonLegend series={series} />
       {layout ? (

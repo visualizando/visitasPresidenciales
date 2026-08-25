@@ -5,16 +5,16 @@ import {PersonLegend} from "./PersonLegend";
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-export function HeatmapChart({data, location, series = []}: {data: HeatmapPoint[]; location: Location; series?: ComparisonSeries[]}) {
-  const points = data.filter((point) => series.length ? true : point.location === location);
+export function HeatmapChart({data, location, series = []}: {data: HeatmapPoint[]; location: Location | "all"; series?: ComparisonSeries[]}) {
+  const points = data.filter((point) => location === "all" || point.location === location);
   return (
     <figure className="chart-card" aria-labelledby="heatmap-title">
-      <div className="chart-heading"><h3 id="heatmap-title">Días y horarios</h3><span className="chart-context">{series.length ? "Ambas sedes" : location === "casa-rosada" ? "Casa Rosada" : "Olivos"}</span></div>
+      <div className="chart-heading"><h3 id="heatmap-title">Días y horarios</h3><span className="chart-context">{location === "all" ? "Ambas sedes" : location === "casa-rosada" ? "Casa Rosada" : "Olivos"}</span></div>
       <PersonLegend series={series} />
       {points.length ? (
         <div className={`heatmap-comparison${series.length ? " heatmap-comparison--people" : ""}`}>{series.length
           ? series.map((person) => <HeatmapGrid key={person.entityId} points={points.filter((point) => point.entity_id === person.entityId)} color={person.color} label={person.name} />)
-          : <HeatmapGrid points={points} color="#075c70" label={location === "casa-rosada" ? "Casa Rosada" : "Olivos"} />}
+          : <HeatmapGrid points={points} color="#075c70" label={location === "all" ? "Ambas sedes" : location === "casa-rosada" ? "Casa Rosada" : "Olivos"} />}
         </div>
       ) : <p className="chart-empty-copy">Todavía no hay horarios suficientes para este gráfico.</p>}
       <details className="data-table-disclosure"><summary>Ver resumen accesible</summary>{series.length ? series.map((person) => <p key={person.entityId}><strong>{person.name}:</strong> mayor actividad en {peakDescription(points.filter((point) => point.entity_id === person.entityId))}.</p>) : <p>La mayor actividad se registra en {peakDescription(points)}.</p>}</details>
