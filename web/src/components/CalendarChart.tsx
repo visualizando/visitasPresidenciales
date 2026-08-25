@@ -41,17 +41,15 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
   const maximum = max([...points.values()], (point) => point.records) ?? 1;
   const color = scaleSqrt<string>().domain([0, maximum]).range(["#e9ede8", "#075c70"]);
   const peak = [...points.entries()].sort((left, right) => right[1].records - left[1].records)[0];
-  const sharedDays = [...points.values()].filter((point) => point.people.size > 1).length;
 
   return (
     <figure className="chart-card" aria-labelledby={titleId}>
       <div className="chart-heading"><h3 id={titleId}>Actividad por día</h3><span className="chart-context">{locationLabel(location)}</span></div>
       <PersonLegend series={series} />
       {location !== "olivos" && mileiCasaRosadaDays.length > 0 && <label className="calendar-overlay-toggle"><input type="checkbox" checked={showMilei} onChange={(event) => setShowMilei(event.currentTarget.checked)} /><span className="calendar-milei-key" aria-hidden="true" />Actividad de Javier Milei en Casa Rosada</label>}
-      {series.length > 1 && <p className="comparison-summary"><span className="calendar-shared-key" aria-hidden="true" /><strong>{formatNumber(sharedDays)}</strong> {sharedDays === 1 ? "día compartido" : "días compartidos"}</p>}
       {periods.length ? <>
         <div className="calendar-scroll" tabIndex={0} aria-label="Calendario anual desplazable horizontalmente" onScroll={() => setTooltip(null)}>
-          <div className="calendar-periods" role={series.length ? "group" : "img"} aria-label={calendarDescription(points.size, peak, location, sharedDays)}>
+          <div className="calendar-periods" role={series.length ? "group" : "img"} aria-label={calendarDescription(points.size, peak, location)}>
             {periods.map((period) => <section className="calendar-period" key={period.key} aria-hidden={series.length ? undefined : "true"}>
               <h4>{period.label}</h4>
               <div className="calendar-months" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.months.map((month, monthIndex) => <span key={month.key} data-month={month.key} style={{gridColumnStart: month.column, transform: `translateX(${monthIndex * MONTH_GAP_PX}px)`}}>{month.label}</span>)}</div>
@@ -68,7 +66,7 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
                     const center = bounds.left + bounds.width / 2;
                     setTooltip({day, mileiPresent, x: Math.min(Math.max(center, 112), window.innerWidth - 112), y: bounds.top});
                   };
-                  return <span key={day.key} data-date={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${day.records ? " calendar-day--active" : " calendar-day--empty"}${colors.length > 1 ? " calendar-day--shared" : ""}${mileiPresent ? " calendar-day--milei" : ""}`} style={day.inPeriod ? {...dayColor(colors, backgroundColor), ...position} : position} tabIndex={canFocus ? 0 : undefined} aria-label={canFocus ? dayTitle(day, series, mileiPresent) : undefined} aria-describedby={canFocus && tooltip?.day.key === day.key ? tooltipId : undefined} onPointerEnter={(browserEvent) => day.inPeriod && showTooltip(browserEvent.currentTarget)} onPointerLeave={() => setTooltip(null)} onFocus={(browserEvent) => canFocus && showTooltip(browserEvent.currentTarget)} onBlur={() => setTooltip(null)}>
+                  return <span key={day.key} data-date={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${day.records ? " calendar-day--active" : " calendar-day--empty"}${colors.length > 1 ? " calendar-day--multi" : ""}${mileiPresent ? " calendar-day--milei" : ""}`} style={day.inPeriod ? {...dayColor(colors, backgroundColor), ...position} : position} tabIndex={canFocus ? 0 : undefined} aria-label={canFocus ? dayTitle(day, series, mileiPresent) : undefined} aria-describedby={canFocus && tooltip?.day.key === day.key ? tooltipId : undefined} onPointerEnter={(browserEvent) => day.inPeriod && showTooltip(browserEvent.currentTarget)} onPointerLeave={() => setTooltip(null)} onFocus={(browserEvent) => canFocus && showTooltip(browserEvent.currentTarget)} onBlur={() => setTooltip(null)}>
                     {colors.length > 1 && colors.map((item, colorIndex) => <i className="calendar-day-segment" style={{backgroundColor: item}} key={`${day.key}-${colorIndex}`} />)}
                     {day.inPeriod && <b className="calendar-day-number" style={{color: calendarDayNumberColor(colors, backgroundColor)}} aria-hidden="true">{day.date.getUTCDate()}</b>}
                   </span>;
@@ -78,7 +76,7 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
           </div>
         </div>
         {!series.length && <div className="calendar-key" aria-hidden="true"><span>Menos</span><i /><span>Más</span></div>}
-        <details className="data-table-disclosure"><summary>Ver resumen accesible</summary><p>{calendarDescription(points.size, peak, location, sharedDays)}</p></details>
+        <details className="data-table-disclosure"><summary>Ver resumen accesible</summary><p>{calendarDescription(points.size, peak, location)}</p></details>
         {tooltip && <CalendarTooltip id={tooltipId} day={tooltip.day} series={series} mileiPresent={tooltip.mileiPresent} x={tooltip.x} y={tooltip.y} />}
       </> : <p className="chart-empty-copy">Todavía no hay fechas suficientes para este calendario.</p>}
     </figure>
@@ -139,10 +137,9 @@ function addDays(date: Date, amount: number) { return new Date(date.valueOf() + 
 function formatNumber(value: number) { return Intl.NumberFormat("es-AR").format(value); }
 function formatDate(date: Date) { return new Intl.DateTimeFormat("es-AR", {day: "numeric", month: "short", year: "numeric", timeZone: "UTC"}).format(date); }
 function locationLabel(value: CalendarLocation) { return value === "all" ? "Ambas sedes" : value === "casa-rosada" ? "Casa Rosada" : "Olivos"; }
-function calendarDescription(activeDays: number, peak: [string, {records: number}] | undefined, location: CalendarLocation, sharedDays = 0) {
+function calendarDescription(activeDays: number, peak: [string, {records: number}] | undefined, location: CalendarLocation) {
   if (!peak) return `No hay actividad diaria disponible para ${locationLabel(location)}.`;
-  const shared = sharedDays ? ` ${formatNumber(sharedDays)} ${sharedDays === 1 ? "día tiene" : "días tienen"} registros de más de una persona seleccionada.` : "";
-  return `${formatNumber(activeDays)} ${activeDays === 1 ? "día" : "días"} con actividad en ${locationLabel(location)}. El máximo fue el ${formatDate(parseDate(peak[0]))}, con ${formatNumber(peak[1].records)} registros.${shared}`;
+  return `${formatNumber(activeDays)} ${activeDays === 1 ? "día" : "días"} con actividad en ${locationLabel(location)}. El máximo fue el ${formatDate(parseDate(peak[0]))}, con ${formatNumber(peak[1].records)} registros.`;
 }
 
 function personColors(day: CalendarDay, series: ComparisonSeries[]) {

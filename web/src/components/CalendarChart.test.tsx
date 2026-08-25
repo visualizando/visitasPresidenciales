@@ -18,7 +18,7 @@ describe("CalendarChart", () => {
     expect(container.querySelector<HTMLElement>('[data-month="2025-01"]')).toHaveStyle({gridColumnStart: "2"});
   });
 
-  it("divide por color y señala los días compartidos", () => {
+  it("divide por color sin agregar un segundo borde a los días con varias personas", () => {
     const {container} = render(<CalendarChart location="all" series={[
       {entityId: "one", name: "Ana Pérez", color: "#0077bb"},
       {entityId: "two", name: "A. Pérez", color: "#d55e00"},
@@ -27,11 +27,12 @@ describe("CalendarChart", () => {
       {date: "2025-01-02", location: "olivos", record_type: "person", records: 2, people: 1, entity_id: "two"},
     ]} />);
 
-    expect(container.querySelector(".comparison-summary")).toHaveTextContent(/1 día compartido/i);
-    const shared = container.querySelector<HTMLElement>(".calendar-day--shared");
-    expect(shared?.querySelectorAll(".calendar-day-segment")).toHaveLength(2);
-    expect(shared).toHaveAttribute("aria-label", expect.stringContaining("Ana Pérez: 1"));
-    fireEvent.pointerEnter(shared!);
+    expect(container.querySelector(".comparison-summary")).not.toBeInTheDocument();
+    const multi = container.querySelector<HTMLElement>(".calendar-day--multi");
+    expect(multi?.querySelectorAll(".calendar-day-segment")).toHaveLength(2);
+    expect(multi).not.toHaveClass("calendar-day--shared");
+    expect(multi).toHaveAttribute("aria-label", expect.stringContaining("Ana Pérez: 1"));
+    fireEvent.pointerEnter(multi!);
     const tooltip = screen.getByRole("tooltip");
     expect(tooltip).toHaveTextContent("2 de ene de 2025");
     expect(tooltip).toHaveTextContent("Ana Pérez1");
