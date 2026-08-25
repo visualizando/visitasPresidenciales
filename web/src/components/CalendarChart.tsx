@@ -5,7 +5,7 @@ import type {ComparisonSeries, DailyPoint, Location} from "../types";
 import {PersonLegend} from "./PersonLegend";
 
 const DAY_MS = 86_400_000;
-const MONTH_GAP_PX = 1;
+const MONTH_GAP_PX = 3;
 const WEEKDAYS = ["L", "M", "X", "J", "V", "S", "D"];
 const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
