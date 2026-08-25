@@ -26,6 +26,7 @@ La base combina PDF consolidados y mensuales de Casa Rosada, partes diarios de O
 - Seleccionar varias variantes de una misma persona y compararlas con colores consistentes.
 - Compartir una selección mediante un hotlink como `#person=id1,id2`.
 - Consultar fichas con cronología, sede, destino, motivo, calidad y vínculo a la fuente.
+- Descargar en CSV todos los registros de las personas seleccionadas.
 - Ordenar la tabla de movimientos por columna y recorrerla en bloques de 100 filas.
 - Explorar actividad diaria y mensual, calendario anual, ritmos por día y hora, destinos y motivos.
 - Distinguir días compartidos por varias personas y marcar los días con registros de Javier Milei en Casa Rosada.

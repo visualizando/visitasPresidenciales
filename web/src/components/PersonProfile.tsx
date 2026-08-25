@@ -1,9 +1,10 @@
-import {ArrowDown, ArrowUp, ExternalLink, FileText, X} from "lucide-react";
+import {ArrowDown, ArrowUp, Download, ExternalLink, FileText, X} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 import type {AccessEvent, CoincidenceResult, PersonSummary} from "../types";
 import {CoincidenceRanking} from "./CoincidenceRanking";
 import {locationLabel, titleCase} from "./SearchResults";
 import {comparisonSeries} from "../utils/personColors";
+import {buildSelectedEventsCsv, selectedEventsFilename} from "../utils/selectedEventsCsv";
 
 type SortKey = "date" | "person" | "location" | "type" | "detail" | "exit" | "quality";
 type SortDirection = "asc" | "desc";
@@ -52,6 +53,18 @@ export function PersonProfile({people, events, loading, error, coincidences, coi
     setSort((current) => current.key === key ? {key, direction: current.direction === "asc" ? "desc" : "asc"} : {key, direction: key === "date" ? "desc" : "asc"});
   }
 
+  function downloadSelection() {
+    const blobUrl = URL.createObjectURL(new Blob([buildSelectedEventsCsv(events)], {type: "text/csv;charset=utf-8"}));
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = selectedEventsFilename(people);
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1_000);
+  }
+
   return <section className="profile" aria-labelledby="profile-title">
     <div className="profile-header">
       <div><p className="eyebrow">Selección comparada</p><h2 id="profile-title" ref={headingRef} tabIndex={-1}>{people.length === 1 ? titleCase(people[0].canonical_name) : `${people.length} personas o variantes seleccionadas`}</h2><p className="profile-description">Cada selección conserva su color en la tabla y los gráficos. Las identidades originales no se modifican.</p></div>
@@ -67,7 +80,7 @@ export function PersonProfile({people, events, loading, error, coincidences, coi
 
     {loading && <p role="status">Cargando registros…</p>}
     {error && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los registros.</strong><span>{error}</span></div>}
-    {!loading && !error && <div className="records-section"><div className="records-heading"><h3>Entradas y movimientos</h3><span>{visibleEvents.length.toLocaleString("es-AR")} de {events.length.toLocaleString("es-AR")} filas</span></div>{events.length ? <><div className="records-table-wrap"><table className="records-table"><caption className="sr-only">Entradas y movimientos de las personas seleccionadas</caption><thead><tr>
+    {!loading && !error && <div className="records-section"><div className="records-heading"><h3>Entradas y movimientos</h3><div className="records-heading-actions"><span>{visibleEvents.length.toLocaleString("es-AR")} de {events.length.toLocaleString("es-AR")} filas</span>{events.length > 0 && <button className="selection-download" type="button" onClick={downloadSelection} aria-label={`Descargar ${events.length.toLocaleString("es-AR")} ${events.length === 1 ? "registro" : "registros"} de la selección en CSV`}><Download aria-hidden="true" />Descargar CSV</button>}</div></div>{events.length ? <><div className="records-table-wrap"><table className="records-table"><caption className="sr-only">Entradas y movimientos de las personas seleccionadas</caption><thead><tr>
       <SortableHeader label="Fecha y hora" column="date" sort={sort} onSort={changeSort} />
       <SortableHeader label="Persona" column="person" sort={sort} onSort={changeSort} />
       <SortableHeader label="Sede" column="location" sort={sort} onSort={changeSort} />

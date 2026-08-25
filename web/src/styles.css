@@ -155,6 +155,9 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .records-section { margin-block-start: 1rem; }
 .records-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-block-end: 0.4rem; }
 .records-heading span { color: var(--color-text-secondary); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.records-heading-actions { display: flex; align-items: center; gap: 0.75rem; }
+.selection-download { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2.25rem; padding: 0.35rem 0.65rem; border: 1px solid var(--accent-100); border-radius: 0.5rem; color: var(--color-accent-solid); background: var(--color-accent-soft); font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+.selection-download svg { width: 0.85rem; height: 0.85rem; stroke-width: 2; }
 .records-table-wrap { max-height: 31rem; overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-inner); background: var(--color-bg-surface); }
 .records-table { min-width: 70rem; font-size: 0.75rem; }
 .records-table thead { position: sticky; inset-block-start: 0; z-index: 2; background: var(--color-bg-subtle); }
@@ -326,15 +329,16 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .result-card:hover { border-color: var(--accent-500); }
   .download-row:hover { border-color: var(--accent-500); background: var(--color-accent-soft); }
   .text-button:hover { color: var(--color-accent-hover); }
+  .selection-download:hover { border-color: var(--accent-500); color: var(--color-accent-hover); }
   footer a:hover { color: var(--color-accent-solid); text-decoration-color: currentColor; }
   .segmented-control button:hover { color: var(--color-text-primary); }
   .pack-leaf:hover circle { fill: var(--accent-50); stroke-width: 2; }
   .pack-leaf--olivos:hover circle { fill: #f9eadc; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .result-card, .download-row, .text-button, .section-nav a, .segmented-control button { transition-property: background-color, border-color, color, transform; transition-duration: 140ms; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
+  .result-card, .download-row, .text-button, .selection-download, .section-nav a, .segmented-control button { transition-property: background-color, border-color, color, transform; transition-duration: 140ms; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
   .pack-leaf circle { transition-property: fill, stroke-width; transition-duration: 140ms; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
-  .result-card:active, .download-row:active, .person-chip button:active { transform: scale(0.96); }
+  .result-card:active, .download-row:active, .selection-download:active, .person-chip button:active { transform: scale(0.96); }
   .result-skeleton { animation: skeleton 1.6s linear infinite; }
   @keyframes skeleton { to { background-position: -200% 0; } }
 }
@@ -360,6 +364,7 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .result-meta { grid-column: 1; }
   .result-action { grid-column: 2; grid-row: 1 / span 2; }
   .profile-header { flex-direction: column; gap: 0.25rem; }
+  .records-heading { align-items: start; flex-direction: column; gap: 0.4rem; }
   .profile-stats, .dashboard-grid { grid-template-columns: 1fr; }
   .dashboard-wide { grid-column: auto; }
   .calendar-periods { padding: 0.6rem; }
