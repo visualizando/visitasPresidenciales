@@ -78,13 +78,13 @@ export function PersonProfile({people, events, loading, error, coincidences, onR
 
   return <section className="profile" aria-labelledby="profile-title">
     <div className="profile-header">
-      <h2 id="profile-title" ref={headingRef} tabIndex={-1}>{people.length === 1 ? titleCase(people[0].canonical_name) : `${people.length} variantes seleccionadas`}</h2>
+      <h2 id="profile-title" ref={headingRef} tabIndex={-1}>Detalle de movimientos</h2>
       <button className="text-button" type="button" onClick={onClear}>Limpiar selección</button>
     </div>
 
     <div className="selected-people" aria-label="Personas seleccionadas">{people.map((person) => <div className="person-chip" key={person.entity_id} style={{borderColor: colors.get(person.entity_id)}}><i className="person-color" style={{backgroundColor: colors.get(person.entity_id)}} aria-hidden="true" /><span><strong>{titleCase(person.canonical_name)}</strong><small>{person.document_type ?? "Documento"} <bdi>{person.document_number ?? "no informado"}</bdi></small></span><button type="button" onClick={() => onRemove(person.entity_id)} aria-label={`Quitar ${titleCase(person.canonical_name)}`}><X aria-hidden="true" /></button></div>)}</div>
 
-    <div className="profile-stats"><span><strong>{events.length.toLocaleString("es-AR")}</strong> registros cargados</span><span><strong>{locations.map(locationLabel).join(" y ")}</strong> sedes</span><span><strong>{formatDate(latest)}</strong> última aparición</span></div>
+    <dl className="profile-stats"><div><dd>{events.length.toLocaleString("es-AR")}</dd><dt>registros</dt></div><div><dd>{locations.map(locationLabel).join(" y ")}</dd><dt>{locations.length === 1 ? "sede" : "sedes"}</dt></div><div><dd>{formatDate(latest)}</dd><dt>última aparición</dt></div></dl>
     {loading && <p role="status">Cargando registros…</p>}
     {error && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los registros.</strong><span>{error}</span></div>}
     {!loading && !error && <div className="records-section"><div className="records-heading"><h3>Entradas y movimientos</h3><div className="records-heading-actions"><span>{visibleEvents.length.toLocaleString("es-AR")} de {events.length.toLocaleString("es-AR")} filas</span>{events.length > 0 && <button className="selection-download" type="button" onClick={downloadSelection} aria-label={`Descargar ${events.length.toLocaleString("es-AR")} ${events.length === 1 ? "registro" : "registros"} de la selección en CSV`}><Download aria-hidden="true" />Descargar CSV</button>}</div></div>{events.length ? <><div className="records-table-wrap"><table className="records-table"><caption className="sr-only">Entradas y movimientos de las personas seleccionadas</caption><thead><tr>

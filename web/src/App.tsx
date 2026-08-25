@@ -1,4 +1,4 @@
-import {ChevronDown, Database, Download, Search} from "lucide-react";
+import {ChevronDown, Database, Search} from "lucide-react";
 import {useDeferredValue, useEffect, useMemo, useState} from "react";
 import {CalendarChart} from "./components/CalendarChart";
 import {CoverageReport} from "./components/CoverageReport";
@@ -153,8 +153,7 @@ export default function App() {
       </section>
 
       <section className="downloads-section" id="descargas" aria-labelledby="downloads-title">
-        <div className="downloads-intro"><h2 id="downloads-title">Descargar datos</h2><p>Archivos CSV por año.</p></div>
-        <div className="download-list">{exportsData.data?.length ? [...exportsData.data].sort((left, right) => right.year - left.year).map((file) => <a className="download-row" key={file.year} href={new URL(`data/exports/${file.path}`, document.baseURI).href} download><span><strong>{file.year}</strong><small>{file.records.toLocaleString("es-AR")} registros</small></span><Download aria-hidden="true" /></a>) : <p className="empty-state">Los CSV aparecerán después de la primera actualización de datos.</p>}</div>
+        <details className="downloads-disclosure"><summary><span><h2 id="downloads-title">Descargar datos</h2><small>Archivos CSV por año</small></span><ChevronDown aria-hidden="true" /></summary><div className="downloads-content">{exportsData.data?.length ? <div className="download-table-wrap"><table className="download-table"><caption className="sr-only">Archivos de datos disponibles por año</caption><thead><tr><th scope="col">Año</th><th scope="col">Registros</th><th scope="col">Archivo</th></tr></thead><tbody>{[...exportsData.data].sort((left, right) => right.year - left.year).map((file) => <tr key={file.year}><td><strong>{file.year}</strong></td><td>{file.records.toLocaleString("es-AR")}</td><td><a href={new URL(`data/exports/${file.path}`, document.baseURI).href} download>Descargar CSV</a></td></tr>)}</tbody></table></div> : <p className="empty-state">Los CSV aparecerán después de la primera actualización de datos.</p>}</div></details>
       </section>
 
       <section className="more-section" id="mas" aria-labelledby="more-title">
