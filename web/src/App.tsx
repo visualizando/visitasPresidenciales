@@ -124,7 +124,6 @@ export default function App() {
       : [...current, person]);
   }
 
-  const selectedLabel = selected.length === 1 ? selected[0].canonical_name : `${selected.length} personas o variantes seleccionadas`;
 
   return <>
     <a className="skip-link" href="#main">Saltar al contenido</a>
@@ -146,7 +145,7 @@ export default function App() {
       </section>
 
       <section className="dashboard-section" id="panorama" aria-labelledby="dashboard-title">
-        <div className="section-heading dashboard-heading"><div><h2 id="dashboard-title">Actividad</h2><p>{selected.length ? selectedLabel : "Todos los registros"}</p></div><ChartLocationFilter value={chartLocations} onChange={setChartLocations} /></div>
+        <div className="section-heading dashboard-heading"><div><h2 id="dashboard-title">Actividad</h2></div><ChartLocationFilter value={chartLocations} onChange={setChartLocations} /></div>
         {dashboardLoading && <p role="status">Cargando gráficos…</p>}
         {dashboardError && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los gráficos.</strong><span>{dashboardError}</span></div>}
         {activeAnalytics && !dashboardLoading && !dashboardError && <div className="dashboard-grid"><div className="dashboard-wide"><CalendarChart data={activeAnalytics.daily} location={chartLocation} series={personSeries} mileiCasaRosadaDays={chartLocations.includes("casa-rosada") ? analytics.data?.milei_casa_rosada_days : []} /></div><HeatmapChart data={activeAnalytics.heatmap} location={chartLocation} series={personSeries} /><PurposeChart data={purposeData} series={personSeries} /></div>}
