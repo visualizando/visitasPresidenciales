@@ -24,7 +24,7 @@ interface CalendarPeriod {
   key: string;
   label: string;
   weeks: number;
-  months: {label: string; column: number}[];
+  months: {key: string; label: string; column: number}[];
   days: CalendarDay[];
 }
 
@@ -53,7 +53,7 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
           <div className="calendar-periods" role={series.length ? "group" : "img"} aria-label={calendarDescription(points.size, peak, location, sharedDays)}>
             {periods.map((period) => <section className="calendar-period" key={period.key} aria-hidden={series.length ? undefined : "true"}>
               <h4>{period.label}</h4>
-              <div className="calendar-months" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.months.map((month, monthIndex) => <span key={`${period.key}-${month.label}`} style={{gridColumnStart: month.column, transform: `translateX(${monthIndex * MONTH_GAP_PX}px)`}}>{month.label}</span>)}</div>
+              <div className="calendar-months" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.months.map((month, monthIndex) => <span key={month.key} data-month={month.key} style={{gridColumnStart: month.column, transform: `translateX(${monthIndex * MONTH_GAP_PX}px)`}}>{month.label}</span>)}</div>
               <div className="calendar-body">
                 <div className="calendar-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
                 <div className="calendar-days" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.days.map((day, index) => {
@@ -124,7 +124,8 @@ function createPeriods(points: Map<string, {records: number; people: Map<string,
     });
     const months = Array.from({length: 12}, (_, month) => {
       const date = new Date(Date.UTC(year, month, 1));
-      return {label: MONTHS[month], column: Math.floor((date.valueOf() - gridStart.valueOf()) / DAY_MS / 7) + 1};
+      const firstMonday = addDays(date, (8 - date.getUTCDay()) % 7);
+      return {key: `${year}-${String(month + 1).padStart(2, "0")}`, label: MONTHS[month], column: Math.floor((firstMonday.valueOf() - gridStart.valueOf()) / DAY_MS / 7) + 1};
     });
     periods.push({key: `${year}`, label: `${year}`, weeks, months, days});
   }
