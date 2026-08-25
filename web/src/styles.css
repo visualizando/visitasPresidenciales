@@ -295,15 +295,7 @@ td:nth-child(n + 3), th:nth-child(n + 3) { font-variant-numeric: tabular-nums; }
 .selection-empty strong { color: var(--color-text-primary); }
 
 .downloads-section { max-width: 96rem; }
-.downloads-disclosure { border-block: 1px solid var(--color-border); }
-.downloads-disclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.75rem; padding-block: 0.6rem; cursor: pointer; list-style: none; }
-.downloads-disclosure > summary::-webkit-details-marker { display: none; }
-.downloads-disclosure > summary span { display: flex; align-items: baseline; gap: 0.65rem; }
-.downloads-disclosure > summary h2 { font-size: 1.25rem; }
-.downloads-disclosure > summary small { color: var(--color-text-secondary); }
-.downloads-disclosure > summary svg { width: 1rem; color: var(--color-text-secondary); transition: transform 140ms cubic-bezier(0.2, 0, 0, 1); }
-.downloads-disclosure[open] > summary svg { transform: rotate(180deg); }
-.downloads-content { padding-block-end: 0.75rem; }
+.downloads-content { padding-block-end: 0.8rem; }
 .download-table-wrap { overflow-x: auto; }
 .download-table { width: 100%; min-width: 28rem; font-size: 0.75rem; }
 .download-table th, .download-table td { padding: 0.38rem 0.5rem; border-block-end: 1px solid var(--color-border); text-align: start; }
@@ -433,7 +425,6 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .record-detail-actions { align-items: stretch; flex-direction: column; gap: 0.35rem; }
   .dashboard-wide { grid-column: auto; }
   .calendar-periods { padding: 0.6rem; }
-  .downloads-disclosure > summary span { align-items: start; flex-direction: column; gap: 0.05rem; }
   .ranking-filters { grid-template-columns: 1fr; }
   .ranking-coverage { grid-column: auto; }
   .coverage-locations { grid-template-columns: 1fr; }
