@@ -191,6 +191,7 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .quality--low { color: var(--status-error-text); background: var(--status-error-bg); }
 .source-link, .source-local { display: inline-flex; align-items: center; gap: 0.2rem; }
 .source-link svg, .source-local svg { width: 0.75rem; }
+.source-file-name { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; }
 .source-local { color: var(--color-text-secondary); }
 .record-detail-trigger { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; padding: 0; border: 1px solid var(--color-border); border-radius: 0.35rem; color: var(--color-accent-solid); background: var(--color-bg-surface); cursor: pointer; }
 .record-detail-trigger svg { width: 0.85rem; height: 0.85rem; stroke-width: 2; }

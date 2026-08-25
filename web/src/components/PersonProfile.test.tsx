@@ -41,7 +41,7 @@ describe("PersonProfile", () => {
     const detailed = {...event("detail", "one", "PEREZ ANA", "2024-05-24T08:33:00Z"), entered_at: "2024-05-24T08:33:00Z", exited_at: "2024-05-24T17:12:00Z", destination: "Jefatura", purpose: "Reunión", raw_text: "Observación original", sources: [{url: "https://example.org/olivos-2024.pdf", path: "olivos/2024.pdf", page: 7}]} satisfies AccessEvent;
     render(<PersonProfile people={[people[0]]} events={[detailed]} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={vi.fn()} />);
 
-    expect(screen.getByRole("link", {name: /Abrir PDF · p\. 7/i})).toHaveAttribute("href", "https://example.org/olivos-2024.pdf#page=7");
+    expect(screen.getByRole("link", {name: /2024\.pdf · p\. 7/i})).toHaveAttribute("href", "https://example.org/olivos-2024.pdf#page=7");
     fireEvent.click(screen.getByRole("button", {name: /Abrir detalle del registro/i}));
     expect(screen.getByRole("dialog", {name: "Detalle para citar"})).toBeInTheDocument();
     expect(screen.getByText(/respuesta oficial a un pedido de acceso a la información realizado por Poder Ciudadano/i)).toBeInTheDocument();

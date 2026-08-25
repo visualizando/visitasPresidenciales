@@ -110,7 +110,9 @@ function SortableHeader({label, column, sort, onSort}: {label: string; column: S
 function SourceCell({event}: {event: AccessEvent}) {
   const source = event.sources?.[0];
   if (!source) return <span>—</span>;
-  return isPublicUrl(source.url) ? <a className="source-link" href={`${source.url}#page=${source.page}`} target="_blank" rel="noreferrer"><FileText aria-hidden="true" />Abrir PDF · p. {source.page}<ExternalLink aria-hidden="true" /></a> : <span className="source-local" title={`${sourceFileName(source.path)} · enlace público no disponible`}><FileText aria-hidden="true" />PDF · p. {source.page}</span>;
+  const filename = sourceFileName(source.path || source.url);
+  const label = <><FileText aria-hidden="true" /><span className="source-file-name">{filename}</span><span>· p. {source.page}</span></>;
+  return isPublicUrl(source.url) ? <a className="source-link" href={`${source.url}#page=${source.page}`} target="_blank" rel="noreferrer" title={`Abrir ${filename}, página ${source.page}`}>{label}<ExternalLink aria-hidden="true" /></a> : <span className="source-local" title={`${filename} · enlace público no disponible`}>{label}</span>;
 }
 
 function primaryDate(event: AccessEvent) { return event.occurred_at ?? event.entered_at ?? event.exited_at; }
