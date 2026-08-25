@@ -11,7 +11,7 @@ describe("CalendarChart", () => {
     ]} />);
 
     expect(screen.getByRole("img", {name: /2 de ene de 2025, con 7 registros/})).toBeInTheDocument();
-    expect(container.querySelector('[title="2 de ene de 2025: 7 registros"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-date="2025-01-02"] .calendar-day-number')).toHaveTextContent("2");
   });
 
   it("divide por color y señala los días compartidos", () => {
@@ -26,7 +26,12 @@ describe("CalendarChart", () => {
     expect(container.querySelector(".comparison-summary")).toHaveTextContent(/1 día con registros de más de una persona/i);
     const shared = container.querySelector<HTMLElement>(".calendar-day--shared");
     expect(shared?.querySelectorAll(".calendar-day-segment")).toHaveLength(2);
-    expect(shared).toHaveAttribute("title", expect.stringContaining("Ana Pérez: 1"));
+    expect(shared).toHaveAttribute("aria-label", expect.stringContaining("Ana Pérez: 1"));
+    fireEvent.pointerEnter(shared!);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip).toHaveTextContent("2 de ene de 2025");
+    expect(tooltip).toHaveTextContent("Ana Pérez1");
+    expect(tooltip).toHaveTextContent("A. Pérez2");
   });
 
   it("marca los días de Milei y permite ocultar la capa", () => {

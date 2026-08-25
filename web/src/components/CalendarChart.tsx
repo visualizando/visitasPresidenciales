@@ -1,6 +1,6 @@
 import {max} from "d3-array";
 import {scaleSqrt} from "d3-scale";
-import {useId, useMemo} from "react";
+import {useId, useMemo, useState} from "react";
 import type {ComparisonSeries, DailyPoint, Location} from "../types";
 import {PersonLegend} from "./PersonLegend";
 
@@ -31,6 +31,8 @@ type CalendarLocation = Location | "all";
 
 export function CalendarChart({data, location, series = [], mileiCasaRosadaDays = []}: {data: DailyPoint[]; location: CalendarLocation; series?: ComparisonSeries[]; mileiCasaRosadaDays?: string[]}) {
   const titleId = useId();
+  const tooltipId = useId();
+  const [tooltip, setTooltip] = useState<{day: CalendarDay; mileiPresent: boolean; x: number; y: number} | null>(null);
   const points = useMemo(() => aggregateDays(data, location), [data, location]);
   const periods = useMemo(() => createPeriods(points), [points]);
   const mileiDays = useMemo(() => new Set(mileiCasaRosadaDays), [mileiCasaRosadaDays]);
@@ -46,9 +48,9 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
       <label className="calendar-overlay-toggle"><input type="checkbox" defaultChecked /><span className="calendar-milei-key" aria-hidden="true" />Marcar días con registro de Javier Milei en Casa Rosada</label>
       {series.length > 1 && <p className="comparison-summary"><strong>{formatNumber(sharedDays)}</strong> {sharedDays === 1 ? "día" : "días"} con registros de más de una persona.</p>}
       {periods.length ? <>
-        <div className="calendar-scroll" tabIndex={0} aria-label="Calendario anual desplazable horizontalmente">
-          <div className="calendar-periods" role="img" aria-label={calendarDescription(points.size, peak, location, sharedDays)}>
-            {periods.map((period) => <section className="calendar-period" key={period.key} aria-hidden="true">
+        <div className="calendar-scroll" tabIndex={0} aria-label="Calendario anual desplazable horizontalmente" onScroll={() => setTooltip(null)}>
+          <div className="calendar-periods" role={series.length ? "group" : "img"} aria-label={calendarDescription(points.size, peak, location, sharedDays)}>
+            {periods.map((period) => <section className="calendar-period" key={period.key} aria-hidden={series.length ? undefined : "true"}>
               <h4>{period.label}</h4>
               <div className="calendar-months" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.months.map((month) => <span key={`${period.key}-${month.label}`} style={{gridColumnStart: month.column}}>{month.label}</span>)}</div>
               <div className="calendar-body">
@@ -56,7 +58,16 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
                 <div className="calendar-days" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.days.map((day, index) => {
                   const mileiPresent = mileiDays.has(day.key);
                   const colors = personColors(day, series);
-                  return <span key={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${colors.length > 1 ? " calendar-day--shared" : ""}${mileiPresent ? " calendar-day--milei" : ""}`} style={day.inPeriod ? {...dayColor(day, colors, color), gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1} : {gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1}} title={day.inPeriod ? dayTitle(day, series, mileiPresent) : undefined}>{colors.length > 1 && colors.map((item, colorIndex) => <i className="calendar-day-segment" style={{backgroundColor: item}} key={`${day.key}-${colorIndex}`} />)}</span>;
+                  const canFocus = day.inPeriod && day.records > 0 && series.length > 0;
+                  const showTooltip = (target: HTMLElement) => {
+                    const bounds = target.getBoundingClientRect();
+                    const center = bounds.left + bounds.width / 2;
+                    setTooltip({day, mileiPresent, x: Math.min(Math.max(center, 112), window.innerWidth - 112), y: bounds.top});
+                  };
+                  return <span key={day.key} data-date={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${day.records ? " calendar-day--active" : " calendar-day--empty"}${colors.length > 1 ? " calendar-day--shared" : ""}${mileiPresent ? " calendar-day--milei" : ""}`} style={day.inPeriod ? {...dayColor(day, colors, color), gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1} : {gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1}} tabIndex={canFocus ? 0 : undefined} aria-label={canFocus ? dayTitle(day, series, mileiPresent) : undefined} aria-describedby={canFocus && tooltip?.day.key === day.key ? tooltipId : undefined} onPointerEnter={(browserEvent) => day.inPeriod && showTooltip(browserEvent.currentTarget)} onPointerLeave={() => setTooltip(null)} onFocus={(browserEvent) => canFocus && showTooltip(browserEvent.currentTarget)} onBlur={() => setTooltip(null)}>
+                    {colors.length > 1 && colors.map((item, colorIndex) => <i className="calendar-day-segment" style={{backgroundColor: item}} key={`${day.key}-${colorIndex}`} />)}
+                    {day.inPeriod && <b className="calendar-day-number" aria-hidden="true">{day.date.getUTCDate()}</b>}
+                  </span>;
                 })}</div>
               </div>
             </section>)}
@@ -64,9 +75,21 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
         </div>
         {!series.length && <div className="calendar-key" aria-hidden="true"><span>Menos</span><i /><span>Más</span></div>}
         <details className="data-table-disclosure"><summary>Ver resumen accesible</summary><p>{calendarDescription(points.size, peak, location, sharedDays)}</p></details>
+        {tooltip && <CalendarTooltip id={tooltipId} day={tooltip.day} series={series} mileiPresent={tooltip.mileiPresent} x={tooltip.x} y={tooltip.y} />}
       </> : <p className="chart-empty-copy">Todavía no hay fechas suficientes para este calendario.</p>}
     </figure>
   );
+}
+
+function CalendarTooltip({id, day, series, mileiPresent, x, y}: {id: string; day: CalendarDay; series: ComparisonSeries[]; mileiPresent: boolean; x: number; y: number}) {
+  const records = new Map(day.people.map((person) => [person.entityId, person.records]));
+  const people = series.length ? series.map((person) => ({...person, records: records.get(person.entityId) ?? 0})) : [];
+  return <div id={id} className="calendar-tooltip" role="tooltip" style={{left: x, top: y}}>
+    <strong>{formatDate(day.date)}</strong>
+    <span className="calendar-tooltip-total">{formatNumber(day.records)} {day.records === 1 ? "registro" : "registros"} en total</span>
+    {people.length > 0 && <ul>{people.map((person) => <li key={person.entityId}><i style={{backgroundColor: person.color}} aria-hidden="true" /><span>{person.name}</span><b>{formatNumber(person.records)}</b></li>)}</ul>}
+    {mileiPresent && <small>Javier Milei registra actividad en Casa Rosada</small>}
+  </div>;
 }
 
 function aggregateDays(data: DailyPoint[], location: CalendarLocation) {
