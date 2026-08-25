@@ -47,6 +47,8 @@ def test_builds_search_events_analytics_and_csv(tmp_path) -> None:
     search_meta = json.loads((output / "search" / "meta.json").read_text(encoding="utf-8"))
     assert search_meta["name_shard_prefix_length"] == 3
     assert search_meta["id_shards"] == ["_"]
+    people = json.loads(gzip.decompress((output / "search" / "name" / "per.json.gz").read_bytes()))
+    assert people[0]["years"] == [2023]
     assert list((output / "events").glob("*.json.gz"))
     assert (output / "exports" / "2023.csv.gz").exists()
     exports = json.loads((output / "exports" / "index.json").read_text(encoding="utf-8"))

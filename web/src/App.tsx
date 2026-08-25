@@ -186,6 +186,7 @@ function SearchExplorer({firstDate, lastDate, selectedIds, onToggle}: {
   const search = useSearch(deferredQuery, filters);
   const inputPending = query !== deferredQuery;
   const loading = inputPending || search.loading;
+  const activeFilterCount = Number(filters.location !== "all") + Number(filters.year !== "all") + Number(filters.recordType !== "all");
   const years = useMemo(() => {
     const first = firstDate ? new Date(firstDate).getUTCFullYear() : 2023;
     const last = lastDate ? new Date(lastDate).getUTCFullYear() : new Date().getFullYear();
@@ -197,12 +198,12 @@ function SearchExplorer({firstDate, lastDate, selectedIds, onToggle}: {
     <form className="search-form" role="search" onSubmit={(event) => event.preventDefault()}>
       <label htmlFor="person-query">Nombre, DNI o CUIL</label>
       <div className="search-input-wrap"><Search aria-hidden="true" /><input id="person-query" name="query" type="search" autoComplete="off" spellCheck="false" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ej.: Ana Pérez o 20.123.456" /></div>
-      <div className="filters" aria-label="Filtros de búsqueda">
+      <details className="search-advanced"><summary><span>Búsqueda avanzada{activeFilterCount > 0 && <small>{activeFilterCount} {activeFilterCount === 1 ? "filtro activo" : "filtros activos"}</small>}</span><ChevronDown aria-hidden="true" /></summary><div className="search-advanced-content"><p>Acotá los resultados por sede, año o tipo. Solo afecta la lista de personas.</p><div className="filters" aria-label="Filtros de búsqueda">
         <label>Sede<select value={filters.location} onChange={(event) => setFilters({...filters, location: event.target.value as SearchFilters["location"]})}><option value="all">Todas</option><option value="casa-rosada">Casa Rosada</option><option value="olivos">Olivos</option></select></label>
         <label>Año<select value={filters.year} onChange={(event) => setFilters({...filters, year: event.target.value === "all" ? "all" : Number(event.target.value)})}><option value="all">Todos</option>{years.map((year) => <option value={year} key={year}>{year}</option>)}</select></label>
         <label>Tipo<select value={filters.recordType} onChange={(event) => setFilters({...filters, recordType: event.target.value as SearchFilters["recordType"]})}><option value="all">Todos</option><option value="movement">Movimiento</option><option value="person">Persona</option><option value="vehicle">Vehículo</option><option value="visitor">Visita</option></select></label>
-        {JSON.stringify(filters) !== JSON.stringify(DEFAULT_FILTERS) && <button type="button" className="text-button" onClick={() => setFilters(DEFAULT_FILTERS)}>Limpiar filtros</button>}
-      </div>
+        {activeFilterCount > 0 && <button type="button" className="text-button" onClick={() => setFilters(DEFAULT_FILTERS)}>Quitar filtros</button>}
+      </div></div></details>
     </form>
     <div className="results-region" aria-busy={loading}><div className="sr-only" role="status" aria-live="polite">{statusMessage}</div><SearchResults query={query} results={search.results} selectedIds={selectedIds} loading={loading} phase={search.phase} error={search.error} onToggle={onToggle} /></div>
   </div>;

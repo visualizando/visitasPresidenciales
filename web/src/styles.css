@@ -87,9 +87,18 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .search-input-wrap svg { flex: 0 0 auto; width: 1rem; color: var(--color-text-secondary); }
 .search-input-wrap input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--color-text-primary); background: transparent; font-size: 0.9375rem; }
 .search-input-wrap input::placeholder { color: #68756e; }
+.search-advanced { margin-block-start: 0.35rem; }
+.search-advanced > summary { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 2.5rem; padding: 0.35rem 0.1rem; color: var(--color-accent-solid); font-size: 0.75rem; font-weight: 700; cursor: pointer; list-style: none; }
+.search-advanced > summary::-webkit-details-marker { display: none; }
+.search-advanced > summary span { display: flex; align-items: center; gap: 0.45rem; }
+.search-advanced > summary small { padding: 0.1rem 0.35rem; border-radius: 999px; color: var(--color-text-secondary); background: var(--color-bg-subtle); font-size: 0.65rem; font-weight: 600; }
+.search-advanced > summary svg { width: 0.9rem; }
+.search-advanced[open] > summary svg { transform: rotate(180deg); }
+.search-advanced-content > p { margin: 0.1rem 0 0.5rem; color: var(--color-text-secondary); font-size: 0.72rem; line-height: 1.4; }
 .filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin-block-start: 0.5rem; }
 .filters label { display: flex; flex-direction: column; gap: 0.25rem; }
 .filters select { width: 100%; min-height: 2.25rem; padding-inline: 0.55rem; border: 1px solid var(--color-border); border-radius: 0.5rem; color: var(--color-text-primary); background: var(--color-bg-surface); font-size: 0.8125rem; }
+.filters .text-button { align-self: end; justify-self: start; }
 .text-button { justify-self: start; min-height: 2.25rem; padding-inline: 0.25rem; border: 0; color: var(--color-accent-solid); background: transparent; font-size: 0.8125rem; font-weight: 700; text-decoration: underline; text-underline-offset: 0.18em; cursor: pointer; }
 .results-region { min-height: 10rem; }
 .results-list { display: flex; max-height: 18rem; flex-direction: column; gap: 0.4rem; overflow-y: auto; padding: 0.1rem; }

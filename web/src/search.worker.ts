@@ -154,9 +154,12 @@ function matchesFilters(person: PersonSummary, filters: SearchFilters): boolean 
   if (filters.location !== "all" && !person.locations.includes(filters.location)) return false;
   if (filters.recordType !== "all" && !person.record_types.includes(filters.recordType)) return false;
   if (filters.year !== "all") {
-    const first = person.first_seen ? new Date(person.first_seen).getUTCFullYear() : 0;
-    const last = person.last_seen ? new Date(person.last_seen).getUTCFullYear() : 0;
-    if (filters.year < first || filters.year > last) return false;
+    if (person.years && !person.years.includes(filters.year)) return false;
+    if (!person.years) {
+      const first = person.first_seen ? new Date(person.first_seen).getUTCFullYear() : 0;
+      const last = person.last_seen ? new Date(person.last_seen).getUTCFullYear() : 0;
+      if (filters.year < first || filters.year > last) return false;
+    }
   }
   return true;
 }

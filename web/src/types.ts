@@ -24,6 +24,7 @@ export interface PersonSummary {
   last_seen: string | null;
   locations: Location[];
   record_types: RecordType[];
+  years?: number[];
   event_shard: string;
   score?: number;
 }

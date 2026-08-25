@@ -106,7 +106,9 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
           min(coalesce(occurred_at, entered_at, exited_at)) AS first_seen,
           max(coalesce(occurred_at, entered_at, exited_at)) AS last_seen,
           list_sort(list_distinct(list(location))) AS locations,
-          list_sort(list_distinct(list(record_type))) AS record_types
+          list_sort(list_distinct(list(record_type))) AS record_types,
+          list_sort(list_distinct(list(year(coalesce(occurred_at, entered_at, exited_at)))
+            FILTER (WHERE coalesce(occurred_at, entered_at, exited_at) IS NOT NULL))) AS years
         FROM records GROUP BY entity_id ORDER BY canonical_name
         """,
     )
