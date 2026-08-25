@@ -142,9 +142,8 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .person-chip button { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; padding: 0; border: 0; border-radius: 50%; color: var(--color-accent-solid); background: var(--color-bg-surface); cursor: pointer; }
 .person-chip svg { width: 0.85rem; }
 .profile-stats { display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; margin-block: 0.65rem 0.8rem; padding: 0.45rem 0.65rem; border-radius: var(--radius-inner); color: var(--color-text-secondary); background: var(--color-bg-page); font-size: 0.72rem; }
-.profile-stats div { display: flex; align-items: baseline; gap: 0.25rem; }
-.profile-stats dt { order: 2; }
-.profile-stats dd { margin: 0; color: var(--color-text-primary); font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.profile-stats span { white-space: nowrap; }
+.profile-stats strong { color: var(--color-text-primary); font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .privacy-note { margin: 0; padding: 0.55rem 0.65rem; border-radius: var(--radius-inner); color: var(--status-warning-text); background: var(--status-warning-bg); font-size: 0.75rem; }
 .coincidences { margin-block-start: 1rem; padding-block-start: 0.9rem; border-block-start: 1px solid var(--color-border); }
 .coincidences .records-heading { align-items: start; }
@@ -175,9 +174,9 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .selection-download { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2.25rem; padding: 0.35rem 0.65rem; border: 1px solid var(--accent-100); border-radius: 0.5rem; color: var(--color-accent-solid); background: var(--color-accent-soft); font-size: 0.75rem; font-weight: 700; cursor: pointer; }
 .selection-download svg { width: 0.85rem; height: 0.85rem; stroke-width: 2; }
 .records-table-wrap { max-height: 31rem; overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-inner); background: var(--color-bg-surface); }
-.records-table { min-width: 70rem; font-size: 0.75rem; }
+.records-table { min-width: 68rem; font-size: 0.75rem; line-height: 1.25; }
 .records-table thead { position: sticky; inset-block-start: 0; z-index: 2; background: var(--color-bg-subtle); }
-.records-table th, .records-table td { padding: 0.42rem 0.5rem; border-block-end: 1px solid var(--color-border); text-align: start; vertical-align: top; white-space: nowrap; }
+.records-table th, .records-table td { padding: 0.32rem 0.45rem; border-block-end: 1px solid var(--color-border); text-align: start; vertical-align: middle; white-space: nowrap; }
 .records-table th { color: var(--color-text-secondary); font-size: 0.6875rem; letter-spacing: 0.02em; }
 .records-table th button { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 1.75rem; padding: 0; border: 0; color: inherit; background: transparent; font-weight: 700; cursor: pointer; }
 .records-table th button svg { width: 0.75rem; }
@@ -193,7 +192,7 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .source-link, .source-local { display: inline-flex; align-items: center; gap: 0.2rem; }
 .source-link svg, .source-local svg { width: 0.75rem; }
 .source-local { color: var(--color-text-secondary); }
-.record-detail-trigger { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; padding: 0; border: 1px solid var(--color-border); border-radius: 50%; color: var(--color-accent-solid); background: var(--color-bg-surface); cursor: pointer; }
+.record-detail-trigger { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; padding: 0; border: 1px solid var(--color-border); border-radius: 0.35rem; color: var(--color-accent-solid); background: var(--color-bg-surface); cursor: pointer; }
 .record-detail-trigger svg { width: 0.85rem; height: 0.85rem; stroke-width: 2; }
 .record-detail-dialog { width: min(39rem, calc(100% - 2rem)); max-height: min(46rem, calc(100dvh - 2rem)); padding: 0; overflow: auto; overscroll-behavior: contain; border: 0; border-radius: var(--radius-outer); color: var(--color-text-primary); background: var(--color-bg-surface); box-shadow: 0 24px 70px rgb(20 35 28 / 0.24); }
 .record-detail-dialog::backdrop { background: rgb(70 78 73 / 0.34); backdrop-filter: blur(2px); }

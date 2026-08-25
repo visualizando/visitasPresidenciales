@@ -14,9 +14,12 @@ function event(record_id: string, entity_id: string, canonical_name: string, occ
 
 describe("PersonProfile", () => {
   it("agrupa variantes y ordena la tabla por persona", () => {
-    render(<PersonProfile people={people} events={[event("1", "one", "PEREZ ANA", "2024-01-01T10:00:00Z"), event("2", "two", "ANA PEREZ", "2024-02-01T10:00:00Z")]} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={vi.fn()} />);
+    const {container} = render(<PersonProfile people={people} events={[event("1", "one", "PEREZ ANA", "2024-01-01T10:00:00Z"), event("2", "two", "ANA PEREZ", "2024-02-01T10:00:00Z")]} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={vi.fn()} />);
     expect(screen.getByRole("heading", {name: "Detalle de movimientos"})).toBeInTheDocument();
     expect(screen.getByRole("button", {name: /Descargar 2 registros de la selección en CSV/i})).toBeInTheDocument();
+    expect([...container.querySelectorAll(".profile-stats > span")].map((item) => item.textContent)).toEqual(["2 registros", "Sede: Olivos", "Última aparición: 01 de feb de 2024"]);
+    expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Fecha", "Ingreso", "Egreso", "Persona", "Sede", "Tipo", "Detalle", "Fuente PDF", "Acciones"]);
+    expect(screen.queryByRole("columnheader", {name: "Calidad"})).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", {name: "Persona"}));
     const rows = screen.getAllByRole("row").slice(1);
     expect(within(rows[0]).getByText("Ana Perez")).toBeInTheDocument();
@@ -38,7 +41,8 @@ describe("PersonProfile", () => {
     const detailed = {...event("detail", "one", "PEREZ ANA", "2024-05-24T08:33:00Z"), entered_at: "2024-05-24T08:33:00Z", exited_at: "2024-05-24T17:12:00Z", destination: "Jefatura", purpose: "Reunión", raw_text: "Observación original", sources: [{url: "https://example.org/olivos-2024.pdf", path: "olivos/2024.pdf", page: 7}]} satisfies AccessEvent;
     render(<PersonProfile people={[people[0]]} events={[detailed]} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole("button", {name: /Ver detalle del registro/i}));
+    expect(screen.getByRole("link", {name: /Abrir PDF · p\. 7/i})).toHaveAttribute("href", "https://example.org/olivos-2024.pdf#page=7");
+    fireEvent.click(screen.getByRole("button", {name: /Abrir detalle del registro/i}));
     expect(screen.getByRole("dialog", {name: "Detalle para citar"})).toBeInTheDocument();
     expect(screen.getByText(/respuesta oficial a un pedido de acceso a la información realizado por Poder Ciudadano/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", {name: "Copiar detalle"}));
