@@ -12,6 +12,8 @@ describe("CalendarChart", () => {
 
     expect(screen.getByRole("img", {name: /2 de ene de 2025, con 7 registros/})).toBeInTheDocument();
     expect(container.querySelector('[data-date="2025-01-02"] .calendar-day-number')).toHaveTextContent("2");
+    expect(container.querySelector('[data-date="2025-01-02"] .calendar-day-number')).toHaveStyle({color: "rgb(255 255 255 / 0.72)"});
+    expect(container.querySelector('[data-date="2025-01-01"] .calendar-day-number')).toHaveStyle({color: "rgb(0 0 0 / 0.52)"});
     expect(container.querySelector<HTMLElement>('[data-date="2025-02-01"]')).toHaveStyle({transform: "translateX(3px)"});
     expect(container.querySelector<HTMLElement>('[data-month="2025-01"]')).toHaveStyle({gridColumnStart: "2"});
   });

@@ -60,6 +60,7 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
                 <div className="calendar-days" style={{gridTemplateColumns: `repeat(${period.weeks}, minmax(0, 1fr))`}}>{period.days.map((day, index) => {
                   const mileiPresent = showMilei && mileiDays.has(day.key);
                   const colors = personColors(day, series);
+                  const backgroundColor = color(day.records);
                   const canFocus = day.inPeriod && day.records > 0 && series.length > 0;
                   const position = {gridColumn: Math.floor(index / 7) + 1, gridRow: index % 7 + 1, transform: `translateX(${day.date.getUTCMonth() * MONTH_GAP_PX}px)`};
                   const showTooltip = (target: HTMLElement) => {
@@ -67,9 +68,9 @@ export function CalendarChart({data, location, series = [], mileiCasaRosadaDays 
                     const center = bounds.left + bounds.width / 2;
                     setTooltip({day, mileiPresent, x: Math.min(Math.max(center, 112), window.innerWidth - 112), y: bounds.top});
                   };
-                  return <span key={day.key} data-date={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${day.records ? " calendar-day--active" : " calendar-day--empty"}${colors.length > 1 ? " calendar-day--shared" : ""}${mileiPresent ? " calendar-day--milei" : ""}`} style={day.inPeriod ? {...dayColor(day, colors, color), ...position} : position} tabIndex={canFocus ? 0 : undefined} aria-label={canFocus ? dayTitle(day, series, mileiPresent) : undefined} aria-describedby={canFocus && tooltip?.day.key === day.key ? tooltipId : undefined} onPointerEnter={(browserEvent) => day.inPeriod && showTooltip(browserEvent.currentTarget)} onPointerLeave={() => setTooltip(null)} onFocus={(browserEvent) => canFocus && showTooltip(browserEvent.currentTarget)} onBlur={() => setTooltip(null)}>
+                  return <span key={day.key} data-date={day.key} className={`calendar-day${day.inPeriod ? "" : " calendar-day--outside"}${day.records ? " calendar-day--active" : " calendar-day--empty"}${colors.length > 1 ? " calendar-day--shared" : ""}${mileiPresent ? " calendar-day--milei" : ""}`} style={day.inPeriod ? {...dayColor(colors, backgroundColor), ...position} : position} tabIndex={canFocus ? 0 : undefined} aria-label={canFocus ? dayTitle(day, series, mileiPresent) : undefined} aria-describedby={canFocus && tooltip?.day.key === day.key ? tooltipId : undefined} onPointerEnter={(browserEvent) => day.inPeriod && showTooltip(browserEvent.currentTarget)} onPointerLeave={() => setTooltip(null)} onFocus={(browserEvent) => canFocus && showTooltip(browserEvent.currentTarget)} onBlur={() => setTooltip(null)}>
                     {colors.length > 1 && colors.map((item, colorIndex) => <i className="calendar-day-segment" style={{backgroundColor: item}} key={`${day.key}-${colorIndex}`} />)}
-                    {day.inPeriod && <b className="calendar-day-number" aria-hidden="true">{day.date.getUTCDate()}</b>}
+                    {day.inPeriod && <b className="calendar-day-number" style={{color: calendarDayNumberColor(colors, backgroundColor)}} aria-hidden="true">{day.date.getUTCDate()}</b>}
                   </span>;
                 })}</div>
               </div>
@@ -149,10 +150,24 @@ function personColors(day: CalendarDay, series: ComparisonSeries[]) {
   return day.people.map((person) => series.find((item) => item.entityId === person.entityId)?.color).filter(Boolean) as string[];
 }
 
-function dayColor(day: CalendarDay, colors: string[], fallback: (value: number) => string) {
-  if (!colors.length) return {backgroundColor: fallback(day.records)};
+function dayColor(colors: string[], fallback: string) {
+  if (!colors.length) return {backgroundColor: fallback};
   if (colors.length === 1) return {backgroundColor: colors[0]};
   return {backgroundColor: "#fff"};
+}
+
+function calendarDayNumberColor(colors: string[], fallback: string) {
+  const backgrounds = colors.length ? colors : [fallback];
+  const luminance = backgrounds.reduce((total, value) => total + relativeLuminance(value), 0) / backgrounds.length;
+  return luminance > 0.48 ? "rgb(0 0 0 / 0.52)" : "rgb(255 255 255 / 0.72)";
+}
+
+function relativeLuminance(value: string) {
+  const hex = value.match(/^#([\da-f]{3}|[\da-f]{6})$/i)?.[1];
+  const rgb = hex ? (hex.length === 3 ? [...hex].map((item) => parseInt(item + item, 16)) : [0, 2, 4].map((index) => parseInt(hex.slice(index, index + 2), 16))) : value.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+  if (!rgb || rgb.length < 3) return 1;
+  const linear = rgb.map((channel) => { const normalized = channel / 255; return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4; });
+  return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
 }
 
 function dayTitle(day: CalendarDay, series: ComparisonSeries[], mileiPresent = false) {

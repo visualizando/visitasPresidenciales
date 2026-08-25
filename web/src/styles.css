@@ -256,8 +256,7 @@ td:nth-child(n + 3), th:nth-child(n + 3) { font-variant-numeric: tabular-nums; }
 .calendar-day { position: relative; display: grid; min-width: 0; aspect-ratio: 1; place-items: center; border-radius: 0.12rem; }
 .calendar-day--shared { z-index: 1; display: flex; gap: 1px; overflow: hidden; outline: 2px solid var(--accent-500); outline-offset: 1px; }
 .calendar-day-segment { flex: 1 1 0; min-width: 0; }
-.calendar-day-number { position: absolute; z-index: 1; color: rgb(255 255 255 / 0.82); font-size: clamp(0.4rem, 0.55vw, 0.58rem); font-weight: 600; line-height: 1; text-shadow: 0 1px 2px rgb(0 0 0 / 0.55); font-variant-numeric: tabular-nums; pointer-events: none; }
-.calendar-day--empty .calendar-day-number { color: var(--neutral-500); font-weight: 500; text-shadow: none; opacity: 0.68; }
+.calendar-day-number { position: absolute; z-index: 1; font-size: clamp(0.4rem, 0.55vw, 0.58rem); font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; pointer-events: none; }
 .calendar-day[tabindex="0"] { cursor: help; }
 .calendar-day[tabindex="0"]:focus-visible { z-index: 3; outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .calendar-day--milei::after { position: absolute; inset: 0; border: 2px solid #111; border-radius: inherit; content: ""; pointer-events: none; }
