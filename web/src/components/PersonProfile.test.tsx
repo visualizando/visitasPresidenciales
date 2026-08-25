@@ -31,4 +31,18 @@ describe("PersonProfile", () => {
     fireEvent.click(screen.getByRole("button", {name: "Mostrar 1 más"}));
     expect(container.querySelectorAll(".records-table tbody tr")).toHaveLength(101);
   });
+
+  it("abre un detalle citable y lo copia al portapapeles", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {value: {writeText}, configurable: true});
+    const detailed = {...event("detail", "one", "PEREZ ANA", "2024-05-24T08:33:00Z"), entered_at: "2024-05-24T08:33:00Z", exited_at: "2024-05-24T17:12:00Z", destination: "Jefatura", purpose: "Reunión", raw_text: "Observación original", sources: [{url: "https://example.org/olivos-2024.pdf", path: "olivos/2024.pdf", page: 7}]} satisfies AccessEvent;
+    render(<PersonProfile people={[people[0]]} events={[detailed]} loading={false} error={null} coincidences={[]} coincidencesLoading={false} coincidencesError={null} onRemove={vi.fn()} onClear={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", {name: /Ver detalle del registro/i}));
+    expect(screen.getByRole("dialog", {name: "Detalle para citar"})).toBeInTheDocument();
+    expect(screen.getByText(/respuesta oficial a un pedido de acceso a la información realizado por Poder Ciudadano/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", {name: "Copiar detalle"}));
+    expect(await screen.findByRole("button", {name: "Copiado"})).toBeInTheDocument();
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("Fuente: Accesos a Olivos 2024"));
+  });
 });

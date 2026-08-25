@@ -177,6 +177,31 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .source-link, .source-local { display: inline-flex; align-items: center; gap: 0.2rem; }
 .source-link svg, .source-local svg { width: 0.75rem; }
 .source-local { color: var(--color-text-secondary); }
+.record-detail-trigger { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; padding: 0; border: 1px solid var(--color-border); border-radius: 50%; color: var(--color-accent-solid); background: var(--color-bg-surface); cursor: pointer; }
+.record-detail-trigger svg { width: 0.85rem; height: 0.85rem; stroke-width: 2; }
+.record-detail-dialog { width: min(39rem, calc(100% - 2rem)); max-height: min(46rem, calc(100dvh - 2rem)); padding: 0; overflow: auto; overscroll-behavior: contain; border: 0; border-radius: var(--radius-outer); color: var(--color-text-primary); background: var(--color-bg-surface); box-shadow: 0 24px 70px rgb(20 35 28 / 0.24); }
+.record-detail-dialog::backdrop { background: rgb(70 78 73 / 0.34); backdrop-filter: blur(2px); }
+.record-detail-dialog article { padding: 1rem; }
+.record-detail-header { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.record-detail-header h2 { font-size: 1.5rem; }
+.record-detail-close { display: grid; flex: 0 0 auto; place-items: center; width: 2.25rem; height: 2.25rem; padding: 0; border: 1px solid var(--color-border); border-radius: 50%; color: var(--color-text-secondary); background: var(--color-bg-surface); cursor: pointer; }
+.record-detail-close svg { width: 1rem; height: 1rem; stroke-width: 2; }
+.record-detail-lead { margin: 0.45rem 0 0.85rem; color: var(--color-text-secondary); font-size: 0.8125rem; }
+.record-detail-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin: 0; border-block-start: 1px solid var(--color-border); }
+.record-detail-fields > div { min-width: 0; padding: 0.65rem 0.7rem; border-block-end: 1px solid var(--color-border); }
+.record-detail-fields > div:nth-child(odd):not(.record-detail-field--wide) { border-inline-end: 1px solid var(--color-border); }
+.record-detail-fields .record-detail-field--wide { grid-column: 1 / -1; }
+.record-detail-fields dt { color: var(--color-text-secondary); font-size: 0.6875rem; font-weight: 700; }
+.record-detail-fields dd { margin: 0.12rem 0 0; overflow-wrap: anywhere; font-size: 0.875rem; line-height: 1.4; white-space: pre-wrap; }
+.record-detail-source { margin-block-start: 0.8rem; padding: 0.7rem; border-radius: var(--radius-inner); background: var(--color-bg-subtle); }
+.record-detail-source strong { font-size: 0.75rem; }
+.record-detail-source p { margin: 0.15rem 0 0.35rem; font-size: 0.8125rem; line-height: 1.45; }
+.record-detail-source a, .record-detail-source small { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; overflow-wrap: anywhere; }
+.record-detail-source a svg { width: 0.75rem; }
+.record-detail-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-block-start: 0.8rem; padding: 0; border: 0; background: transparent; }
+.record-detail-actions > span { min-height: 1.2rem; color: var(--color-text-secondary); font-size: 0.75rem; }
+.record-detail-copy { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 2.5rem; padding: 0.5rem 0.8rem; border: 1px solid var(--accent-700); border-radius: 0.5rem; color: var(--neutral-0); background: var(--accent-700); font-size: 0.8125rem; font-weight: 700; cursor: pointer; }
+.record-detail-copy svg { width: 0.9rem; height: 0.9rem; stroke-width: 2; }
 
 .dashboard-section { max-width: none; background: var(--color-bg-subtle); }
 .dashboard-section > * { max-width: calc(96rem - 2 * var(--space-page)); margin-inline: auto; }
@@ -330,15 +355,17 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .download-row:hover { border-color: var(--accent-500); background: var(--color-accent-soft); }
   .text-button:hover { color: var(--color-accent-hover); }
   .selection-download:hover { border-color: var(--accent-500); color: var(--color-accent-hover); }
+  .record-detail-trigger:hover, .record-detail-close:hover { border-color: var(--accent-500); color: var(--color-accent-hover); background: var(--color-accent-soft); }
+  .record-detail-copy:hover { background: var(--accent-900); }
   footer a:hover { color: var(--color-accent-solid); text-decoration-color: currentColor; }
   .segmented-control button:hover { color: var(--color-text-primary); }
   .pack-leaf:hover circle { fill: var(--accent-50); stroke-width: 2; }
   .pack-leaf--olivos:hover circle { fill: #f9eadc; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .result-card, .download-row, .text-button, .selection-download, .section-nav a, .segmented-control button { transition-property: background-color, border-color, color, transform; transition-duration: 140ms; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
+  .result-card, .download-row, .text-button, .selection-download, .record-detail-trigger, .record-detail-close, .record-detail-copy, .section-nav a, .segmented-control button { transition-property: background-color, border-color, color, transform; transition-duration: 140ms; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
   .pack-leaf circle { transition-property: fill, stroke-width; transition-duration: 140ms; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
-  .result-card:active, .download-row:active, .selection-download:active, .person-chip button:active { transform: scale(0.96); }
+  .result-card:active, .download-row:active, .selection-download:active, .record-detail-trigger:active, .record-detail-close:active, .record-detail-copy:active, .person-chip button:active { transform: scale(0.96); }
   .result-skeleton { animation: skeleton 1.6s linear infinite; }
   @keyframes skeleton { to { background-position: -200% 0; } }
 }
@@ -366,6 +393,10 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .profile-header { flex-direction: column; gap: 0.25rem; }
   .records-heading { align-items: start; flex-direction: column; gap: 0.4rem; }
   .profile-stats, .dashboard-grid { grid-template-columns: 1fr; }
+  .record-detail-fields { grid-template-columns: 1fr; }
+  .record-detail-fields > div:nth-child(odd):not(.record-detail-field--wide) { border-inline-end: 0; }
+  .record-detail-fields .record-detail-field--wide { grid-column: auto; }
+  .record-detail-actions { align-items: stretch; flex-direction: column; gap: 0.35rem; }
   .dashboard-wide { grid-column: auto; }
   .calendar-periods { padding: 0.6rem; }
   .download-list { grid-template-columns: 1fr; }

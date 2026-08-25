@@ -1,10 +1,11 @@
-import {ArrowDown, ArrowUp, Download, ExternalLink, FileText, X} from "lucide-react";
+import {ArrowDown, ArrowUp, Download, ExternalLink, FileText, Search, X} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 import type {AccessEvent, CoincidenceResult, PersonSummary} from "../types";
 import {CoincidenceRanking} from "./CoincidenceRanking";
 import {locationLabel, titleCase} from "./SearchResults";
 import {comparisonSeries} from "../utils/personColors";
 import {buildSelectedEventsCsv, selectedEventsFilename} from "../utils/selectedEventsCsv";
+import {RecordDetailDialog} from "./RecordDetailDialog";
 
 type SortKey = "date" | "person" | "location" | "type" | "detail" | "exit" | "quality";
 type SortDirection = "asc" | "desc";
@@ -29,6 +30,8 @@ type PersonProfileProps = {
 
 export function PersonProfile({people, events, loading, error, coincidences, coincidencesLoading, coincidencesError, onRemove, onClear}: PersonProfileProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const [detailEvent, setDetailEvent] = useState<AccessEvent | null>(null);
   const [sort, setSort] = useState<{key: SortKey; direction: SortDirection}>({key: "date", direction: "desc"});
   const peopleKey = people.map((person) => person.entity_id).sort().join(",");
   const [eventWindow, setEventWindow] = useState({peopleKey, count: EVENT_PAGE_SIZE});
@@ -65,6 +68,16 @@ export function PersonProfile({people, events, loading, error, coincidences, coi
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1_000);
   }
 
+  function openEventDetail(event: AccessEvent, trigger: HTMLButtonElement) {
+    detailTriggerRef.current = trigger;
+    setDetailEvent(event);
+  }
+
+  function closeEventDetail() {
+    setDetailEvent(null);
+    window.requestAnimationFrame(() => detailTriggerRef.current?.focus());
+  }
+
   return <section className="profile" aria-labelledby="profile-title">
     <div className="profile-header">
       <div><p className="eyebrow">Selección comparada</p><h2 id="profile-title" ref={headingRef} tabIndex={-1}>{people.length === 1 ? titleCase(people[0].canonical_name) : `${people.length} personas o variantes seleccionadas`}</h2><p className="profile-description">Cada selección conserva su color en la tabla y los gráficos. Las identidades originales no se modifican.</p></div>
@@ -89,7 +102,9 @@ export function PersonProfile({people, events, loading, error, coincidences, coi
       <SortableHeader label="Salida" column="exit" sort={sort} onSort={changeSort} />
       <SortableHeader label="Calidad" column="quality" sort={sort} onSort={changeSort} />
       <th scope="col">Fuente</th>
-    </tr></thead><tbody>{visibleEvents.map((event) => <tr key={event.record_id}><td><time dateTime={primaryDate(event) ?? undefined}>{formatDateTime(primaryDate(event))}</time></td><td><span className="record-person"><i className="person-color" style={{backgroundColor: colors.get(event.entity_id)}} aria-hidden="true" /><strong>{titleCase(event.canonical_name)}</strong></span></td><td>{locationLabel(event.location)}</td><td>{recordLabel(event)}</td><td className="detail-cell" title={eventDetail(event)}>{eventDetail(event)}</td><td>{formatTime(event.exited_at)}</td><td><span className={`quality quality--${event.quality}`}>{qualityLabel(event.quality)}</span></td><td><SourceCell event={event} /></td></tr>)}</tbody></table></div>{visibleEvents.length < sortedEvents.length && <button className="text-button records-more" type="button" onClick={() => setEventWindow({peopleKey, count: visibleEventCount + EVENT_PAGE_SIZE})}>Mostrar {Math.min(EVENT_PAGE_SIZE, sortedEvents.length - visibleEvents.length).toLocaleString("es-AR")} más</button>}</> : <p className="selection-empty">No hay eventos publicados para esta selección.</p>}</div>}
+      <th scope="col"><span className="sr-only">Acciones</span></th>
+    </tr></thead><tbody>{visibleEvents.map((event) => <tr key={event.record_id}><td><time dateTime={primaryDate(event) ?? undefined}>{formatDateTime(primaryDate(event))}</time></td><td><span className="record-person"><i className="person-color" style={{backgroundColor: colors.get(event.entity_id)}} aria-hidden="true" /><strong>{titleCase(event.canonical_name)}</strong></span></td><td>{locationLabel(event.location)}</td><td>{recordLabel(event)}</td><td className="detail-cell" title={eventDetail(event)}>{eventDetail(event)}</td><td>{formatTime(event.exited_at)}</td><td><span className={`quality quality--${event.quality}`}>{qualityLabel(event.quality)}</span></td><td><SourceCell event={event} /></td><td><button className="record-detail-trigger" type="button" onClick={(browserEvent) => openEventDetail(event, browserEvent.currentTarget)} aria-label={`Ver detalle del registro de ${titleCase(event.canonical_name)} del ${formatDate(primaryDate(event))}`}><Search aria-hidden="true" /></button></td></tr>)}</tbody></table></div>{visibleEvents.length < sortedEvents.length && <button className="text-button records-more" type="button" onClick={() => setEventWindow({peopleKey, count: visibleEventCount + EVENT_PAGE_SIZE})}>Mostrar {Math.min(EVENT_PAGE_SIZE, sortedEvents.length - visibleEvents.length).toLocaleString("es-AR")} más</button>}</> : <p className="selection-empty">No hay eventos publicados para esta selección.</p>}</div>}
+    {detailEvent && <RecordDetailDialog event={detailEvent} onClose={closeEventDetail} />}
   </section>;
 }
 
