@@ -319,6 +319,7 @@ def test_builds_coverage_with_gaps_and_quarantined_files(tmp_path) -> None:
                         "status": "quarantined",
                         "record_count": 0,
                         "parser": "no-legible-o-formato-desconocido-v1",
+                        "quarantine_reason": "archivo_danado",
                     },
                     "empty.pdf": {
                         "path": "empty.pdf",
@@ -343,6 +344,8 @@ def test_builds_coverage_with_gaps_and_quarantined_files(tmp_path) -> None:
     assert coverage["summary"]["quarantined_files"] == 2
     empty = next(item for item in coverage["file_issues"] if item["path"] == "empty.pdf")
     assert "vacío" in empty["reason"]
+    damaged = next(item for item in coverage["file_issues"] if item["path"] == "scan.pdf")
+    assert "dañado" in damaged["reason"]
 
 
 def test_resolves_transitive_identity_merges_and_rejects_cycles() -> None:

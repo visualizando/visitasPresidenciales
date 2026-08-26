@@ -10,6 +10,8 @@ from typing import Any
 from urllib.parse import quote
 
 import openpyxl
+import pymupdf
+import xlrd
 from docx import Document
 
 from pipeline.build_web import build_web_data
@@ -44,7 +46,7 @@ MONTHS = {
     "DICIEMBRE": 12,
     "DIC": 12,
 }
-OLIVOS_YEARS = {2016, 2018, 2019}
+OLIVOS_YEARS = {2016, 2017, 2018, 2019}
 
 
 def import_historical_office(
@@ -56,7 +58,7 @@ def import_historical_office(
     include_casa_2020: bool = True,
     rebuild_web: bool = True,
 ) -> dict[str, int]:
-    """Import structured historical XLSX/DOCX sources without retaining originals in Git."""
+    """Import structured historical XLS/XLSX/DOCX sources without retaining originals in Git."""
     years = olivos_years or OLIVOS_YEARS
     source_root = source_root.resolve()
     candidates = _candidate_files(source_root, years, include_casa_2020)
@@ -66,27 +68,68 @@ def import_historical_office(
     partitions_root = data_dir / "partitions"
     diagnostics: defaultdict[str, int] = defaultdict(int)
     imported = 0
+    changed = False
 
     for source in candidates:
         relative = source.relative_to(source_root).as_posix()
         source_path = f"raw/{relative}"
         source_id = stable_id("src_", source_path)
+        info = source.stat()
+        previous = manifest["files"].get(source_path)
+        if _entry_matches_metadata(previous, info, partitions_root):
+            diagnostics["unchanged_sources"] += 1
+            continue
+
+        checksum = _sha256(source)
+        if _entry_is_current(previous, checksum, partitions_root):
+            previous["size"] = info.st_size
+            previous["last_modified"] = str(info.st_mtime_ns)
+            diagnostics["unchanged_by_checksum"] += 1
+            changed = True
+            continue
+
+        changed = True
         for old_partition in (
             partitions_root.rglob(f"{source_id}.parquet") if partitions_root.exists() else []
         ):
             old_partition.unlink()
 
         location = "casa-rosada" if "CASA ROSADA" in fold_text(relative) else "olivos"
-        if source.suffix.lower() == ".xlsx":
-            records = _parse_xlsx(source, source_path, source_id, location, diagnostics)
-            parser = (
-                "casa-rosada-xlsx-historico-v1"
-                if location == "casa-rosada"
-                else "olivos-xlsx-historico-v1"
-            )
-        else:
-            records = _parse_docx(source, source_path, source_id, diagnostics)
-            parser = "olivos-docx-historico-v1"
+        suffix = source.suffix.lower()
+        status = "active"
+        quarantine_reason: str | None = None
+        try:
+            if suffix == ".xlsx":
+                records = _parse_xlsx(source, source_path, source_id, location, diagnostics)
+                parser = (
+                    "casa-rosada-xlsx-historico-v2"
+                    if location == "casa-rosada"
+                    else "olivos-xlsx-historico-v2"
+                )
+            elif suffix == ".xls":
+                records = _parse_xls(source, source_path, source_id, diagnostics)
+                parser = "olivos-xls-historico-v1"
+            elif suffix == ".docx":
+                records = _parse_docx(source, source_path, source_id, diagnostics)
+                parser = "olivos-docx-historico-v2"
+            else:
+                records, parser, quarantine_reason = _inspect_pdf(source)
+                status = "quarantined"
+        except Exception as error:
+            records = []
+            parser = f"olivos-{suffix.lstrip('.') or 'archivo'}-error-v1"
+            status = "quarantined"
+            quarantine_reason = "archivo_danado"
+            diagnostics[f"errors_{type(error).__name__}"] += 1
+
+        if status == "active" and not records:
+            empty_reason = _empty_source_reason(source)
+            if empty_reason == "sin_novedad":
+                diagnostics["sources_without_activity"] += 1
+            else:
+                status = "quarantined"
+                quarantine_reason = empty_reason
+                diagnostics[f"quarantined_{empty_reason}"] += 1
 
         grouped: dict[tuple[int, int], list[AccessRecord]] = defaultdict(list)
         for record in records:
@@ -100,7 +143,6 @@ def import_historical_office(
             partition_paths.append(partition.as_posix())
 
         year, month = _source_period(source)
-        info = source.stat()
         manifest["files"][source_path] = {
             "source_id": source_id,
             "url": "local-source:///" + quote(source_path),
@@ -111,23 +153,66 @@ def import_historical_office(
             "size": info.st_size,
             "etag": None,
             "last_modified": str(info.st_mtime_ns),
-            "sha256": _sha256(source),
+            "sha256": checksum,
             "parser": parser,
             "record_count": len(records),
-            "status": "active",
+            "status": status,
             "partition": None,
             "partitions": partition_paths,
             "processed_at": utc_now(),
         }
+        if quarantine_reason:
+            manifest["files"][source_path]["quarantine_reason"] = quarantine_reason
         diagnostics["sources"] += 1
         if not records:
             diagnostics["sources_without_records"] += 1
         imported += len(records)
 
-    manifest["generated_at"] = utc_now()
-    write_json_atomic(data_dir / "manifest.json", manifest)
-    web = build_web_data(data_dir, web_data_dir) if rebuild_web else {}
+    if changed:
+        manifest["generated_at"] = utc_now()
+        write_json_atomic(data_dir / "manifest.json", manifest)
+    web = build_web_data(data_dir, web_data_dir) if rebuild_web and changed else {}
     return {"imported": imported, **dict(sorted(diagnostics.items())), **web}
+
+
+def _entry_is_current(entry: Any, checksum: str, partitions_root: Path) -> bool:
+    return _entry_has_current_output(entry, partitions_root) and entry.get("sha256") == checksum
+
+
+def _entry_matches_metadata(entry: Any, info: Any, partitions_root: Path) -> bool:
+    return (
+        _entry_has_current_output(entry, partitions_root)
+        and entry.get("size") == info.st_size
+        and entry.get("last_modified") == str(info.st_mtime_ns)
+    )
+
+
+def _entry_has_current_output(entry: Any, partitions_root: Path) -> bool:
+    if not isinstance(entry, dict):
+        return False
+    if entry.get("status") not in {"active", "quarantined"}:
+        return False
+
+    parser = str(entry.get("parser") or "")
+    current_parsers = {
+        "casa-rosada-xlsx-historico-v2",
+        "olivos-xlsx-historico-v2",
+        "olivos-xls-historico-v1",
+        "olivos-docx-historico-v2",
+        "pdf-sin-texto-extraible-v1",
+        "pdf-historico-requiere-parser-v1",
+        "olivos-xlsx-error-v1",
+        "olivos-xls-error-v1",
+        "olivos-docx-error-v1",
+        "olivos-pdf-error-v1",
+    }
+    if parser not in current_parsers:
+        return False
+
+    partitions = entry.get("partitions") or []
+    if not partitions and entry.get("partition"):
+        partitions = [entry["partition"]]
+    return all((partitions_root / relative).is_file() for relative in partitions)
 
 
 def _candidate_files(root: Path, years: set[int], include_casa_2020: bool) -> list[Path]:
@@ -138,7 +223,11 @@ def _candidate_files(root: Path, years: set[int], include_casa_2020: bool) -> li
         suffix = path.suffix.lower()
         relative = fold_text(path.relative_to(root).as_posix())
         path_year, _ = _source_period(path)
-        if "QUINTA DE OLIVOS" in relative and path_year in years and suffix in {".xlsx", ".docx"} or (
+        if (
+            "QUINTA DE OLIVOS" in relative
+            and path_year in years
+            and suffix in {".xlsx", ".xls", ".docx", ".pdf"}
+        ) or (
             include_casa_2020
             and "CASA ROSADA" in relative
             and path_year == 2020
@@ -146,6 +235,53 @@ def _candidate_files(root: Path, years: set[int], include_casa_2020: bool) -> li
         ):
             candidates.append(path)
     return candidates
+
+
+def _parse_xls(
+    source: Path,
+    source_path: str,
+    source_id: str,
+    diagnostics: defaultdict[str, int],
+) -> list[AccessRecord]:
+    workbook = xlrd.open_workbook(source, on_demand=True)
+    records: list[AccessRecord] = []
+    try:
+        for sheet_number, worksheet in enumerate(workbook.sheets(), 1):
+            rows = [
+                [_xls_cell_value(worksheet.cell(row, column), workbook.datemode) for column in range(worksheet.ncols)]
+                for row in range(worksheet.nrows)
+            ]
+            records.extend(
+                _parse_olivos_rows(
+                    rows,
+                    worksheet.name,
+                    source,
+                    source_path,
+                    source_id,
+                    sheet_number,
+                    diagnostics,
+                )
+            )
+    finally:
+        workbook.release_resources()
+    return records
+
+
+def _xls_cell_value(cell: Any, datemode: int) -> Any:
+    if cell.ctype == xlrd.XL_CELL_DATE:
+        return xlrd.xldate_as_datetime(cell.value, datemode)
+    return cell.value
+
+
+def _inspect_pdf(source: Path) -> tuple[list[AccessRecord], str, str]:
+    document = pymupdf.open(source)
+    try:
+        text_characters = sum(len(page.get_text("text").strip()) for page in document)
+    finally:
+        document.close()
+    if text_characters == 0:
+        return [], "pdf-sin-texto-extraible-v1", "pdf_escaneado"
+    return [], "pdf-historico-requiere-parser-v1", "formato_no_compatible"
 
 
 def _parse_xlsx(
@@ -216,21 +352,34 @@ def _parse_olivos_rows(
     diagnostics: defaultdict[str, int],
 ) -> list[AccessRecord]:
     materialized = [list(row) for row in rows]
+    while materialized and not any(_clean_text(value) for value in materialized[-1]):
+        materialized.pop()
+    if not materialized:
+        return []
     header_index, headers = _find_olivos_header(materialized)
     if header_index is None:
-        return []
+        return _parse_olivos_daily_rows(
+            materialized,
+            sheet_title,
+            source,
+            source_path,
+            source_id,
+            source_page,
+            diagnostics,
+        )
     name_index = _column(
         headers,
         "APELLIDO Y NOMBRE",
         "APELLIDOS Y NOMBRES",
+        "NOMBRE Y APELLIDO",
         "AUTORIDAD/CONDUCTOR",
         "AUTORIDAD",
     )
-    document_index = _column(headers, "DOCUMENTO")
-    destination_index = _column(headers, "CONCURRE A", "CONCURRE PARA")
+    document_index = _column(headers, "DOCUMENTO", "DNI")
+    destination_index = _column(headers, "CONCURRE A", "CONCURRE PARA", "DESTINO")
     authorized_index = _column(headers, "AUTORIZADO")
-    entry_index = _column(headers, "HORA ENTRADA")
-    exit_index = _column(headers, "HORA SALIDA")
+    entry_index = _column(headers, "HORA ENTRADA", "HORA DE ENTRADA", "INGRESO")
+    exit_index = _column(headers, "HORA SALIDA", "HORA DE SALIDA", "EGRESO")
     if name_index is None or entry_index is None:
         return []
 
@@ -245,7 +394,7 @@ def _parse_olivos_rows(
     for row in materialized[header_index + 1 :]:
         name = _cell(row, name_index)
         folded_name = fold_text(name)
-        if not name or folded_name in {
+        if not name or _is_non_person_name(name) or folded_name in {
             "APELLIDO Y NOMBRE",
             "APELLIDOS Y NOMBRES",
             "AUTORIDAD",
@@ -292,6 +441,151 @@ def _parse_olivos_rows(
             )
         )
     return records
+
+
+def _parse_olivos_daily_rows(
+    rows: list[list[Any]],
+    sheet_title: str,
+    source: Path,
+    source_path: str,
+    source_id: str,
+    source_page: int,
+    diagnostics: defaultdict[str, int],
+) -> list[AccessRecord]:
+    family = _daily_family(source_path, sheet_title)
+    if family is None:
+        return []
+    default_date = _infer_date(source, sheet_title, rows[:15])
+    if default_date is None:
+        diagnostics["daily_missing_date"] += 1
+        return []
+
+    layout = _daily_layout(rows, family)
+    if layout is None:
+        _increment(diagnostics, f"daily_{family}_unknown_layout")
+        return []
+    start, name_index, document_index, destination_index, device_index = layout
+    records: list[AccessRecord] = []
+    occurred = default_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    for row in rows[start:]:
+        name = _cell(row, name_index)
+        if not _looks_person_name(name):
+            continue
+        document = _cell(row, document_index)
+        destination = _clean(_cell(row, destination_index))
+        device = _clean(_cell(row, device_index))
+        records.append(
+            _record(
+                name=name,
+                document=document,
+                location="olivos",
+                record_type="vehicle" if family == "vehicle" else "person",
+                source_id=source_id,
+                source_path=source_path,
+                source_page=source_page,
+                entered=None,
+                exited=None,
+                occurred=occurred,
+                destination=destination,
+                activity="Ingreso diario sin horario informado",
+                authorized_by=None,
+                device=device,
+                raw_text=" | ".join(_clean_text(value) for value in row if _clean_text(value)),
+            )
+        )
+    if records:
+        _increment(diagnostics, f"daily_{family}_sheets")
+        _increment(diagnostics, f"daily_{family}_records", len(records))
+    return records
+
+
+def _daily_family(source_path: str, sheet_title: str) -> str | None:
+    context = fold_text(f"{source_path} {sheet_title}")
+    if any(label in context for label in ("INGRESO EN MOVIL", "INGRESO MOVIL", "VEHICUL")):
+        return "vehicle"
+    if any(label in context for label in ("INGRESO A PIE", "MOVIMIENTO DE PERSONAS", " A PIE")):
+        return "person"
+    return None
+
+
+def _daily_layout(
+    rows: list[list[Any]], family: str
+) -> tuple[int, int, int | None, int | None, int | None] | None:
+    for index, row in enumerate(rows[:35]):
+        headers = [fold_text(_clean_text(value)) for value in row]
+        name_index = _column(
+            headers,
+            "APELLIDO Y NOMBRE",
+            "APELLIDOS Y NOMBRES",
+            "NOMBRE Y APELLIDO",
+            "AUTORIDAD/CONDUCTOR",
+            "AUTORIDAD",
+        )
+        if name_index is None:
+            continue
+        return (
+            index + 1,
+            name_index,
+            _column(headers, "DOCUMENTO", "DNI"),
+            _column(headers, "CONCURRE A", "CONCURRE PARA", "DESTINO", "VISITA A"),
+            _column(headers, "PATENTE", "DOMINIO", "MARCA/MODELO"),
+        )
+
+    for index, row in enumerate(rows[:35]):
+        if family == "vehicle":
+            if len(row) < 2 or not _looks_person_name(_cell(row, 1)):
+                continue
+            document_index = 2 if _looks_document_value(_value(row, 2)) else None
+            destination_index = 3 if document_index is not None else 2
+            return index, 1, document_index, destination_index, 0
+        if not row or not _looks_person_name(_cell(row, 0)):
+            continue
+        document_index = 1 if _looks_document_value(_value(row, 1)) else None
+        destination_index = 2 if document_index is not None else 1
+        return index, 0, document_index, destination_index, None
+    return None
+
+
+def _looks_person_name(value: str) -> bool:
+    folded = fold_text(value)
+    if _is_non_person_name(value) or any(
+        marker in folded
+        for marker in (
+            "APELLIDO",
+            "AUTORIDAD",
+            "CONDUCTOR",
+            "PLANILLA",
+            "RESIDENCIA",
+            "DIRECCION DE SEGURIDAD",
+            "SIN NOVEDAD",
+            "PERSONAL AUTORIZADO",
+        )
+    ):
+        return False
+    tokens = folded.split()
+    return len(tokens) >= 2 and sum(character.isalpha() for character in folded) >= 5
+
+
+def _is_non_person_name(value: str) -> bool:
+    folded = fold_text(value)
+    if not folded or folded == "NAME" or folded[0].isdigit():
+        return True
+    if any(
+        marker in folded
+        for marker in (
+            "REFORMA UNIVERSITARIA",
+            "SIN NOVEDAD",
+            "PERSONAL AUTORIZADO",
+        )
+    ):
+        return True
+    compact = folded.replace(" ", "")
+    return bool(re.fullmatch(r"(?:[A-Z]{3}\d{3}|[A-Z]{2}\d{3}[A-Z]{2})", compact))
+
+
+def _looks_document_value(value: Any) -> bool:
+    digits = re.sub(r"\D", "", _clean_text(value))
+    return 7 <= len(digits) <= 11
 
 
 def _parse_casa_sheet(
@@ -370,10 +664,12 @@ def _find_olivos_header(rows: list[list[Any]]) -> tuple[int | None, list[str]]:
             for label in (
                 "APELLIDO Y NOMBRE",
                 "APELLIDOS Y NOMBRES",
+                "NOMBRE Y APELLIDO",
                 "AUTORIDAD/CONDUCTOR",
             )
-        ) or ("AUTORIDAD" in joined and "HORA ENTRADA" in joined)
-        if has_name and "HORA ENTRADA" in joined:
+        ) or ("AUTORIDAD" in joined and ("HORA ENTRADA" in joined or "INGRESO" in joined))
+        has_entry = any(label in joined for label in ("HORA ENTRADA", "HORA DE ENTRADA", "INGRESO"))
+        if has_name and has_entry:
             return index, headers
     return None, []
 
@@ -405,11 +701,13 @@ def _record(
     activity: str | None,
     authorized_by: str | None,
     raw_text: str,
+    occurred: datetime | None = None,
+    device: str | None = None,
 ) -> AccessRecord:
     clean_name = canonical_name(name)
     document_type, document_number, _ = document_identity(document)
     person_id = entity_id(clean_name, document_number)
-    logical_time = entered or exited
+    logical_time = occurred or entered or exited
     record_id = stable_id(
         "rec_",
         person_id,
@@ -433,8 +731,10 @@ def _record(
         source_url="local-source:///" + quote(source_path),
         source_path=source_path,
         source_page=source_page,
+        occurred_at=occurred,
         entered_at=entered,
         exited_at=exited,
+        device=device,
         destination=destination,
         activity=activity,
         authorized_by=authorized_by,
@@ -448,9 +748,12 @@ def _infer_date(source: Path, sheet_title: str, rows: list[list[Any]]) -> dateti
     texts = [sheet_title, source.stem]
     texts.extend(" ".join(_clean_text(value) for value in row if value is not None) for row in rows)
     for text in texts:
+        numeric_text = _clean_text(text).upper()
         folded = fold_text(text)
         years = [int(value) for value in re.findall(r"20\d{2}", folded)]
-        year = years[-1] if years else path_year
+        year = path_year or (years[-1] if years else 0)
+        if not year:
+            continue
         for name, month in MONTHS.items():
             match = re.search(rf"\b(\d{{1,2}})\s+(?:DE\s+)?{name}\b", folded)
             if match:
@@ -458,11 +761,15 @@ def _infer_date(source: Path, sheet_title: str, rows: list[list[Any]]) -> dateti
                     return datetime(year, month, int(match.group(1)))
                 except ValueError:
                     pass
-        numeric = re.search(r"\b(\d{1,2})[-/.](\d{1,2})(?:[-/.](\d{2,4}))?\b", folded)
+        numeric = re.search(
+            r"\b(\d{1,2})[-/.](\d{1,2})(?:[-/.](\d{2,4}))?\b", numeric_text
+        )
         if numeric:
             year_value = int(numeric.group(3)) if numeric.group(3) else year
             if year_value < 100:
                 year_value += 2000
+            if path_year:
+                year_value = path_year
             try:
                 return datetime(year_value, int(numeric.group(2)), int(numeric.group(1)))
             except ValueError:
@@ -553,8 +860,12 @@ def _clock_from_digits(value: str, default_date: datetime | None) -> datetime | 
 
 def _source_period(path: Path) -> tuple[int, int]:
     folded_parts = [fold_text(part) for part in path.parts]
-    years = [int(value) for part in folded_parts for value in re.findall(r"20\d{2}", part)]
-    year = years[0] if years else 0
+    year = 0
+    for part in reversed(folded_parts):
+        years = re.findall(r"(?<!\d)(20\d{2})(?!\d)", part)
+        if len(years) == 1:
+            year = int(years[0])
+            break
     month = 0
     for part in reversed(folded_parts[:-1]):
         match = re.match(r"(0?[1-9]|1[0-2])\D", part)
@@ -567,6 +878,45 @@ def _source_period(path: Path) -> tuple[int, int]:
     if not month:
         month = next((number for name, number in MONTHS.items() if name in folded_parts[-1]), 1)
     return year, month
+
+
+def _empty_source_reason(source: Path) -> str:
+    try:
+        suffix = source.suffix.lower()
+        snippets: list[str] = []
+        if suffix == ".xlsx":
+            workbook = openpyxl.load_workbook(source, read_only=True, data_only=True)
+            try:
+                for worksheet in workbook.worksheets:
+                    for row_number, row in enumerate(worksheet.iter_rows(values_only=True)):
+                        snippets.extend(_clean_text(value) for value in row if _clean_text(value))
+                        if row_number >= 50:
+                            break
+            finally:
+                workbook.close()
+        elif suffix == ".xls":
+            workbook = xlrd.open_workbook(source, on_demand=True)
+            try:
+                for worksheet in workbook.sheets():
+                    for row in range(min(worksheet.nrows, 50)):
+                        snippets.extend(
+                            _clean_text(worksheet.cell_value(row, column))
+                            for column in range(worksheet.ncols)
+                            if _clean_text(worksheet.cell_value(row, column))
+                        )
+            finally:
+                workbook.release_resources()
+        elif suffix == ".docx":
+            document = Document(source)
+            snippets.extend(paragraph.text for paragraph in document.paragraphs[:50])
+            for table in document.tables[:4]:
+                for row in table.rows[:50]:
+                    snippets.extend(cell.text for cell in row.cells)
+        if "SIN NOVEDAD" in fold_text(" ".join(snippets)):
+            return "sin_novedad"
+    except Exception:
+        return "archivo_danado"
+    return "sin_registros_extraibles"
 
 
 def _filename_day(value: str) -> int | None:
@@ -599,6 +949,10 @@ def _clean_text(value: Any) -> str:
 def _clean(value: str | None) -> str | None:
     value = (value or "").strip()
     return value if value and value not in {"-", "–", "...", "...."} else None
+
+
+def _increment(values: dict[str, int], key: str, amount: int = 1) -> None:
+    values[key] = values.get(key, 0) + amount
 
 
 def _looks_sequence(value: Any) -> bool:

@@ -153,11 +153,18 @@ Reprocesar una sede después de modificar su parser:
 uv run accesos backfill-local tmp/historical-pdfs --min-year 2016 --force-location olivos
 ```
 
-Importar planillas XLSX y DOCX históricas:
+Importar planillas XLS, XLSX y DOCX históricas:
 
 ```bash
 uv run accesos import-historical-office data/Raw
 ```
+
+El importador reconoce tanto las planillas de visitas con horarios como los partes diarios de
+personas y vehículos. Cuando una planilla diaria no informa horas, conserva la fecha sin inventar
+un horario y marca el registro con calidad media. Los archivos escaneados, dañados o con un formato
+todavía no reconocido quedan identificados en cuarentena y aparecen en el informe de cobertura del
+sitio. Las ejecuciones siguientes comparan metadatos y checksum, y sólo reconstruyen los datos si
+alguna fuente cambió.
 
 Importar el CSV histórico unificado de Olivos 2020–2021:
 

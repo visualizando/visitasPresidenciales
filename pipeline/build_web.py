@@ -57,6 +57,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         return {"records": 0, "people": 0, "exports": 0}
 
     connection = duckdb.connect(":memory:")
+    connection.execute("SET enable_progress_bar = false")
     parquet_files = ",".join(f"'{_sql_path(path)}'" for path in partitions)
     connection.execute(
         f"CREATE VIEW raw_records AS SELECT * FROM read_parquet([{parquet_files}], union_by_name=true)"
@@ -388,12 +389,17 @@ def _build_coverage(data_dir: Path, connection: duckdb.DuckDBPyConnection) -> di
         if status == "active" and records > 0:
             continue
         if status == "quarantined":
-            if item.get("parser") == "archivo-vacio-v1":
+            quarantine_reason = item.get("quarantine_reason")
+            if quarantine_reason == "pdf_escaneado" or item.get("parser") == "pdf-sin-texto-extraible-v1":
+                reason = "El PDF es un escaneo sin texto extraíble y requiere OCR."
+            elif quarantine_reason == "archivo_danado":
+                reason = "El archivo está dañado y no pudo abrirse de forma segura."
+            elif quarantine_reason == "sin_registros_extraibles":
+                reason = "El archivo se pudo abrir, pero no produjo registros verificables."
+            elif item.get("parser") == "archivo-vacio-v1":
                 reason = (
                     "El archivo está publicado, pero está vacío y no contiene datos recuperables."
                 )
-            elif item.get("parser") == "pdf-sin-texto-extraible-v1":
-                reason = "El PDF no contiene texto extraíble; puede ser un escaneo y requiere OCR."
             else:
                 reason = "El archivo está disponible, pero usa un formato todavía no compatible."
         elif status == "missing":

@@ -57,7 +57,7 @@ def parser() -> argparse.ArgumentParser:
         "--output", type=Path, default=Path(os.getenv("WEB_DATA_DIR", "web/public/data"))
     )
     historical_office = subcommands.add_parser(
-        "import-historical-office", help="Importa XLSX y DOCX históricos estructurados"
+        "import-historical-office", help="Importa XLS, XLSX y DOCX históricos estructurados"
     )
     historical_office.add_argument("source", type=Path)
     historical_office.add_argument(
