@@ -4,9 +4,9 @@ import type {Location} from "../types";
 type LocationChoice = Location | "both";
 
 const OPTIONS: {value: LocationChoice; label: string; locations: Location[]}[] = [
-  {value: "casa-rosada", label: "Casa Rosada", locations: ["casa-rosada"]},
-  {value: "olivos", label: "Olivos", locations: ["olivos"]},
+  {value: "casa-rosada", label: "Solo Casa Rosada", locations: ["casa-rosada"]},
   {value: "both", label: "Casa Rosada y Olivos", locations: ["casa-rosada", "olivos"]},
+  {value: "olivos", label: "Solo Olivos", locations: ["olivos"]},
 ];
 
 export function ChartLocationFilter({value, onChange}: {value: Location[]; onChange: (value: Location[]) => void}) {
