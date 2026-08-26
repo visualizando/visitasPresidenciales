@@ -132,7 +132,7 @@ export default function App() {
     </header>
     <main id="main">
       <section className="hero" aria-labelledby="page-title">
-        <div className="hero-copy"><h1 id="page-title">Explorador de accesos a Olivos y Casa Rosada</h1><p>Buscá personas y consultá sus ingresos, horarios y destinos.</p></div>
+        <div className="hero-copy"><h1 id="page-title">Explorador de accesos a Olivos y Casa Rosada</h1><div className="hero-intro"><p>Desde 2016, Poder Ciudadano pone a disposición los registros de ingresos a la Casa Rosada y la Quinta Presidencial de Olivos, obtenidos a partir de pedidos de acceso a la información pública. Este explorador facilita la consulta y búsqueda de las planillas de acceso.</p><p>La información es brindada por Casa Militar, organismo público a cargo de la seguridad presidencial, por lo que Poder Ciudadano no es responsable por su contenido.</p></div></div>
         <dl className="hero-facts" aria-label="Estado y cobertura de la base"><div><dd>{formatNumber(meta.data?.record_count)}</dd><dt>registros</dt></div><div><dd>{formatNumber(meta.data?.people_count)}</dd><dt>personas</dt></div><div><dd>{formatNumber(meta.data?.source_count)}</dd><dt>PDF</dt></div><div><dd>{formatMetricDate(meta.data?.first_date)}</dd><dt>primer registro</dt></div><div><dd>{formatMetricDate(meta.data?.last_date)}</dd><dt>último registro</dt></div></dl>
       </section>
       <SectionNav preserveHash={selected.length > 0 || !selectionHashReady} />
