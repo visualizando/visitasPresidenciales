@@ -3,15 +3,16 @@ import {describe, expect, it, vi} from "vitest";
 import {ChartLocationFilter} from "./ChartLocationFilter";
 
 describe("ChartLocationFilter", () => {
-  it("permite una o ambas sedes, pero nunca ninguna", () => {
+  it("permite elegir Casa Rosada, Olivos o ambas sedes", () => {
     const onChange = vi.fn();
     const {rerender} = render(<ChartLocationFilter value={["casa-rosada", "olivos"]} onChange={onChange} />);
-    fireEvent.click(screen.getByRole("checkbox", {name: "Casa Rosada"}));
-    expect(onChange).toHaveBeenLastCalledWith(["olivos"]);
+    expect(screen.getByRole("radio", {name: "Casa Rosada y Olivos"})).toBeChecked();
+    fireEvent.click(screen.getByRole("radio", {name: "Casa Rosada"}));
+    expect(onChange).toHaveBeenLastCalledWith(["casa-rosada"]);
 
     rerender(<ChartLocationFilter value={["olivos"]} onChange={onChange} />);
-    expect(screen.getByRole("checkbox", {name: "Olivos"})).toBeDisabled();
-    fireEvent.click(screen.getByRole("checkbox", {name: "Casa Rosada"}));
-    expect(onChange).toHaveBeenLastCalledWith(["olivos", "casa-rosada"]);
+    expect(screen.getByRole("radio", {name: "Olivos"})).toBeChecked();
+    fireEvent.click(screen.getByRole("radio", {name: "Casa Rosada y Olivos"}));
+    expect(onChange).toHaveBeenLastCalledWith(["casa-rosada", "olivos"]);
   });
 });

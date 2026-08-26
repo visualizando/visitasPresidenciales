@@ -1,28 +1,23 @@
 import {useId} from "react";
 import type {Location} from "../types";
 
-const OPTIONS: {value: Location; label: string}[] = [
-  {value: "casa-rosada", label: "Casa Rosada"},
-  {value: "olivos", label: "Olivos"},
+type LocationChoice = Location | "both";
+
+const OPTIONS: {value: LocationChoice; label: string; locations: Location[]}[] = [
+  {value: "casa-rosada", label: "Casa Rosada", locations: ["casa-rosada"]},
+  {value: "olivos", label: "Olivos", locations: ["olivos"]},
+  {value: "both", label: "Casa Rosada y Olivos", locations: ["casa-rosada", "olivos"]},
 ];
 
 export function ChartLocationFilter({value, onChange}: {value: Location[]; onChange: (value: Location[]) => void}) {
-  const helpId = useId();
-  function toggle(location: Location) {
-    if (value.includes(location)) {
-      if (value.length === 1) return;
-      onChange(value.filter((item) => item !== location));
-    } else {
-      onChange([...value, location]);
-    }
-  }
+  const name = useId();
+  const selected: LocationChoice = value.length === 2 ? "both" : (value[0] ?? "both");
 
   return <fieldset className="chart-location-filter">
-    <legend>Sedes</legend>
-    <div>{OPTIONS.map((option) => {
-      const checked = value.includes(option.value);
-      return <label key={option.value}><input type="checkbox" name="chart-location" value={option.value} checked={checked} disabled={checked && value.length === 1} aria-describedby={helpId} onChange={() => toggle(option.value)} />{option.label}</label>;
-    })}</div>
-    <small id={helpId}>Elegí al menos una.</small>
+    <legend className="sr-only">Sede mostrada</legend>
+    <div>{OPTIONS.map((option) => <label key={option.value}>
+      <input type="radio" name={name} value={option.value} checked={selected === option.value} onChange={() => onChange(option.locations)} />
+      {option.label}
+    </label>)}</div>
   </fieldset>;
 }

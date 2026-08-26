@@ -6,8 +6,9 @@ describe("ChartPeriodFilter", () => {
   it("permite alternar entre todo y la presidencia actual", () => {
     const onChange = vi.fn();
     render(<ChartPeriodFilter value="all" onChange={onChange} />);
-    expect(screen.getByRole("button", {name: "Todo"})).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", {name: "Presidencia actual"}));
+    const toggle = screen.getByRole("checkbox", {name: "Mostrar solo la presidencia actual"});
+    expect(toggle).not.toBeChecked();
+    fireEvent.click(toggle);
     expect(onChange).toHaveBeenCalledWith("current-presidency");
   });
 });
