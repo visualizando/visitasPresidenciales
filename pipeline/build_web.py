@@ -22,6 +22,7 @@ COINCIDENCE_MAX_TIME_DIFFERENCE_MINUTES = 15
 COINCIDENCE_MINIMUM_OVERLAP_MINUTES = 5
 COINCIDENCE_MAX_INTERVAL_MINUTES = 720
 COINCIDENCE_MAX_ANNUAL_DAYS = 80
+CURRENT_PRESIDENCY_START = "2023-01-01"
 
 
 def build_web_data(data_dir: Path, output_dir: Path) -> dict[str, int]:
@@ -271,6 +272,9 @@ def _build_analytics(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
         GROUP BY ALL ORDER BY records DESC LIMIT 30
         """,
     )
+    current_presidency = _build_period_analytics(
+        connection, date_expr, CURRENT_PRESIDENCY_START
+    )
     coverage = connection.execute(
         f"SELECT min({date_expr}), max({date_expr}) FROM records"
     ).fetchone()
@@ -294,12 +298,42 @@ def _build_analytics(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
         "monthly": monthly,
         "heatmap": heatmap,
         "purposes": purposes,
+        "current_presidency": current_presidency,
         "milei_casa_rosada_days": milei_casa_rosada_days,
         "coverage": {
             "first_date": _json_datetime(coverage[0]),
             "last_date": _json_datetime(coverage[1]),
         },
     }
+
+
+def _build_period_analytics(
+    connection: duckdb.DuckDBPyConnection, date_expr: str, start_date: str
+) -> dict[str, Any]:
+    heatmap = _rows(
+        connection,
+        f"""
+        SELECT location, dayofweek({date_expr})::INTEGER AS weekday,
+               hour({date_expr})::INTEGER AS hour, count(*)::INTEGER AS records
+        FROM records
+        WHERE {date_expr} >= cast(? AS TIMESTAMP)
+        GROUP BY ALL ORDER BY location, weekday, hour
+        """,
+        [start_date],
+    )
+    purposes = _rows(
+        connection,
+        f"""
+        SELECT location, coalesce(nullif(purpose, ''), nullif(destination, '')) AS label,
+               count(*)::INTEGER AS records
+        FROM records
+        WHERE {date_expr} >= cast(? AS TIMESTAMP)
+          AND coalesce(nullif(purpose, ''), nullif(destination, '')) IS NOT NULL
+        GROUP BY ALL ORDER BY records DESC LIMIT 30
+        """,
+        [start_date],
+    )
+    return {"start_date": start_date, "heatmap": heatmap, "purposes": purposes}
 
 
 def _build_coverage(data_dir: Path, connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
@@ -914,6 +948,11 @@ def _write_empty(output: Path, generated_at: str) -> None:
             "monthly": [],
             "heatmap": [],
             "purposes": [],
+            "current_presidency": {
+                "start_date": CURRENT_PRESIDENCY_START,
+                "heatmap": [],
+                "purposes": [],
+            },
             "milei_casa_rosada_days": [],
             "coverage": {"first_date": None, "last_date": None},
         },

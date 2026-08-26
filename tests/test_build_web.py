@@ -70,6 +70,7 @@ def test_analytics_marks_only_javier_milei_days_at_casa_rosada(tmp_path) -> None
         "raw_text": "fila",
     }
     records = [
+        AccessRecord(record_id="old", entity_id="old", canonical_name="PERSONA ANTERIOR", location="casa-rosada", occurred_at=datetime(2022, 1, 2, 9, 0), **common),
         AccessRecord(record_id="javier", entity_id="javier", canonical_name="MILEI JAVIER GERARDO", location="casa-rosada", occurred_at=datetime(2024, 1, 2, 9, 0), **common),
         AccessRecord(record_id="karina", entity_id="karina", canonical_name="MILEI KARINA", location="casa-rosada", occurred_at=datetime(2024, 1, 3, 9, 0), **common),
         AccessRecord(record_id="olivos", entity_id="javier", canonical_name="MILEI JAVIER", location="olivos", occurred_at=datetime(2024, 1, 4, 9, 0), **common),
@@ -81,6 +82,9 @@ def test_analytics_marks_only_javier_milei_days_at_casa_rosada(tmp_path) -> None
 
     analytics = json.loads((output / "analytics" / "overview.json").read_text(encoding="utf-8"))
     assert analytics["milei_casa_rosada_days"] == ["2024-01-02"]
+    assert analytics["current_presidency"]["start_date"] == "2023-01-01"
+    assert sum(point["records"] for point in analytics["heatmap"]) == 5
+    assert sum(point["records"] for point in analytics["current_presidency"]["heatmap"]) == 4
 
 
 def test_builds_deduplicated_cooccurrence_episodes(tmp_path) -> None:

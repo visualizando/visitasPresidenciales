@@ -82,6 +82,9 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .section-heading { display: flex; justify-content: space-between; gap: 2rem; align-items: end; margin-block-end: 1rem; }
 .section-heading > p { max-width: 58ch; margin: 0; color: var(--color-text-secondary); line-height: 1.45; text-wrap: pretty; }
 .dashboard-heading > div > p { margin: 0.2rem 0 0; color: var(--color-text-secondary); font-size: 0.75rem; }
+.dashboard-controls { display: flex; align-items: center; justify-content: end; gap: 0.85rem; }
+.chart-period-filter { display: flex; align-items: center; gap: 0.45rem; margin: 0; padding: 0; border: 0; }
+.chart-period-filter legend { float: inline-start; margin-inline-end: 0.1rem; color: var(--color-text-secondary); font-size: 0.6875rem; font-weight: 700; }
 .chart-location-filter { display: flex; align-items: center; gap: 0.55rem; margin: 0; padding: 0; border: 0; }
 .chart-location-filter legend { float: inline-start; margin-inline-end: 0.1rem; color: var(--color-text-secondary); font-size: 0.6875rem; font-weight: 700; }
 .chart-location-filter > div { display: flex; gap: 0.35rem; }
@@ -444,6 +447,7 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .hero { padding-block-start: 1.5rem; }
   .hero-facts { grid-template-columns: repeat(3, 1fr); }
   .section-heading { align-items: start; flex-direction: column; gap: 0.5rem; }
+  .dashboard-controls { align-items: start; flex-direction: column; }
   .chart-location-filter { align-items: start; flex-wrap: wrap; }
   .filters { grid-template-columns: 1fr; }
   .search-input-wrap input, .filters select { font-size: 1rem; }

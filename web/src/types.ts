@@ -111,6 +111,7 @@ export interface Analytics {
   monthly: MonthlyPoint[];
   heatmap: HeatmapPoint[];
   purposes: PurposePoint[];
+  current_presidency?: {start_date: string; heatmap: HeatmapPoint[]; purposes: PurposePoint[]};
   milei_casa_rosada_days?: string[];
   coverage: {first_date: string | null; last_date: string | null};
 }
