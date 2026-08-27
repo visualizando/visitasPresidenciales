@@ -4,7 +4,7 @@ import type {ComparisonSeries, Location, PurposePoint} from "../types";
 import {PersonLegend} from "./PersonLegend";
 
 const WIDTH = 640;
-const HEIGHT = 360;
+const HEIGHT = 480;
 
 interface PackDatum {
   label: string;
