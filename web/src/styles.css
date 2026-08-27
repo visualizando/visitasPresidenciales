@@ -37,7 +37,7 @@
   --space-page: clamp(1rem, 3vw, 3rem);
   color: var(--color-text-primary);
   background: var(--color-bg-page);
-  font-family: "Ciutadella", Arial, sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: style;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -71,7 +71,8 @@ main > section { max-width: 96rem; margin-inline: auto; scroll-margin-top: 4.25r
 .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2rem; align-items: end; padding-block: 2.25rem 1.75rem; }
 .eyebrow { margin: 0 0 0.35rem; color: var(--color-accent-solid); font-size: 0.6875rem; font-weight: 400; letter-spacing: 0.09em; text-transform: uppercase; }
 h1, h2, h3, p { margin-block-start: 0; }
-h1, h2 { font-family: "Ciutadella", Arial, sans-serif; font-weight: 500; letter-spacing: -0.015em; text-wrap: balance; }
+h1, h2, h3 { font-family: "Ciutadella", Arial, sans-serif; }
+h1, h2 { font-weight: 500; letter-spacing: -0.015em; text-wrap: balance; }
 h1 { margin-block-end: 0.45rem; font-size: clamp(2rem, 3.8vw, 3.4rem); line-height: 1.05; }
 h2 { margin-block-end: 0; font-size: clamp(1.55rem, 2.6vw, 2.25rem); line-height: 1.1; }
 h3 { margin-block-end: 0; font-size: 1rem; font-weight: 400; line-height: 1.2; }
