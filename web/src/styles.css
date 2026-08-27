@@ -251,7 +251,7 @@ h3 { margin-block-end: 0; font-size: 1rem; line-height: 1.2; }
 .dashboard-section > * { max-width: calc(96rem - 2 * var(--space-page)); margin-inline: auto; }
 .dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
 .dashboard-wide { grid-column: 1 / -1; min-width: 0; }
-.chart-card { min-width: 0; margin: 0; padding: 0.85rem; border: 1px solid var(--color-border); border-radius: var(--radius-outer); background: var(--color-bg-surface); }
+.chart-card { align-self: start; min-width: 0; margin: 0; padding: 0.85rem; border: 1px solid var(--color-border); border-radius: var(--radius-outer); background: var(--color-bg-surface); }
 .chart-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin-block-end: 0.75rem; }
 .chart-context { padding: 0.2rem 0.5rem; border-radius: 999px; color: var(--color-accent-solid); background: var(--color-accent-soft); font-size: 0.6875rem; font-weight: 700; }
 .legend { display: flex; flex-wrap: wrap; gap: 0.7rem; color: var(--color-text-secondary); font-size: 0.6875rem; }
@@ -323,16 +323,20 @@ td:nth-child(n + 3), th:nth-child(n + 3) { font-variant-numeric: tabular-nums; }
 .legend-dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; }
 .legend-dot--casa-rosada { background: var(--accent-500); }
 .legend-dot--olivos { background: #b86422; }
-.pack-chart { display: block; width: 100%; height: auto; max-height: 22.5rem; overflow: visible; }
-.pack-group circle { fill: none; stroke: var(--color-border); stroke-width: 1; }
-.pack-group text { fill: var(--color-text-secondary); font-size: 10px; font-weight: 700; text-anchor: middle; text-transform: uppercase; letter-spacing: 0.04em; pointer-events: none; }
-.pack-leaf circle { stroke-width: 1.25; }
-.pack-leaf--casa-rosada circle { fill: var(--accent-100); stroke: var(--accent-500); }
-.pack-leaf--olivos circle { fill: #f3ddca; stroke: #b86422; }
-.pack-leaf--person circle { fill-opacity: 0.22; stroke-width: 1.5; }
-.pack-label { fill: var(--accent-900); font-size: 10px; font-weight: 700; text-anchor: middle; pointer-events: none; }
-.pack-leaf--olivos .pack-label { fill: #62330e; }
-.pack-value { font-variant-numeric: tabular-nums; font-weight: 500; opacity: 0.76; }
+.treemap-graphic { width: 100%; }
+.treemap-chart { display: block; width: 100%; height: auto; }
+.treemap-chart--mobile { display: none; }
+.treemap-group-background { fill: var(--neutral-50); }
+.treemap-group rect { fill: none; stroke: var(--color-border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.treemap-group text { fill: var(--color-text-secondary); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; pointer-events: none; }
+.treemap-leaf rect { stroke-width: 1; vector-effect: non-scaling-stroke; }
+.treemap-leaf--casa-rosada rect { fill: var(--accent-100); stroke: var(--accent-500); }
+.treemap-leaf--olivos rect { fill: #f3ddca; stroke: #b86422; }
+.treemap-leaf--person rect { fill-opacity: 0.32; stroke: rgb(0 0 0 / 0.18); }
+.treemap-leaf text { fill: var(--accent-900); font-size: 10px; pointer-events: none; }
+.treemap-leaf--olivos text { fill: #62330e; }
+.treemap-label { font-weight: 700; }
+.treemap-value { font-variant-numeric: tabular-nums; font-weight: 500; opacity: 0.76; }
 .chart-empty, .chart-empty-copy { color: var(--color-text-secondary); }
 .selection-empty { display: flex; flex-direction: column; gap: 0.2rem; margin: 0; padding: 1rem; border: 1px dashed var(--color-border); border-radius: var(--radius-inner); color: var(--color-text-secondary); background: var(--color-bg-surface); text-align: center; }
 .selection-empty strong { color: var(--color-text-primary); }
@@ -472,7 +476,8 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .download-table th:nth-child(2), .download-table td:nth-child(2) { width: 28%; }
   .download-table th:nth-child(3), .download-table td:nth-child(3) { width: 50%; text-align: end; }
   .download-table a { white-space: nowrap; }
-  .pack-chart { max-height: none; }
+  .treemap-chart--desktop { display: none; }
+  .treemap-chart--mobile { display: block; }
   .heatmap-row { grid-template-columns: 2rem repeat(24, minmax(0, 1fr)); gap: 0.1rem; }
   .heatmap-cell { min-width: 0; }
   .filters { grid-template-columns: 1fr; }
