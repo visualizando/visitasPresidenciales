@@ -1,5 +1,6 @@
-import {ChevronDown, Database, Search} from "lucide-react";
+import {ChevronDown, Search} from "lucide-react";
 import {useDeferredValue, useEffect, useMemo, useState} from "react";
+import poderCiudadanoLogo from "./assets/poder-ciudadano/logo-poder-ciudadano.png";
 import {CalendarChart} from "./components/CalendarChart";
 import {ChartLocationFilter} from "./components/ChartLocationFilter";
 import {ChartPeriodFilter, type ChartPeriod} from "./components/ChartPeriodFilter";
@@ -132,8 +133,12 @@ export default function App() {
 
   return <>
     <a className="skip-link" href="#main">Saltar al contenido</a>
-    <header className="site-header">
-      <a className="brand" href="./" aria-label="Accesos públicos, inicio"><span className="brand-mark" aria-hidden="true"><Database /></span><span>Accesos <em>públicos</em></span></a>
+    <header className="institutional-header">
+      <div className="institutional-strip"><div><span>Micrositio de datos abiertos</span><a href="https://poderciudadano.org/" target="_blank" rel="noreferrer">poderciudadano.org <span aria-hidden="true">↗</span></a></div></div>
+      <div className="site-header">
+        <a className="organization-brand" href="https://poderciudadano.org/" target="_blank" rel="noreferrer" aria-label="Poder Ciudadano, abrir sitio principal"><img src={poderCiudadanoLogo} alt="Poder Ciudadano" /></a>
+        <a className="microsite-brand" href="./" aria-label="Explorador de accesos, inicio"><small>Datos abiertos</small><strong>Explorador de accesos</strong></a>
+      </div>
     </header>
     <main id="main">
       <section className="hero" aria-labelledby="page-title">
