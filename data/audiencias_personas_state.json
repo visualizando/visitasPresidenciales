@@ -1,0 +1,11 @@
+{
+  "con_cargo": 51773,
+  "con_institucion": 29123,
+  "en_base_por_dni": 9365,
+  "en_base_por_nombre": 728,
+  "filas_personas": 324196,
+  "generated_at": "2026-09-03T12:42:32.852054Z",
+  "nuevas": 58197,
+  "personas_unicas": 68290,
+  "version": 1
+}

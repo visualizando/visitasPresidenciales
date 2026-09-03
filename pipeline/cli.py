@@ -11,6 +11,11 @@ from pipeline.build_web import build_web_data
 from pipeline.curation_server import serve_curation
 from pipeline.discovery import discover
 from pipeline.drive_backfill import download_public_folder
+from pipeline.enrich_audiencias import (
+    apply_audiencias_decisions,
+    build_audiencias_curation,
+    build_enrichment,
+)
 from pipeline.historical_csv_import import import_olivos_historical_csv
 from pipeline.historical_office_import import import_historical_office
 from pipeline.identity_candidates import build_identity_candidates_from_search
@@ -47,6 +52,74 @@ def parser() -> argparse.ArgumentParser:
     )
     update_aud.add_argument(
         "--force", action="store_true", help="Re-descarga todos los CSV y re-unifica"
+    )
+    enrich = subcommands.add_parser(
+        "enrich-audiencias",
+        help="Extrae personas de las audiencias y las cruza con la base de identidades",
+    )
+    enrich.add_argument(
+        "--unificado",
+        type=Path,
+        default=Path("data/audiencias_unificado.csv"),
+        help="CSV unificado de audiencias de entrada",
+    )
+    enrich.add_argument(
+        "--base-doc-dir",
+        type=Path,
+        default=Path("web/public/data/search/document"),
+        help="Carpeta con los shards de personas con documento de la base",
+    )
+    enrich.add_argument(
+        "--name-threshold",
+        type=int,
+        default=96,
+        help="Umbral de similitud (0-100) para cruce por nombre sin documento",
+    )
+    enrich.add_argument(
+        "--decisions",
+        type=Path,
+        default=None,
+        help="Archivo de decisiones curadas (aplica rechazos al master)",
+    )
+    cur_aud = subcommands.add_parser(
+        "curate-audiencias",
+        help="Genera candidatos de curacion para el cruce audiencias <-> base",
+    )
+    cur_aud.add_argument(
+        "--unificado", type=Path, default=Path("data/audiencias_unificado.csv")
+    )
+    cur_aud.add_argument(
+        "--base-doc-dir",
+        type=Path,
+        default=Path("web/public/data/search/document"),
+    )
+    cur_aud.add_argument(
+        "--candidates",
+        type=Path,
+        default=Path("data/curation/audiencias_candidates.csv"),
+    )
+    cur_aud.add_argument(
+        "--decisions",
+        type=Path,
+        default=Path("data/curation/audiencias_decisions.json"),
+    )
+    cur_aud.add_argument("--name-threshold", type=int, default=96)
+    apply_aud = subcommands.add_parser(
+        "apply-audiencias",
+        help="Aplica automaticamente las decisiones del cruce audiencias <-> base",
+    )
+    apply_aud.add_argument(
+        "--candidates",
+        type=Path,
+        default=Path("data/curation/audiencias_candidates.csv"),
+    )
+    apply_aud.add_argument(
+        "--decisions",
+        type=Path,
+        default=Path("data/curation/audiencias_decisions.json"),
+    )
+    apply_aud.add_argument(
+        "--confirmed", action="store_true", help="Escribe las decisiones (sin esto es solo previsualización)"
     )
     build = subcommands.add_parser("build-web", help="Regenera índices, analytics y exportaciones")
     build.add_argument("--data-dir", type=Path, default=Path(os.getenv("DATA_DIR", "data")))
@@ -153,6 +226,27 @@ def main() -> None:
             raw_dir=arguments.raw,
             output=arguments.output,
             force=arguments.force,
+        )
+    elif arguments.command == "enrich-audiencias":
+        result = build_enrichment(
+            unificado=arguments.unificado,
+            base_doc_dir=arguments.base_doc_dir,
+            name_threshold=arguments.name_threshold,
+            decisions_path=arguments.decisions,
+        )
+    elif arguments.command == "curate-audiencias":
+        result = build_audiencias_curation(
+            unificado=arguments.unificado,
+            candidates_out=arguments.candidates,
+            decisions_out=arguments.decisions,
+            base_doc_dir=arguments.base_doc_dir,
+            name_threshold=arguments.name_threshold,
+        )
+    elif arguments.command == "apply-audiencias":
+        result = apply_audiencias_decisions(
+            candidates_out=arguments.candidates,
+            decisions_out=arguments.decisions,
+            confirmed=arguments.confirmed,
         )
     elif arguments.command == "build-web":
         result = build_web_data(arguments.data_dir, arguments.output)

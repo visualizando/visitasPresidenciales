@@ -154,6 +154,52 @@ El portal expone dos esquemas a lo largo de los años: uno antiguo (2004-2016, c
 
 La actualización mensual del workflow ejecuta `update-audiencias` luego de procesar los PDF de acceso.
 
+### Enriquecimiento de personas desde las audiencias
+
+Las audiencias identifican personas (sujeto obligado/funcionario, solicitante y persona representada). Para enriquecer la base de identidades, un paso opcional extrae esas personas, las cruza con las personas ya publicadas y consolida nombres, documentos, cargos e instituciones:
+
+```bash
+uv run accesos enrich-audiencias
+```
+
+Opciones:
+
+- `--unificado`: CSV unificado de entrada (por defecto `data/audiencias_unificado.csv`).
+- `--base-doc-dir`: carpeta con los shards de personas con documento de la base (por defecto `web/public/data/search/document`). Requiere un build-web previo.
+- `--name-threshold`: umbral de similitud (0-100, por defecto `96`) para el cruce por nombre cuando no hay documento.
+
+Salidas:
+
+- `<data>/audiencias_personas.csv` — una fila por (audiencia, rol, persona) con cargo e institución.
+- `<data>/audiencias_personas_master.json` — consolidación por `entity_id`: nombre canónico, documento, lista de cargos, instituciones por tipo (`dependencia`, `persona_juridica`, `organismo_estatal`, `grupo`), y el vínculo con la base (`match_type`: `dni` o `nombre`).
+- `<data>/audiencias_personas_state.json` — estadísticas de la corrida.
+
+El cruce asigna a cada persona de audiencia un `entity_id` idéntico al de la base (`normalize.entity_id`), de modo que el cruce por documento es directo. Cuando no hay documento se intenta un cruce por nombre casi exacto, con un umbral alto para evitar falsos positivos; los resultados quedan etiquetados como `dni` o `nombre` para su revisión. Este dataset es independiente del sitio web: no modifica los índices publicados.
+
+### Revisión y curación de las coincidencias
+
+Los cruces por **nombre** (sin documento coincidente) son los únicos inciertos y merecen revisión antes de usarse: en ellos una identidad de audiencias que no tiene documento se propone fusionar con una identidad ya existente en la base. El proyecto reutiliza la misma interfaz local de curación que ya se usa para las identidades duplicadas.
+
+Generar los candidatos de curación del cruce audiencias ↔ base:
+
+```bash
+uv run accesos curate-audiencias
+```
+
+Esto produce `data/curation/audiencias_candidates.csv` y `data/curation/audiencias_decisions.json` en el mismo esquema de `curate-identities`. Para revisarlos uno por uno (aceptar `merge`, `reject` o `defer`):
+
+```bash
+uv run accesos curate-identities \
+    --candidates data/curation/audiencias_candidates.csv \
+    --decisions data/curation/audiencias_decisions.json
+```
+
+Notas:
+
+- Los cruces por **documento** no generan candidato: coinciden en `entity_id` por construcción y no requieren fusión.
+- Un candidato cuyas dos identidades tienen documentos distintos (señal típica de falso positivo por nombre) es bloqueado por la interfaz con un conflicto de documento; conviene rechazarlo.
+- Las decisiones quedan en `data/curation/audiencias_decisions.json` y son la base para aplicar el enriquecimiento en un paso posterior (aún no publicado en el sitio).
+
 ## Importaciones históricas
 
 Importar TSV previamente normalizados:
