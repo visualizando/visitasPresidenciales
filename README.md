@@ -200,6 +200,35 @@ Notas:
 - Un candidato cuyas dos identidades tienen documentos distintos (señal típica de falso positivo por nombre) es bloqueado por la interfaz con un conflicto de documento; conviene rechazarlo.
 - Las decisiones quedan en `data/curation/audiencias_decisions.json` y son la base para aplicar el enriquecimiento en un paso posterior (aún no publicado en el sitio).
 
+### Cruce audiencias ↔ Casa Rosada
+
+Cuando una persona aparece tanto en el registro de acceso a Casa Rosada como en las audiencias de gestión de intereses, se puede inferir si la audiencia realmente se realizó en Casa Rosada. El enfoque deductivo:
+
+1. **Confirmado por fecha:** si una persona tuvo una audiencia el mismo día que un acceso registrado a Casa Rosada, esa audiencia seguramente fue en Casa Rosada. Esto revela qué `lugar` y qué `sujeto_obligado` corresponden a Casa Rosada.
+2. **Inferido por patrón:** si un `lugar` o `sujeto_obligado` fue confirmado en Casa Rosada en ≥2 audiencias distintas, se asume que todas las audiencias con ese funcionario/lugar también fueron en Casa Rosada.
+
+```bash
+uv run accesos cross-audiencias
+```
+
+Opciones:
+
+- `--unificado`: CSV unificado de audiencias (por defecto `data/audiencias_unificado.csv`).
+- `--events-dir`: shards de eventos de Casa Rosada (por defecto `web/public/data/events`).
+- `--master`: master de personas de audiencias (por defecto `data/audiencias_personas_master.json`).
+- `--output`: JSON de salida (por defecto `data/audiencias_cross.json`).
+
+Salida (`data/audiencias_cross.json`):
+
+- `patterns` — los `lugar`/`sujeto_obligado` confirmados en Casa Rosada.
+- `per_entity` — por cada `entity_id`, la lista de audiencias clasificadas como `confirmed`, `likely` o `unconfirmed`.
+- Los campos `confirmed_count`, `likely_count`, `unconfirmed_count`.
+
+Cuando se ejecuta `build-web`, los shards de personas publicadas se enriquecen con:
+
+- `audiencias` — cargos, instituciones y cantidad de audiencias de interés de esa persona.
+- `audiencias_cr` — para personas en ambos registros: cuántas de sus audiencias fueron `confirmed` o `likely` en Casa Rosada.
+
 ## Importaciones históricas
 
 Importar TSV previamente normalizados:

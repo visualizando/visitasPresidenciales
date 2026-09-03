@@ -8,6 +8,7 @@ from pathlib import Path
 
 from pipeline.audiencias import update_audiencias
 from pipeline.build_web import build_web_data
+from pipeline.cross_audiencias import cross_audiencias
 from pipeline.curation_server import serve_curation
 from pipeline.discovery import discover
 from pipeline.drive_backfill import download_public_folder
@@ -120,6 +121,30 @@ def parser() -> argparse.ArgumentParser:
     )
     apply_aud.add_argument(
         "--confirmed", action="store_true", help="Escribe las decisiones (sin esto es solo previsualización)"
+    )
+    cross_aud = subcommands.add_parser(
+        "cross-audiencias",
+        help="Cruza audiencias con registros de acceso a Casa Rosada",
+    )
+    cross_aud.add_argument(
+        "--unificado",
+        type=Path,
+        default=Path("data/audiencias_unificado.csv"),
+    )
+    cross_aud.add_argument(
+        "--events-dir",
+        type=Path,
+        default=Path("web/public/data/events"),
+    )
+    cross_aud.add_argument(
+        "--master",
+        type=Path,
+        default=Path("data/audiencias_personas_master.json"),
+    )
+    cross_aud.add_argument(
+        "--output",
+        type=Path,
+        default=Path("data/audiencias_cross.json"),
     )
     build = subcommands.add_parser("build-web", help="Regenera índices, analytics y exportaciones")
     build.add_argument("--data-dir", type=Path, default=Path(os.getenv("DATA_DIR", "data")))
@@ -248,6 +273,36 @@ def main() -> None:
             decisions_out=arguments.decisions,
             confirmed=arguments.confirmed,
         )
+    elif arguments.command == "cross-audiencias":
+        import json as _json
+
+        master = _json.load(arguments.master.open(encoding="utf-8"))
+        cross_result = cross_audiencias(
+            unificado=arguments.unificado,
+            events_dir=arguments.events_dir,
+            master=master,
+        )
+        output_data = {
+            "confirmed_count": cross_result.confirmed_count,
+            "likely_count": cross_result.likely_count,
+            "unconfirmed_count": cross_result.unconfirmed_count,
+            "patterns": cross_result.patterns.to_dict(),
+            "per_entity": {
+                eid: [vars(c) for c in classifications]
+                for eid, classifications in cross_result.per_entity.items()
+            },
+        }
+        arguments.output.parent.mkdir(parents=True, exist_ok=True)
+        arguments.output.write_text(
+            _json.dumps(output_data, ensure_ascii=False, indent=2, default=str),
+            encoding="utf-8",
+        )
+        result = {
+            "confirmed": cross_result.confirmed_count,
+            "likely": cross_result.likely_count,
+            "unconfirmed": cross_result.unconfirmed_count,
+            "entities_with_audiencias_cr": len(cross_result.per_entity),
+        }
     elif arguments.command == "build-web":
         result = build_web_data(arguments.data_dir, arguments.output)
     elif arguments.command == "import-legacy":

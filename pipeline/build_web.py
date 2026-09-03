@@ -123,6 +123,9 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         row["search_tokens"] = sorted(set(row["normalized_name"].split()))
         people.append(row)
 
+    # Enrich with audiencias de interes data
+    _enrich_people_with_audiencias(data_dir, people)
+
     name_shards: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     name_fallback_shards: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     document_shards: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
@@ -236,6 +239,56 @@ def _resolved_merge_rows(items: list[Any]) -> list[tuple[str, str]]:
         if source != current:
             rows.append((source, current))
     return rows
+
+
+def _enrich_people_with_audiencias(data_dir: Path, people: list[dict[str, Any]]) -> None:
+    """Add audiencias de interes data to people records.
+
+    Reads the audiencias master and cross-reference data to annotate each
+    person with:
+      - ``audiencias``: cargos, instituciones, and audiencia count
+      - ``audiencias_cr``: classification of audiencias as confirmed/likely
+        at Casa Rosada
+    """
+    # Load audiencias master
+    master_path = data_dir / "audiencias_personas_master.json"
+    if not master_path.exists():
+        return
+    master_data = load_json(master_path, [])
+    master_index: dict[str, dict[str, Any]] = {m["entity_id"]: m for m in master_data}
+
+    # Load cross-reference data
+    cross_path = data_dir / "audiencias_cross.json"
+    cross_data: dict[str, Any] = {}
+    if cross_path.exists():
+        cross_data = load_json(cross_path, {})
+
+    cross_per_entity: dict[str, list[dict[str, Any]]] = cross_data.get("per_entity", {})
+
+    for person in people:
+        eid = person["entity_id"]
+        master_entry = master_index.get(eid)
+        if not master_entry:
+            continue
+
+        # Add audiencias data
+        person["audiencias"] = {
+            "cargos": master_entry.get("cargos", []),
+            "instituciones": list(master_entry.get("instituciones", {}).keys()),
+        }
+
+        # Add CR classification if available
+        classifications = cross_per_entity.get(eid, [])
+        if classifications:
+            confirmed = [c for c in classifications if c["status"] == "confirmed"]
+            likely = [c for c in classifications if c["status"] == "likely"]
+            person["audiencias_cr"] = {
+                "confirmed_count": len(confirmed),
+                "likely_count": len(likely),
+                "total_count": len(classifications),
+                "has_likely": len(likely) > 0,
+            }
+            person["audiencias"]["audiencia_count"] = len(classifications)
 
 
 def _build_analytics(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
