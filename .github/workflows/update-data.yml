@@ -30,6 +30,8 @@ jobs:
         run: test -n "$SOURCE_BASE_URL" || (echo "Configure la variable SOURCE_BASE_URL" && exit 1)
       - name: Procesar novedades
         run: uv run accesos update
+      - name: Actualizar audiencias de gestión de intereses
+        run: uv run accesos update-audiencias
       - name: Guardar actualización
         run: |
           if git diff --quiet; then

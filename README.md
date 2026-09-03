@@ -127,6 +127,33 @@ uv run accesos update --source "D:\_DATAVIZ\RosadaOlivos\data\Raw"
 
 El procesamiento es incremental. El manifiesto compara metadatos y checksum; si una fuente cambió, reemplaza todos los registros procedentes de ese archivo. Una fuente eliminada queda marcada como ausente, pero sus registros históricos no se borran automáticamente.
 
+## Audiencias de gestión de intereses
+
+El proyecto también incorpora los CSV anuales del [Registro Único de Audiencias de Gestión de Intereses](https://datos.gob.ar/dataset/registro-unico-de-audiencias-de-gestion-de-intereses) (Poder Ejecutivo Nacional, Decreto 1172/2003). A diferencia de los PDF de acceso, estos se conservan como un dataset tabular único y no alimentan (todavía) el sitio web.
+
+Actualizar las audiencias (descubre los CSV del año en curso, descarga solo los que cambiaron y re-genera el unificado):
+
+```bash
+uv run accesos update-audiencias
+```
+
+Opciones:
+
+- `--data-dir`: directorio de estado (por defecto `data`).
+- `--raw`: carpeta con los CSV descargados (por defecto `<data>/raw`).
+- `--output`: CSV unificado de salida (por defecto `<data>/audiencias_unificado.csv`).
+- `--force`: re-descarga todos los CSV y re-unifica, ignorando el estado previo.
+
+Salidas:
+
+- `<data>/raw/` — CSV anuales descargados (originales, latin-1).
+- `<data>/audiencias_unificado.csv` — serie completa (2004-2025) normalizada a un esquema único de 48 columnas en UTF-8.
+- `<data>/audiencias_state.json` — estado de cada fuente (URL, sha256, tamaño, formato) usado para la detección incremental de cambios.
+
+El portal expone dos esquemas a lo largo de los años: uno antiguo (2004-2016, columnas `*_sujeto_obligado`, `fecha_hora_audiencia`, `id_audiencia`, etc.) y uno moderno (2016 bis y 2017-2025, con `fecha`, `sujeto_obligado_nombre`, `participantes_json`, etc.). La unificación normaliza el esquema antiguo al moderno y conserva como columnas adicionales los campos antiguos sin equivalente (por ejemplo `id_audiencia`, `estado_audiencia`, `es_persona_juridica`), de modo que no se pierde información.
+
+La actualización mensual del workflow ejecuta `update-audiencias` luego de procesar los PDF de acceso.
+
 ## Importaciones históricas
 
 Importar TSV previamente normalizados:

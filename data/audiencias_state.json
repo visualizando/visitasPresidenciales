@@ -1,0 +1,213 @@
+{
+  "files": {
+    "audiencias-2004.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2004.csv",
+      "sha256": "aacc49076fc4343233dd2d2ab75b275544ef4260a1a8a08bbeac9865991436b7",
+      "size": 640258,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/e3159a9b-9f2c-4598-a80e-7336455c484f/download/audiencias-2004b.csv",
+      "year": 2004
+    },
+    "audiencias-2005.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2005.csv",
+      "sha256": "817541acef3c8dc79ca479ecd7b190b9af9bcd64715f5289b182c7635d95fc3c",
+      "size": 5939102,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/b0d919dc-59b1-40e8-a89f-6e191b130954/download/audiencias-2005.csv",
+      "year": 2005
+    },
+    "audiencias-2006.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2006.csv",
+      "sha256": "4c499d6879c28d6baaa26dbdbd5f1c4639752b4b03bbdd02d16a6f2c4d504022",
+      "size": 4791689,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/16cf6dcb-6b87-4536-ba9e-3dbacaaf4b6c/download/audiencias-2006.csv",
+      "year": 2006
+    },
+    "audiencias-2007.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2007.csv",
+      "sha256": "1b2828768ab9d398e92234a5d0aa2f1b7f4b5eb682a2350736c7c037798c7d90",
+      "size": 3188982,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/028837df-b2a0-433c-96c4-e8b2373a6c3c/download/audiencias-2007.csv",
+      "year": 2007
+    },
+    "audiencias-2008.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2008.csv",
+      "sha256": "49b85471dfd727c3f6b8994d456a204a0410e70e0b330dbc8c7aad6593586875",
+      "size": 5116614,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/3658856b-40ad-4c8e-a6f9-64b0483f16a7/download/audiencias-2008.csv",
+      "year": 2008
+    },
+    "audiencias-2009.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2009.csv",
+      "sha256": "aa910b8946cd78e616050b1e98b8853066fb5d59fac1ecb3d048ec13ca0b5b22",
+      "size": 3960531,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/d7ac6971-0ebf-481c-9492-a3e70057f60a/download/audiencias-2009.csv",
+      "year": 2009
+    },
+    "audiencias-2010.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2010.csv",
+      "sha256": "286af7e69fa769b3afc480542195d96c4025eefbef9f684d4599dc79c9f38367",
+      "size": 3774361,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/3b3871b9-48a4-4953-b4a5-e660f133b466/download/audiencias-2010.csv",
+      "year": 2010
+    },
+    "audiencias-2011.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2011.csv",
+      "sha256": "947746e929feba801b4560d411ba456bc0c0937060ba0a31f74ebdea7f696117",
+      "size": 4127606,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/389840b0-4c97-4177-a4b0-77302699a00a/download/audiencias-2011.csv",
+      "year": 2011
+    },
+    "audiencias-2012.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2012.csv",
+      "sha256": "ef630d89c63b2f63ce41e5980c2b4f6afc84770e03986e52b28a66834c96f24b",
+      "size": 3247194,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/f368ac69-9289-4258-9646-f139300642e2/download/audiencias-2012.csv",
+      "year": 2012
+    },
+    "audiencias-2013.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2013.csv",
+      "sha256": "0eae9f692fcfb2e4bf90ca2855dfeb99b4acee4445ef9b0a571ffcc2262a320a",
+      "size": 2823200,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/b3a3eb60-72a1-449e-aefb-1a44678d61a7/download/audiencias-2013.csv",
+      "year": 2013
+    },
+    "audiencias-2014.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2014.csv",
+      "sha256": "eff9398f548ebf80828f7836c83c21b42031c30b9a01e22e9b9bf804444db7f3",
+      "size": 2474049,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/89836108-d804-45d7-b7fb-db7c902f2ca4/download/audiencias-2014.csv",
+      "year": 2014
+    },
+    "audiencias-2015.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2015.csv",
+      "sha256": "427b46ae02ffb0b89e5d31eb4f47ecf4865b4b816332919c3cc2b7b5e64fcc2e",
+      "size": 1602593,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/8bd791b0-6f8b-4b07-880a-2c8b4aeb74e0/download/audiencias-2015.csv",
+      "year": 2015
+    },
+    "audiencias-2016-bis.csv": {
+      "format": "nuevo",
+      "is_bis": true,
+      "name": "audiencias-2016-bis.csv",
+      "sha256": "cf981d7789fa7b860ced718839e2ab80c2108555810254c48cb38a91f7e4d766",
+      "size": 162391,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/9500233f-c7b5-4d57-aaf1-c0b2a6978cdf/download/audiencias-2016-bis-sistema-nuevo.csv",
+      "year": 2016
+    },
+    "audiencias-2016.csv": {
+      "format": "viejo",
+      "is_bis": false,
+      "name": "audiencias-2016.csv",
+      "sha256": "afb87d52b418d793c263259a3057c50975d7a212c43ccc55909c3d60c61266af",
+      "size": 3444869,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/4716fd48-4bae-4f31-8f9b-bdaa95d56809/download/audiencias-2016.csv",
+      "year": 2016
+    },
+    "audiencias-2017.csv": {
+      "format": "nuevo",
+      "is_bis": false,
+      "name": "audiencias-2017.csv",
+      "sha256": "2c3b0d9519720715b5cfb111a0dc4b29ef450cf75d4b7354d7589e9cca634d61",
+      "size": 5490006,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/c35149f8-bf17-4c64-bdbb-0a7a29dfb882/download/2017.csv",
+      "year": 2017
+    },
+    "audiencias-2018.csv": {
+      "format": "nuevo",
+      "is_bis": false,
+      "name": "audiencias-2018.csv",
+      "sha256": "c4aff96785e80f038cd83ef7d1df760db545e90718df831d004cc97eea904301",
+      "size": 4146425,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/0102cb82-45cf-4799-b33d-aed967bf5c8c/download/2018.csv",
+      "year": 2018
+    },
+    "audiencias-2019.csv": {
+      "format": "nuevo",
+      "is_bis": false,
+      "name": "audiencias-2019.csv",
+      "sha256": "bb0f0f22b69b79eff83d0ebd28c7ae3b32054e709d739f2e901b0667d544d6af",
+      "size": 3745322,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/6ec58857-8795-4ccc-946d-6230b48a08fe/download/2019.csv",
+      "year": 2019
+    },
+    "audiencias-2020.csv": {
+      "format": "nuevo",
+      "is_bis": false,
+      "name": "audiencias-2020.csv",
+      "sha256": "1b19318e6232e7e7f078fd8e0ff0dd5340869c0ed62d7830586953ddcaf30881",
+      "size": 4015563,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/38f346b2-18cf-4158-b990-a859a16d7c7c/download/2020.csv",
+      "year": 2020
+    },
+    "audiencias-2021.csv": {
+      "format": "nuevo",
+      "is_bis": false,
+      "name": "audiencias-2021.csv",
+      "sha256": "446ecf3db03c176c238115eddb58db0a4e7b3359c532bfca65074acc427fa3a2",
+      "size": 4213458,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/e2b50dc6-3917-4a5f-9dfe-7d3945b5ab95/download/2021.csv",
+      "year": 2021
+    },
+    "audiencias-2022.csv": {
+      "format": "nuevo",
+      "is_bis": false,
+      "name": "audiencias-2022.csv",
+      "sha256": "974665d0552b073c68de3af5fc14c91f20865517278b484f931d10f9e3aeb15d",
+      "size": 3729998,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/61468e04-82f3-4638-ac12-033291c0d9ac/download/2022.csv",
+      "year": 2022
+    },
+    "audiencias-2023.csv": {
+      "format": "nuevo",
+      "is_bis": false,
+      "name": "audiencias-2023.csv",
+      "sha256": "256161b430fa8e7bcb54c01c997f4464e944004bf28b7424015d001a51912dbc",
+      "size": 2412578,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/0291f06f-a0a2-41bf-bd83-dc9af2772cc9/download/2023.csv",
+      "year": 2023
+    },
+    "audiencias-2024.csv": {
+      "format": "nuevo",
+      "is_bis": false,
+      "name": "audiencias-2024.csv",
+      "sha256": "22a476e896b9a95c5fbc4dd74059eefa70c731f6cc0c093313b260051e15af97",
+      "size": 4568639,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/8fa4823d-0f38-419d-9518-499792d826dd/download/2024.csv",
+      "year": 2024
+    },
+    "audiencias-2025.csv": {
+      "format": "nuevo",
+      "is_bis": false,
+      "name": "audiencias-2025.csv",
+      "sha256": "15b4e8868ec649788eb399b9fc4bf8b21cb2f69608428101f5f0f80f000be059",
+      "size": 1823673,
+      "url": "http://datos.mininterior.gob.ar/dataset/f9fcd62a-3656-4bb9-ba83-7544b4b156b8/resource/e0503b72-d68a-42ae-ba8c-492d82f2d970/download/2025.csv",
+      "year": 2025
+    }
+  },
+  "last_updated": "2026-09-03T01:44:19.306512Z",
+  "version": 1
+}

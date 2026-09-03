@@ -6,6 +6,7 @@ import os
 from dataclasses import asdict
 from pathlib import Path
 
+from pipeline.audiencias import update_audiencias
 from pipeline.build_web import build_web_data
 from pipeline.curation_server import serve_curation
 from pipeline.discovery import discover
@@ -29,6 +30,24 @@ def parser() -> argparse.ArgumentParser:
         "--output", type=Path, default=Path(os.getenv("WEB_DATA_DIR", "web/public/data"))
     )
     update.add_argument("--min-year", type=int, default=int(os.getenv("MIN_YEAR", "2023")))
+    update_aud = subcommands.add_parser(
+        "update-audiencias", help="Descarga y unifica las audiencias de gestión de intereses"
+    )
+    update_aud.add_argument(
+        "--data-dir", type=Path, default=Path(os.getenv("DATA_DIR", "data"))
+    )
+    update_aud.add_argument(
+        "--raw", type=Path, default=None, help="Carpeta con los CSV descargados (default <data>/raw)"
+    )
+    update_aud.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="CSV unificado de salida (default <data>/audiencias_unificado.csv)",
+    )
+    update_aud.add_argument(
+        "--force", action="store_true", help="Re-descarga todos los CSV y re-unifica"
+    )
     build = subcommands.add_parser("build-web", help="Regenera índices, analytics y exportaciones")
     build.add_argument("--data-dir", type=Path, default=Path(os.getenv("DATA_DIR", "data")))
     build.add_argument(
@@ -127,6 +146,13 @@ def main() -> None:
             data_dir=arguments.data_dir,
             web_data_dir=arguments.output,
             min_year=arguments.min_year,
+        )
+    elif arguments.command == "update-audiencias":
+        result = update_audiencias(
+            data_dir=arguments.data_dir,
+            raw_dir=arguments.raw,
+            output=arguments.output,
+            force=arguments.force,
         )
     elif arguments.command == "build-web":
         result = build_web_data(arguments.data_dir, arguments.output)
