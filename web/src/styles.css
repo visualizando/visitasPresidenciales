@@ -535,6 +535,7 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
 .records-table .type-icon { flex: 0 0 auto; width: 0.85rem; height: 0.85rem; stroke-width: 2; color: var(--color-text-secondary); }
 .source-stack, .source-audiencia { display: inline-flex; align-items: center; gap: 0.3rem; }
 .source-audiencia { font-size: inherit; }
+.records-table .source-link, .records-table .source-local, .records-table .source-audiencia { color: var(--color-text-secondary); }
 .source-stack { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
 .fused-audiencia { display: flex; align-items: center; gap: 0.3rem; margin-block-start: 0.25rem; color: var(--color-text-secondary); font-size: 0.72rem; }
 .fused-audiencia b { color: var(--color-text-primary); font-weight: 600; }
