@@ -1,7 +1,6 @@
-import {ArrowDown, ArrowUp, Download, ExternalLink, FileText, X} from "lucide-react";
+import {ArrowDown, ArrowUp, ClipboardList, Download, ExternalLink, FileText, House, X} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 import type {AccessEvent, AudienciaDetail, CoincidenceResult, PersonSummary} from "../types";
-import {AudienciasBadge} from "./AudienciasBadge";
 import {CoincidenceRanking} from "./CoincidenceRanking";
 import {locationLabel, titleCase} from "./SearchResults";
 import {comparisonSeries} from "../utils/personColors";
@@ -82,15 +81,14 @@ export function PersonProfile({people, events, audiencias, loading, error, coinc
   return <section className="profile" aria-labelledby="profile-title">
     <div className="profile-header">
       <h2 id="profile-title" ref={headingRef} tabIndex={-1}>Detalle de movimientos</h2>
-      <button className="text-button" type="button" onClick={onClear}>Limpiar selección</button>
     </div>
 
-    <div className="selected-people" aria-label="Personas seleccionadas">{people.map((person) => <div className="person-chip" key={person.entity_id} style={{borderColor: colors.get(person.entity_id)}}><i className="person-color" style={{backgroundColor: colors.get(person.entity_id)}} aria-hidden="true" /><span><strong>{titleCase(person.canonical_name)}</strong><small>{person.document_type ?? "Documento"} <bdi>{person.document_number ?? "no informado"}</bdi></small></span>{person.audiencias_cr && <AudienciasBadge />}<button type="button" onClick={() => onRemove(person.entity_id)} aria-label={`Quitar ${titleCase(person.canonical_name)}`}><X aria-hidden="true" /></button></div>)}</div>
+    <div className="selected-people" aria-label="Personas seleccionadas">{people.map((person) => <div className="person-chip" key={person.entity_id} style={{borderColor: colors.get(person.entity_id)}}><i className="person-color" style={{backgroundColor: colors.get(person.entity_id)}} aria-hidden="true" /><span><strong>{titleCase(person.canonical_name)}</strong><small>{person.document_type ?? "Documento"} <bdi>{person.document_number ?? "no informado"}</bdi></small></span><button type="button" onClick={() => onRemove(person.entity_id)} aria-label={`Quitar ${titleCase(person.canonical_name)}`}><X aria-hidden="true" /></button></div>)}</div>
 
     <div className="profile-stats"><span><strong>{rows.length.toLocaleString("es-AR")}</strong> registros</span><span>{locations.length === 1 ? "Sede" : "Sedes"}: <strong>{locations.map(locationLabel).join(" y ")}</strong></span><span>Última aparición: <strong>{formatDate(latest)}</strong></span></div>
     {loading && <p role="status">Cargando registros…</p>}
     {error && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los registros.</strong><span>{error}</span></div>}
-    {!loading && !error && <div className="records-section"><div className="records-heading"><h3>Visitas: a Casa Rosada / Quinta de Olivos según registro - Audiencias: según registro de audiencias</h3><div className="records-heading-actions"><span>{visibleEvents.length.toLocaleString("es-AR")} de {rows.length.toLocaleString("es-AR")} filas</span>{rows.length > 0 && <button className="selection-download" type="button" onClick={downloadSelection} aria-label={`Descargar ${rows.length.toLocaleString("es-AR")} ${rows.length === 1 ? "registro" : "registros"} de la selección en CSV`}><Download aria-hidden="true" />Descargar CSV</button>}</div></div>{rows.length ? <><div className="records-table-wrap"><table className="records-table"><caption className="sr-only">Visitas y audiencias de las personas seleccionadas</caption><thead><tr>
+    {!loading && !error && <div className="records-section"><div className="records-heading"><h3>Visitas: a Casa Rosada / Quinta de Olivos según registro - Audiencias: según registro de audiencias</h3><div className="records-heading-actions"><span>{visibleEvents.length.toLocaleString("es-AR")} de {rows.length.toLocaleString("es-AR")} filas</span>{rows.length > 0 && <button className="selection-download" type="button" onClick={downloadSelection} aria-label={`Descargar ${rows.length.toLocaleString("es-AR")} ${rows.length === 1 ? "registro" : "registros"} de la selección en CSV`}><Download aria-hidden="true" />Descargar CSV</button>}<button className="text-button" type="button" onClick={onClear}>Limpiar selección</button></div></div>{rows.length ? <><div className="records-table-wrap"><table className="records-table"><caption className="sr-only">Visitas y audiencias de las personas seleccionadas</caption><thead><tr>
       <SortableHeader label="Fecha" column="date" sort={sort} onSort={changeSort} />
       <SortableHeader label="Ingreso" column="entry" sort={sort} onSort={changeSort} />
       <SortableHeader label="Egreso" column="exit" sort={sort} onSort={changeSort} />
@@ -113,18 +111,29 @@ function SortableHeader({label, column, sort, onSort}: {label: string; column: S
 
 function TimelineRow({event, colors, onOpenDetail}: {event: AccessEvent; colors: Map<string, string>; onOpenDetail: (event: AccessEvent, trigger: HTMLButtonElement) => void}) {
   const isAudiencia = Boolean(event.audiencia);
-  const hasFused = Boolean(event.fused_audiencias?.length);
   return <tr>
     <td><time dateTime={primaryDate(event) ?? undefined}>{formatDate(primaryDate(event))}</time></td>
     <td><time dateTime={entryDate(event) ?? undefined}>{formatTime(entryDate(event))}</time></td>
     <td><time dateTime={exitDate(event) ?? undefined}>{formatTime(exitDate(event))}</time></td>
     <td><span className="record-person"><i className="person-color" style={{backgroundColor: colors.get(event.entity_id)}} aria-hidden="true" /><strong>{titleCase(event.canonical_name)}</strong></span></td>
     <td>{isAudiencia ? "Casa Rosada" : locationLabel(event.location)}</td>
-    <td>{isAudiencia ? "Audiencia" : hasFused ? `${recordLabel(event)} + Audiencia` : recordLabel(event)}</td>
+    <td><TypeCell event={event} /></td>
     <td className="detail-cell"><AudienciaDetailCell event={event} /></td>
     <td><SourceCell event={event} /></td>
     <td><button className="record-detail-trigger" type="button" onClick={(browserEvent) => onOpenDetail(event, browserEvent.currentTarget)} aria-label={`Abrir detalle del registro de ${titleCase(event.canonical_name)} del ${formatDate(primaryDate(event))}`}><FileText aria-hidden="true" /></button></td>
   </tr>;
+}
+
+function TypeCell({event}: {event: AccessEvent}) {
+  const audiencia = event.audiencia;
+  const fused = event.fused_audiencias?.length;
+  if (audiencia) {
+    return <span className="record-type"><ClipboardList className="type-icon" aria-hidden="true" />Audiencia</span>;
+  }
+  if (fused) {
+    return <span className="record-type"><House className="type-icon" aria-hidden="true" />{recordLabel(event)} + <ClipboardList className="type-icon" aria-hidden="true" />Audiencia</span>;
+  }
+  return <span className="record-type"><House className="type-icon" aria-hidden="true" />{recordLabel(event)}</span>;
 }
 
 function AudienciaDetailCell({event}: {event: AccessEvent}) {
@@ -141,10 +150,10 @@ function SourceCell({event}: {event: AccessEvent}) {
   const audiencia = event.audiencia;
   const fused = event.fused_audiencias;
   if (audiencia && !fused?.length) {
-    return <span className="source-audiencia">Registro de Audiencias</span>;
+    return <span className="source-audiencia"><ClipboardList className="type-icon" aria-hidden="true" />Registro de Audiencias</span>;
   }
   if (fused?.length) {
-    return <span className="source-stack"><SourceLink event={event} /><span className="source-audiencia">Registro de Audiencias</span></span>;
+    return <span className="source-stack"><SourceLink event={event} /><span className="source-audiencia"><ClipboardList className="type-icon" aria-hidden="true" />Registro de Audiencias</span></span>;
   }
   return <SourceLink event={event} />;
 }
@@ -153,7 +162,7 @@ function SourceLink({event}: {event: AccessEvent}) {
   const source = event.sources?.[0];
   if (!source) return <span>—</span>;
   const filename = sourceFileName(source.path || source.url);
-  const label = <><FileText aria-hidden="true" /><span className="source-file-name">{filename}</span><span>· p. {source.page}</span></>;
+  const label = <><House className="type-icon" aria-hidden="true" /><span className="source-file-name">{filename}</span><span>· p. {source.page}</span></>;
   return isPublicUrl(source.url) ? <a className="source-link" href={`${source.url}#page=${source.page}`} target="_blank" rel="noreferrer" title={`Abrir ${filename}, página ${source.page}`}>{label}<ExternalLink aria-hidden="true" /></a> : <span className="source-local" title={`${filename} · enlace público no disponible`}>{label}</span>;
 }
 

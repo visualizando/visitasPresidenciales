@@ -161,15 +161,15 @@ strong, b { font-weight: 400; }
 .profile h2 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
 .profile h2:focus { outline: 0; }
 .profile-description { max-width: 70ch; margin: 0.35rem 0 0; color: var(--color-text-secondary); font-size: 0.8125rem; }
-.selected-people { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-block-start: 0.8rem; }
-.person-chip { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2.5rem; padding: 0.3rem 0.35rem 0.3rem 0.65rem; border: 1px solid var(--accent-100); border-radius: 999px; background: var(--color-accent-soft); }
+.selected-people { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-block-start: 0.5rem; }
+.person-chip { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2.25rem; padding: 0.25rem 0.3rem 0.25rem 0.6rem; border: 1px solid var(--accent-100); border-radius: 999px; background: var(--color-accent-soft); }
 .person-color { display: inline-block; flex: 0 0 auto; width: 0.55rem; height: 0.55rem; border: 1px solid rgb(0 0 0 / 0.12); border-radius: 50%; }
 .person-chip > span { display: flex; flex-direction: column; }
 .person-chip strong { font-size: 0.75rem; }
 .person-chip small { color: var(--color-text-secondary); font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
 .person-chip button { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; padding: 0; border: 0; border-radius: 50%; color: var(--color-accent-solid); background: var(--color-bg-surface); cursor: pointer; }
 .person-chip svg { width: 0.85rem; }
-.profile-stats { display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; margin-block: 0.65rem 0.8rem; padding: 0.45rem 0.65rem; border-radius: var(--radius-inner); color: var(--color-text-secondary); background: var(--color-bg-page); font-size: 0.72rem; }
+.profile-stats { display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; margin-block: 0.5rem 0.6rem; padding: 0.35rem 0.6rem; border-radius: var(--radius-inner); color: var(--color-text-secondary); background: var(--color-bg-page); font-size: 0.72rem; }
 .profile-stats span { white-space: nowrap; }
 .profile-stats strong { color: var(--color-text-primary); font-size: 0.75rem; font-weight: 400; font-variant-numeric: tabular-nums; }
 .privacy-note { margin: 0; padding: 0.55rem 0.65rem; border-radius: var(--radius-inner); color: var(--status-warning-text); background: var(--status-warning-bg); font-size: 0.75rem; }
@@ -211,10 +211,10 @@ strong, b { font-weight: 400; }
 .coincidence-empty, .coincidence-limit { margin: 0; padding: 0.55rem 0.65rem; border-radius: var(--radius-inner); color: var(--color-text-secondary); background: var(--color-bg-subtle); font-size: 0.75rem; }
 .coincidence-limit { margin-block-start: 0.35rem; padding: 0; background: transparent; font-size: 0.6875rem; }
 .evidence-limit { width: 22rem; margin: 0.25rem 0 0; color: var(--color-text-secondary); font-size: 0.6875rem; }
-.records-section { margin-block-start: 1rem; }
+.records-section { margin-block-start: 0.6rem; }
 .records-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-block-end: 0.4rem; }
 .records-heading span { color: var(--color-text-secondary); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
-.records-heading-actions { display: flex; align-items: center; gap: 0.75rem; }
+.records-heading-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
 .selection-download { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2.25rem; padding: 0.35rem 0.65rem; border: 1px solid var(--accent-100); border-radius: 0.5rem; color: var(--color-accent-solid); background: var(--color-accent-soft); font-size: 0.75rem; font-weight: 400; cursor: pointer; }
 .selection-download svg { width: 0.85rem; height: 0.85rem; stroke-width: 2; }
 .records-table-wrap { max-height: 31rem; overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-inner); background: var(--color-bg-surface); }
@@ -529,9 +529,10 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
 .audiencias-badge { display: inline-flex; align-items: center; gap: 0.3rem; width: fit-content; max-width: 100%; padding: 0.12rem 0.45rem; border-radius: 999px; color: var(--accent-900); background: var(--accent-50); font-size: 0.66rem; font-weight: 600; line-height: 1.35; white-space: nowrap; }
 .audiencias-badge svg { width: 0.7rem; height: 0.7rem; stroke-width: 2; flex: none; }
 .result-title-row .audiencias-badge { flex: 0 0 auto; }
-.person-chip .audiencias-badge { flex: none; }
 
 /* Renglones de audiencias dentro de la tabla de registros */
+.record-type { display: inline-flex; align-items: center; gap: 0.3rem; }
+.type-icon { flex: 0 0 auto; width: 0.85rem; height: 0.85rem; stroke-width: 2; color: var(--color-text-secondary); }
 .source-stack, .source-audiencia { display: inline-flex; align-items: center; gap: 0.3rem; }
 .source-audiencia { font-size: 0.72rem; }
 .source-stack { flex-direction: column; align-items: flex-start; gap: 0.15rem; }

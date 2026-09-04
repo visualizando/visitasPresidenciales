@@ -52,12 +52,16 @@ describe("PersonProfile", () => {
 
   it("muestra audiencias como filas de la tabla con su fuente", () => {
     const audiencias = new Map<string, import("../types").AudienciaDetail[]>([["one", [{audiencia_id: "49.435", entity_id: "one", status: "likely", official_name: "MINISTRO X", official_cargo: "Ministro", lugar: "CASA DE GOBIERNO", date: "2024-03-15", cr_destination: "", cr_record_id: ""}]]]);
-    render(<PersonProfile people={[people[0]]} events={[event("1", "one", "PEREZ ANA", "2024-03-10T10:00:00Z")]} audiencias={audiencias} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={vi.fn()} />);
+    const onClear = vi.fn();
+    const {container} = render(<PersonProfile people={[people[0]]} events={[event("1", "one", "PEREZ ANA", "2024-03-10T10:00:00Z")]} audiencias={audiencias} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={onClear} />);
     expect(screen.getAllByRole("row")).toHaveLength(3);
     expect(screen.getAllByText("Audiencia")).toHaveLength(1);
     expect(screen.getByText("Registro de Audiencias")).toBeInTheDocument();
     expect(screen.getByText(/MINISTRO X/i)).toBeInTheDocument();
     expect(screen.queryByText(/Fila celeste/i)).not.toBeInTheDocument();
+    expect(container.querySelectorAll(".type-icon")).not.toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", {name: "Limpiar selección"}));
+    expect(onClear).toHaveBeenCalled();
     fireEvent.click(screen.getAllByRole("button", {name: /Abrir detalle del registro/i})[0]);
     expect(screen.getByRole("dialog", {name: "Detalle para citar"})).toBeInTheDocument();
     expect(screen.getByText(/Audiencia probable en Casa Rosada/i)).toBeInTheDocument();
