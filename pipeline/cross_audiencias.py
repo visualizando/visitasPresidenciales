@@ -104,8 +104,9 @@ def load_cr_events(events_dir: Path) -> list[dict[str, str]]:
 
 
 def load_audiencias_rows(unificado: Path) -> list[dict[str, str]]:
-    """Load all rows from the unified audiencias CSV."""
-    with unificado.open(encoding="utf-8") as handle:
+    """Load all rows from the unified audiencias CSV (plain or .gz)."""
+    opener = gzip.open if unificado.suffix == ".gz" else open
+    with opener(unificado, "rt", encoding="utf-8") as handle:
         return list(csv.DictReader(handle, delimiter=";"))
 
 

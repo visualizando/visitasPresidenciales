@@ -254,7 +254,7 @@ def test_update_audiencias_incremental(monkeypatch, tmp_path) -> None:
     assert result["downloaded"] == 1
     assert result["changed"] == 1
     assert result["unified"] is True
-    assert (data_dir / "audiencias_unificado.csv").exists()
+    assert (data_dir / "audiencias_unificado.csv.gz").exists()
     assert (data_dir / "audiencias_state.json").exists()
 
     # Segunda corrida: nada cambió -> no descarga de nuevo, no re-unifica

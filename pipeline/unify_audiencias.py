@@ -25,7 +25,7 @@ from pathlib import Path
 import duckdb
 
 RAW_DIR = Path("data/raw")
-OUTPUT = Path("data/audiencias_unificado.csv")
+OUTPUT = Path("data/audiencias_unificado.csv.gz")
 
 # Columnas del esquema moderno (formato 2016 bis / 2017-2025)
 NUEVAS_COLS = [
@@ -200,6 +200,7 @@ def unify(raw_dir: Path, output: Path) -> dict[str, int]:
         )
         con.execute(f"CREATE OR REPLACE TABLE unificado AS {combined}")
 
+        # DuckDB comprime automaticamente cuando el destino termina en .gz.
         con.execute(
             f"COPY unificado TO '{output}' (HEADER, DELIMITER ';', QUOTE '\"')"
         )

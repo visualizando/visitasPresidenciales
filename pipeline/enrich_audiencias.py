@@ -1,6 +1,6 @@
 """Extrae y cruza personas de las Audiencias de Gestión de Intereses.
 
-Este módulo lee `data/audiencias_unificado.csv` (consolidado por el módulo de
+Este módulo lee `data/audiencias_unificado.csv.gz` (consolidado por el módulo de
 audiencias) y extrae todas las personas identificadas en cada audiencia:
 
 - sujeto_obligado (el funcionario que recibe la audiencia),
@@ -38,7 +38,7 @@ from rapidfuzz import fuzz
 from pipeline.normalize import document_identity, entity_id, fold_text, normalize_document
 from pipeline.storage import utc_now, write_json_atomic
 
-RAW_UNIFICADO = Path("data/audiencias_unificado.csv")
+RAW_UNIFICADO = Path("data/audiencias_unificado.csv.gz")
 OUTPUT_PERSONAS = Path("data/audiencias_personas.csv")
 OUTPUT_MASTER = Path("data/audiencias_personas_master.json")
 OUTPUT_STATE = Path("data/audiencias_personas_state.json")

@@ -49,7 +49,7 @@ def parser() -> argparse.ArgumentParser:
         "--output",
         type=Path,
         default=None,
-        help="CSV unificado de salida (default <data>/audiencias_unificado.csv)",
+        help="CSV unificado de salida (default <data>/audiencias_unificado.csv.gz)",
     )
     update_aud.add_argument(
         "--force", action="store_true", help="Re-descarga todos los CSV y re-unifica"
@@ -61,7 +61,7 @@ def parser() -> argparse.ArgumentParser:
     enrich.add_argument(
         "--unificado",
         type=Path,
-        default=Path("data/audiencias_unificado.csv"),
+        default=Path("data/audiencias_unificado.csv.gz"),
         help="CSV unificado de audiencias de entrada",
     )
     enrich.add_argument(
@@ -87,7 +87,7 @@ def parser() -> argparse.ArgumentParser:
         help="Genera candidatos de curacion para el cruce audiencias <-> base",
     )
     cur_aud.add_argument(
-        "--unificado", type=Path, default=Path("data/audiencias_unificado.csv")
+        "--unificado", type=Path, default=Path("data/audiencias_unificado.csv.gz")
     )
     cur_aud.add_argument(
         "--base-doc-dir",
@@ -129,7 +129,7 @@ def parser() -> argparse.ArgumentParser:
     cross_aud.add_argument(
         "--unificado",
         type=Path,
-        default=Path("data/audiencias_unificado.csv"),
+        default=Path("data/audiencias_unificado.csv.gz"),
     )
     cross_aud.add_argument(
         "--events-dir",

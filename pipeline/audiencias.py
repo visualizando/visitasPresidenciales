@@ -5,7 +5,7 @@ de Intereses (https://datos.gob.ar/dataset/registro-unico-de-audiencias-de-gesti
 al flujo de actualización de datos.
 
 Los archivos se conservan en `data/raw/` y se normalizan a un único CSV unificado
-en `data/audiencias_unificado.csv`. El estado de cada fuente (URL, sha256, tamaño,
+en `data/audiencias_unificado.csv.gz`. El estado de cada fuente (URL, sha256, tamaño,
 formato) se guarda en `data/audiencias_state.json` para detectar cambios de forma
 incremental: solo se re-descarga un archivo si cambió su hash o su tamaño.
 
@@ -29,7 +29,7 @@ from pipeline.unify_audiencias import detect_format, unify
 DATASET_URL = "https://datos.gob.ar/dataset/registro-unico-de-audiencias-de-gestion-de-intereses"
 STATE_FILE = Path("data/audiencias_state.json")
 DEFAULT_RAW_DIR = Path("data/raw")
-DEFAULT_OUTPUT = Path("data/audiencias_unificado.csv")
+DEFAULT_OUTPUT = Path("data/audiencias_unificado.csv.gz")
 
 _USER_AGENT = "accesos-publicos/0.1 (+GitHub Actions)"
 
@@ -139,7 +139,7 @@ def update_audiencias(
     """
     data_dir = Path(data_dir)
     raw_dir = Path(raw_dir) if raw_dir is not None else data_dir / "raw"
-    output = Path(output) if output is not None else data_dir / "audiencias_unificado.csv"
+    output = Path(output) if output is not None else data_dir / "audiencias_unificado.csv.gz"
     state_path = Path(state_path) if state_path is not None else data_dir / "audiencias_state.json"
 
     raw_dir.mkdir(parents=True, exist_ok=True)

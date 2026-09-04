@@ -141,13 +141,13 @@ Opciones:
 
 - `--data-dir`: directorio de estado (por defecto `data`).
 - `--raw`: carpeta con los CSV descargados (por defecto `<data>/raw`).
-- `--output`: CSV unificado de salida (por defecto `<data>/audiencias_unificado.csv`).
+- `--output`: CSV unificado de salida (por defecto `<data>/audiencias_unificado.csv.gz`).
 - `--force`: re-descarga todos los CSV y re-unifica, ignorando el estado previo.
 
 Salidas:
 
 - `<data>/raw/` — CSV anuales descargados (originales, latin-1).
-- `<data>/audiencias_unificado.csv` — serie completa (2004-2025) normalizada a un esquema único de 48 columnas en UTF-8.
+- `<data>/audiencias_unificado.csv.gz` — serie completa (2004-2025) normalizada a un esquema único de 48 columnas en UTF-8.
 - `<data>/audiencias_state.json` — estado de cada fuente (URL, sha256, tamaño, formato) usado para la detección incremental de cambios.
 
 El portal expone dos esquemas a lo largo de los años: uno antiguo (2004-2016, columnas `*_sujeto_obligado`, `fecha_hora_audiencia`, `id_audiencia`, etc.) y uno moderno (2016 bis y 2017-2025, con `fecha`, `sujeto_obligado_nombre`, `participantes_json`, etc.). La unificación normaliza el esquema antiguo al moderno y conserva como columnas adicionales los campos antiguos sin equivalente (por ejemplo `id_audiencia`, `estado_audiencia`, `es_persona_juridica`), de modo que no se pierde información.
@@ -164,7 +164,7 @@ uv run accesos enrich-audiencias
 
 Opciones:
 
-- `--unificado`: CSV unificado de entrada (por defecto `data/audiencias_unificado.csv`).
+- `--unificado`: CSV unificado de entrada (por defecto `data/audiencias_unificado.csv.gz`).
 - `--base-doc-dir`: carpeta con los shards de personas con documento de la base (por defecto `web/public/data/search/document`). Requiere un build-web previo.
 - `--name-threshold`: umbral de similitud (0-100, por defecto `96`) para el cruce por nombre cuando no hay documento.
 
@@ -213,7 +213,7 @@ uv run accesos cross-audiencias
 
 Opciones:
 
-- `--unificado`: CSV unificado de audiencias (por defecto `data/audiencias_unificado.csv`).
+- `--unificado`: CSV unificado de audiencias (por defecto `data/audiencias_unificado.csv.gz`).
 - `--events-dir`: shards de eventos de Casa Rosada (por defecto `web/public/data/events`).
 - `--master`: master de personas de audiencias (por defecto `data/audiencias_personas_master.json`).
 - `--output`: JSON de salida (por defecto `data/audiencias_cross.json`).
