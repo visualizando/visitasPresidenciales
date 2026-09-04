@@ -63,9 +63,6 @@ a { color: var(--color-accent-solid); text-underline-position: from-font; text-d
 .site-header { display: flex; align-items: center; justify-content: space-between; gap: 2rem; max-width: 96rem; margin-inline: auto; padding: 1.15rem var(--space-page); }
 .organization-brand { display: inline-flex; flex: 0 1 auto; }
 .organization-brand img { display: block; width: clamp(10rem, 18vw, 14rem); height: auto; }
-.microsite-brand { display: grid; gap: 0.1rem; color: var(--color-text-primary); text-align: end; text-decoration: none; }
-.microsite-brand small { color: var(--color-accent-solid); font-size: 0.6875rem; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; }
-.microsite-brand strong { font-size: 0.9375rem; font-weight: 400; letter-spacing: 0.025em; text-transform: uppercase; }
 
 main > section { max-width: 96rem; margin-inline: auto; scroll-margin-top: 4.25rem; padding-inline: var(--space-page); }
 .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2rem; align-items: end; padding-block: 2.25rem 1.75rem; }
@@ -80,6 +77,11 @@ strong, b { font-weight: 400; }
 .hero-intro { display: grid; max-width: 76ch; gap: 0.45rem; }
 .hero-intro p { margin: 0; color: var(--color-text-secondary); font-size: 0.8125rem; line-height: 1.45; text-wrap: pretty; }
 .hero-intro p + p { color: var(--neutral-600); font-size: 0.75rem; }
+.hero-intro .hero-more { width: max-content; margin-block-start: 0.35rem; }
+.hero-more summary { cursor: pointer; color: var(--color-accent-solid); font-size: 0.75rem; text-decoration: underline; text-underline-offset: 3px; list-style: none; }
+.hero-more summary::-webkit-details-marker { display: none; }
+.hero-more-content { display: grid; gap: 0.5rem; margin-block-start: 0.6rem; padding-inline-start: 1rem; border-inline-start: 2px solid var(--color-border); }
+.hero-more-content p { margin: 0; color: var(--color-text-secondary); font-size: 0.8125rem; line-height: 1.45; text-wrap: pretty; }
 .hero-facts { display: grid; grid-template-columns: repeat(5, minmax(5.5rem, 1fr)); gap: 0.25rem; margin: 0; padding: 0.35rem; border: 1px solid var(--color-border); border-radius: var(--radius-outer); background: rgb(255 255 255 / 0.64); }
 .hero-facts div { min-width: 0; padding: 0.45rem 0.55rem; border-radius: var(--radius-inner); }
 .hero-facts dt { color: var(--color-text-secondary); font-size: 0.6875rem; white-space: nowrap; }
@@ -475,8 +477,6 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .institutional-strip > div { min-height: 2.25rem; }
   .site-header { gap: 1rem; padding-block: 0.85rem; }
   .organization-brand img { width: 9.5rem; }
-  .microsite-brand small { font-size: 0.625rem; }
-  .microsite-brand strong { max-width: 8rem; font-size: 0.75rem; line-height: 1.15; }
   .hero { padding-block-start: 1.5rem; }
   .hero-facts { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .hero-facts > div:nth-child(-n + 3) { grid-column: span 2; }
