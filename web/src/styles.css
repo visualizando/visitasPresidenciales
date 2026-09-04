@@ -475,6 +475,7 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .footer-meta { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: baseline; }
 }
 @media (max-width: 46rem) {
+  :root { --space-page: 0.625rem; }
   body { font-size: 0.875rem; }
   .institutional-strip > div { min-height: 2.25rem; }
   .site-header { gap: 1rem; padding-block: 0.85rem; }
