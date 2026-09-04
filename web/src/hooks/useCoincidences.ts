@@ -25,7 +25,7 @@ export function useCoincidences(people: PersonSummary[]): CoincidenceState {
     })).then((groups) => {
       const owners = new Map<string, RawCoincidenceOwner>();
       for (const group of groups) for (const person of people) if (group[person.entity_id]) owners.set(person.entity_id, group[person.entity_id]);
-      setState({data: aggregateCoincidences(owners, selectedIds), loading: false, error: null});
+      setState({data: aggregateCoincidences(owners, selectedIds, new Map(people.map((person) => [person.entity_id, person.canonical_name]))), loading: false, error: null});
     }).catch((error: Error) => {
       if (error.name !== "AbortError") setState({data: [], loading: false, error: error.message});
     });
@@ -37,9 +37,10 @@ export function useCoincidences(people: PersonSummary[]): CoincidenceState {
   return state;
 }
 
-export function aggregateCoincidences(owners: Map<string, RawCoincidenceOwner>, selectedIds: Set<string>): CoincidenceResult[] {
+export function aggregateCoincidences(owners: Map<string, RawCoincidenceOwner>, selectedIds: Set<string>, selectedNames: Map<string, string> = new Map()): CoincidenceResult[] {
   const episodes = new Map<string, {personId: string; name: string; documentType: string | null; documentNumber: string | null; evidence: CoincidenceResult["evidence"][number]}>();
-  for (const owner of owners.values()) {
+  for (const [ownerId, owner] of owners) {
+    const ownerName = selectedNames.get(ownerId) ?? "";
     for (const episode of owner.e) {
       const [personId, date, locationCode, destinationIndex, overlapMinutes, specific, overlapStart, overlapEnd] = episode;
       if (selectedIds.has(personId)) continue;
@@ -50,7 +51,7 @@ export function aggregateCoincidences(owners: Map<string, RawCoincidenceOwner>, 
       const current = episodes.get(key);
       if (!current || overlapMinutes > current.evidence.overlapMinutes) episodes.set(key, {
         personId, name: person[0], documentType: person[1], documentNumber: person[2],
-        evidence: {date, location: locationCode === 0 ? "casa-rosada" : "olivos", destination, overlapMinutes, specificDestination: specific === 1, overlapStart, overlapEnd},
+        evidence: {date, location: locationCode === 0 ? "casa-rosada" : "olivos", destination, overlapMinutes, specificDestination: specific === 1, overlapStart, overlapEnd, ownerName},
       });
     }
   }

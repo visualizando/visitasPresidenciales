@@ -15,7 +15,7 @@ function accessEvent(entityId: string, name: string, enteredAt: string, exitedAt
 const result: CoincidenceResult = {
   entityId: "person-3", canonicalName: "LOPEZ MARTA", documentType: "DNI", documentNumber: "30345678",
   days: 2, episodes: 2, overlapMinutes: 95, specificEpisodes: 2, latestDate: "2024-05-24",
-  evidence: [{date: "2024-05-24", location: "casa-rosada", destination: "Jefatura", overlapMinutes: 50, overlapStart: "10:00", overlapEnd: "10:50", specificDestination: true}],
+  evidence: [{date: "2024-05-24", location: "casa-rosada", destination: "Jefatura", overlapMinutes: 50, overlapStart: "10:00", overlapEnd: "10:50", specificDestination: true, ownerName: "PEREZ ANA"}],
 };
 
 describe("CoincidenceRanking", () => {
@@ -40,5 +40,6 @@ describe("CoincidenceRanking", () => {
     expect(screen.getByRole("heading", {name: "Por destino y horario"})).toBeVisible();
     expect(screen.getByText(/Cálculo automático:/i)).toBeVisible();
     expect(screen.getByRole("table", {name: /calculadas automáticamente/i})).toBeVisible();
+    expect(screen.getByText("Perez Ana ↔ Lopez Marta")).toBeVisible();
   });
 });

@@ -228,6 +228,7 @@ export interface CoincidenceEvidence {
   overlapStart: string;
   overlapEnd: string;
   specificDestination: boolean;
+  ownerName: string;
 }
 
 export interface CoincidenceResult {
