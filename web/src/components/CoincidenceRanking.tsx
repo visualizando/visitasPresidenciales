@@ -36,7 +36,7 @@ export function CoincidenceRanking({results, people, events}: Props) {
 
         <section className="coincidence-group" aria-labelledby="automatic-coincidences-title">
           <div className="coincidence-group-heading"><h4 id="automatic-coincidences-title">Por destino y horario</h4><p><strong>Cálculo automático:</strong> cruza destinos y horarios de ingreso y egreso. Sirve como señal para revisar; no demuestra que las personas se hayan encontrado.</p></div>
-          {results.length ? <div className="coincidence-table-wrap"><table className="coincidence-table"><caption className="sr-only">Coincidencias calculadas automáticamente por destino y horario</caption><thead><tr><th scope="col">Persona</th><th scope="col">Días</th><th scope="col">Última</th><th scope="col">Detalle</th></tr></thead><tbody>{results.slice(0, 5).map((result) => <tr key={result.entityId}><td><strong>{coincidencePairLabel(result)}</strong>{result.documentType && result.documentNumber && <small>{result.documentType} {result.documentNumber}</small>}</td><td>{result.days}</td><td><time dateTime={result.latestDate}>{formatDate(result.latestDate)}</time></td><td><details><summary>Ver {result.evidence.length} <ChevronDown aria-hidden="true" /></summary><ul>{result.evidence.slice(0, 10).map((item, evidenceIndex) => <li key={`${item.date}-${item.destination}-${evidenceIndex}`}><span><time dateTime={item.date}>{formatDate(item.date)}</time> · {locationLabel(item.location)}</span><strong>{item.destination}</strong><small>{item.ownerName ? <>{titleCase(item.ownerName)} · </> : null}{item.overlapStart}–{item.overlapEnd} · {item.overlapMinutes} min de superposición</small></li>)}</ul></details></td></tr>)}</tbody></table></div> : <p className="coincidence-empty">No se detectaron coincidencias precisas por destino y horario.</p>}
+          {results.length ? <div className="coincidence-table-wrap"><table className="coincidence-table"><caption className="sr-only">Coincidencias calculadas automáticamente por destino y horario</caption><thead><tr><th scope="col">Persona</th><th scope="col">Días</th><th scope="col">Última</th><th scope="col">Detalle</th></tr></thead><tbody>{results.slice(0, 5).map((result) => <tr key={result.entityId}><td><strong>{coincidencePairLabel(result, people.map((person) => titleCase(person.canonical_name)))}</strong>{result.documentType && result.documentNumber && <small>{result.documentType} {result.documentNumber}</small>}</td><td>{result.days}</td><td><time dateTime={result.latestDate}>{formatDate(result.latestDate)}</time></td><td><details><summary>Ver {result.evidence.length} <ChevronDown aria-hidden="true" /></summary><ul>{result.evidence.slice(0, 10).map((item, evidenceIndex) => <li key={`${item.date}-${item.destination}-${evidenceIndex}`}><span><time dateTime={item.date}>{formatDate(item.date)}</time> · {locationLabel(item.location)}</span><strong>{item.destination}</strong><small>{item.ownerName ? <>{titleCase(item.ownerName)} · </> : null}{item.overlapStart}–{item.overlapEnd} · {item.overlapMinutes} min de superposición</small></li>)}</ul></details></td></tr>)}</tbody></table></div> : <p className="coincidence-empty">No se detectaron coincidencias precisas por destino y horario.</p>}
         </section>
       </div></div>
     </details>
@@ -84,9 +84,10 @@ function selectedPeopleOverlaps(people: PersonSummary[], events: AccessEvent[]) 
   return [...overlaps.values()].sort((left, right) => right.start.localeCompare(left.start));
 }
 
-function coincidencePairLabel(result: CoincidenceResult) {
+function coincidencePairLabel(result: CoincidenceResult, fallbackOwners: string[]) {
   const owners = [...new Set(result.evidence.map((item) => item.ownerName).filter(Boolean))].map(titleCase);
-  return owners.length ? `${owners.join(", ")} ↔ ${titleCase(result.canonicalName)}` : titleCase(result.canonicalName);
+  const names = owners.length ? owners : fallbackOwners;
+  return names.length ? `${names.join(", ")} ↔ ${titleCase(result.canonicalName)}` : titleCase(result.canonicalName);
 }
 
 function coincidenceSummary(overlaps: number, automatic: number, showSelected: boolean) {  const automaticLabel = `${automatic.toLocaleString("es-AR")} ${automatic === 1 ? "coincidencia automática" : "coincidencias automáticas"}`;
