@@ -57,5 +57,10 @@ describe("PersonProfile", () => {
     expect(screen.getAllByText("Audiencia")).toHaveLength(1);
     expect(screen.getByText("Registro de Audiencias")).toBeInTheDocument();
     expect(screen.getByText(/MINISTRO X/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Fila celeste/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", {name: /Abrir detalle del registro/i})[0]);
+    expect(screen.getByRole("dialog", {name: "Detalle para citar"})).toBeInTheDocument();
+    expect(screen.getByText(/Audiencia probable en Casa Rosada/i)).toBeInTheDocument();
+    expect(screen.getByText(/es probable que también se haya realizado allí/i)).toBeInTheDocument();
   });
 });

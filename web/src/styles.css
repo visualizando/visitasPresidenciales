@@ -77,8 +77,8 @@ strong, b { font-weight: 400; }
 .hero-intro { display: grid; max-width: 76ch; gap: 0.45rem; }
 .hero-intro p { margin: 0; color: var(--color-text-secondary); font-size: 0.8125rem; line-height: 1.45; text-wrap: pretty; }
 .hero-intro p + p { color: var(--neutral-600); font-size: 0.75rem; }
-.hero-intro .hero-more { width: max-content; margin-block-start: 0.35rem; }
-.hero-more summary { cursor: pointer; color: var(--color-accent-solid); font-size: 0.75rem; text-decoration: underline; text-underline-offset: 3px; list-style: none; }
+.hero-intro .hero-more { margin-block-start: 0.35rem; }
+.hero-more summary { display: inline-block; cursor: pointer; color: var(--color-accent-solid); font-size: 0.75rem; text-decoration: underline; text-underline-offset: 3px; list-style: none; }
 .hero-more summary::-webkit-details-marker { display: none; }
 .hero-more-content { display: grid; gap: 0.5rem; margin-block-start: 0.6rem; padding-inline-start: 1rem; border-inline-start: 2px solid var(--color-border); }
 .hero-more-content p { margin: 0; color: var(--color-text-secondary); font-size: 0.8125rem; line-height: 1.45; text-wrap: pretty; }
@@ -532,17 +532,8 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
 .person-chip .audiencias-badge { flex: none; }
 
 /* Renglones de audiencias dentro de la tabla de registros */
-.audiencia-status-icon { flex: 0 0 auto; width: 0.85rem; height: 0.85rem; stroke-width: 2; }
-.audiencia-status-icon--confirmed { color: var(--accent-600); }
-.audiencia-status-icon--likely { color: var(--status-warning-text); }
-.audiencia-status-icon--unconfirmed { color: var(--neutral-400); }
-.audiencia-row--confirmed { background: var(--accent-soft, var(--accent-50)); }
-.audiencia-row--likely { background: var(--status-warning-bg); }
-.audiencia-row--unconfirmed { background: transparent; }
-.audiencia-row--fused { border-inline-start: 3px solid var(--accent-500); }
-.audiencia-source-icon { flex: 0 0 auto; width: 0.8rem; height: 0.8rem; stroke-width: 2; color: var(--accent-700); }
 .source-stack, .source-audiencia { display: inline-flex; align-items: center; gap: 0.3rem; }
-.source-audiencia { color: var(--accent-800); font-size: 0.72rem; }
+.source-audiencia { font-size: 0.72rem; }
 .source-stack { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
 .fused-audiencia { display: flex; align-items: center; gap: 0.3rem; margin-block-start: 0.25rem; color: var(--color-text-secondary); font-size: 0.72rem; }
 .fused-audiencia b { color: var(--color-text-primary); font-weight: 600; }
@@ -550,8 +541,8 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
 .audiencia-inline b { color: var(--color-text-primary); font-weight: 600; }
 .audiencia-sep { color: var(--color-text-secondary); }
 
-.records-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; justify-content: flex-end; margin-block-end: 0.6rem; color: var(--color-text-secondary); font-size: 0.7rem; }
-.legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
-.legend-row-audiencia { flex: 0 0 auto; width: 1.1rem; height: 0.9rem; border-radius: 0.25rem; }
-.legend-row-audiencia--confirmed { background: var(--accent-50); }
-.legend-row-audiencia--likely { background: var(--status-warning-bg); }
+/* Cruce con el Registro de Audiencias dentro del detalle del registro */
+.record-detail-audiencias { display: grid; gap: 0.5rem; margin-block-start: 1rem; }
+.record-detail-audiencias > strong { font-size: 0.8125rem; }
+.record-detail-audiencia { display: grid; gap: 0.25rem; padding: 0.6rem 0.7rem; border: 1px solid var(--color-border); border-radius: var(--radius-inner); background: var(--color-bg-surface); }
+.record-detail-audiencia p { margin: 0; font-size: 0.8rem; line-height: 1.45; }

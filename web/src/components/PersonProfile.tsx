@@ -1,4 +1,4 @@
-import {ArrowDown, ArrowUp, CheckCircle, Circle, ClipboardList, Download, ExternalLink, FileText, HelpCircle, X} from "lucide-react";
+import {ArrowDown, ArrowUp, Download, ExternalLink, FileText, X} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 import type {AccessEvent, AudienciaDetail, CoincidenceResult, PersonSummary} from "../types";
 import {AudienciasBadge} from "./AudienciasBadge";
@@ -90,7 +90,7 @@ export function PersonProfile({people, events, audiencias, loading, error, coinc
     <div className="profile-stats"><span><strong>{rows.length.toLocaleString("es-AR")}</strong> registros</span><span>{locations.length === 1 ? "Sede" : "Sedes"}: <strong>{locations.map(locationLabel).join(" y ")}</strong></span><span>Última aparición: <strong>{formatDate(latest)}</strong></span></div>
     {loading && <p role="status">Cargando registros…</p>}
     {error && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los registros.</strong><span>{error}</span></div>}
-    {!loading && !error && <div className="records-section"><div className="records-heading"><h3>Entradas, movimientos y audiencias</h3><div className="records-heading-actions"><span>{visibleEvents.length.toLocaleString("es-AR")} de {rows.length.toLocaleString("es-AR")} filas</span>{rows.length > 0 && <button className="selection-download" type="button" onClick={downloadSelection} aria-label={`Descargar ${rows.length.toLocaleString("es-AR")} ${rows.length === 1 ? "registro" : "registros"} de la selección en CSV`}><Download aria-hidden="true" />Descargar CSV</button>}</div></div><div className="records-legend" aria-label="Referencias de colores e iconos de las audiencias"><span className="legend-item"><span className="legend-row-audiencia legend-row-audiencia--confirmed" aria-hidden="true" />Fila celeste: audiencia + visita a Casa Rosada el mismo día</span><span className="legend-item"><span className="legend-row-audiencia legend-row-audiencia--likely" aria-hidden="true" />Fila amarilla: probable en Casa Rosada</span><span className="legend-item"><CheckCircle className="audiencia-status-icon audiencia-status-icon--confirmed" aria-hidden="true" />Confirmada</span><span className="legend-item"><HelpCircle className="audiencia-status-icon audiencia-status-icon--likely" aria-hidden="true" />Probable</span><span className="legend-item"><Circle className="audiencia-status-icon audiencia-status-icon--unconfirmed" aria-hidden="true" />En el registro (sin cruce)</span></div>{rows.length ? <><div className="records-table-wrap"><table className="records-table"><caption className="sr-only">Entradas, movimientos y audiencias de las personas seleccionadas</caption><thead><tr>
+    {!loading && !error && <div className="records-section"><div className="records-heading"><h3>Entradas, movimientos y audiencias</h3><div className="records-heading-actions"><span>{visibleEvents.length.toLocaleString("es-AR")} de {rows.length.toLocaleString("es-AR")} filas</span>{rows.length > 0 && <button className="selection-download" type="button" onClick={downloadSelection} aria-label={`Descargar ${rows.length.toLocaleString("es-AR")} ${rows.length === 1 ? "registro" : "registros"} de la selección en CSV`}><Download aria-hidden="true" />Descargar CSV</button>}</div></div>{rows.length ? <><div className="records-table-wrap"><table className="records-table"><caption className="sr-only">Entradas, movimientos y audiencias de las personas seleccionadas</caption><thead><tr>
       <SortableHeader label="Fecha" column="date" sort={sort} onSort={changeSort} />
       <SortableHeader label="Ingreso" column="entry" sort={sort} onSort={changeSort} />
       <SortableHeader label="Egreso" column="exit" sort={sort} onSort={changeSort} />
@@ -112,11 +112,9 @@ function SortableHeader({label, column, sort, onSort}: {label: string; column: S
 }
 
 function TimelineRow({event, colors, onOpenDetail}: {event: AccessEvent; colors: Map<string, string>; onOpenDetail: (event: AccessEvent, trigger: HTMLButtonElement) => void}) {
-  const audiencia = event.audiencia;
-  const isAudiencia = Boolean(audiencia);
-  const fused = event.fused_audiencias;
-  const hasFused = Boolean(fused?.length);
-  return <tr className={isAudiencia ? `audiencia-row audiencia-row--${audiencia!.status}` : hasFused ? "audiencia-row--fused" : undefined}>
+  const isAudiencia = Boolean(event.audiencia);
+  const hasFused = Boolean(event.fused_audiencias?.length);
+  return <tr>
     <td><time dateTime={primaryDate(event) ?? undefined}>{formatDate(primaryDate(event))}</time></td>
     <td><time dateTime={entryDate(event) ?? undefined}>{formatTime(entryDate(event))}</time></td>
     <td><time dateTime={exitDate(event) ?? undefined}>{formatTime(exitDate(event))}</time></td>
@@ -125,14 +123,8 @@ function TimelineRow({event, colors, onOpenDetail}: {event: AccessEvent; colors:
     <td>{isAudiencia ? "Audiencia" : hasFused ? `${recordLabel(event)} + Audiencia` : recordLabel(event)}</td>
     <td className="detail-cell"><AudienciaDetailCell event={event} /></td>
     <td><SourceCell event={event} /></td>
-    <td>{isAudiencia && !event.sources?.length ? <span aria-hidden="true" /> : <button className="record-detail-trigger" type="button" onClick={(browserEvent) => onOpenDetail(event, browserEvent.currentTarget)} aria-label={`Abrir detalle del registro de ${titleCase(event.canonical_name)} del ${formatDate(primaryDate(event))}`}><FileText aria-hidden="true" /></button>}</td>
+    <td><button className="record-detail-trigger" type="button" onClick={(browserEvent) => onOpenDetail(event, browserEvent.currentTarget)} aria-label={`Abrir detalle del registro de ${titleCase(event.canonical_name)} del ${formatDate(primaryDate(event))}`}><FileText aria-hidden="true" /></button></td>
   </tr>;
-}
-
-function AudienciaStatusIcon({status}: {status: string}) {
-  if (status === "confirmed") return <CheckCircle className="audiencia-status-icon audiencia-status-icon--confirmed" aria-hidden="true" />;
-  if (status === "likely") return <HelpCircle className="audiencia-status-icon audiencia-status-icon--likely" aria-hidden="true" />;
-  return <Circle className="audiencia-status-icon audiencia-status-icon--unconfirmed" aria-hidden="true" />;
 }
 
 function AudienciaDetailCell({event}: {event: AccessEvent}) {
@@ -140,19 +132,19 @@ function AudienciaDetailCell({event}: {event: AccessEvent}) {
   const base = audiencia ? audienciaDetail(audiencia) : eventDetail(event);
   const fused = event.fused_audiencias;
   if (audiencia) {
-    return <span className="audiencia-inline" title={base}><AudienciaStatusIcon status={audiencia.status} /><b>{titleCase(audiencia.official_name)}</b>{(audiencia.official_cargo || audiencia.lugar) && <><span className="audiencia-sep" aria-hidden="true">–</span><span>{audiencia.official_cargo || audiencia.lugar}</span></>}</span>;
+    return <span className="audiencia-inline" title={base}><b>{titleCase(audiencia.official_name)}</b>{(audiencia.official_cargo || audiencia.lugar) && <><span className="audiencia-sep" aria-hidden="true">–</span><span>{audiencia.official_cargo || audiencia.lugar}</span></>}</span>;
   }
-  return <><span title={base}>{base}</span>{fused?.map((item) => <span className="fused-audiencia" key={item.audiencia_id}><CheckCircle className="audiencia-status-icon audiencia-status-icon--confirmed" aria-hidden="true" /><b>{titleCase(item.official_name)}</b><span>{item.official_cargo || item.lugar}</span></span>)}</>;
+  return <><span title={base}>{base}</span>{fused?.map((item) => <span className="fused-audiencia" key={item.audiencia_id}><b>{titleCase(item.official_name)}</b><span>{item.official_cargo || item.lugar}</span></span>)}</>;
 }
 
 function SourceCell({event}: {event: AccessEvent}) {
   const audiencia = event.audiencia;
   const fused = event.fused_audiencias;
   if (audiencia && !fused?.length) {
-    return <span className="source-audiencia"><ClipboardList className="audiencia-source-icon" aria-hidden="true" /><span>Registro de Audiencias</span></span>;
+    return <span className="source-audiencia">Registro de Audiencias</span>;
   }
   if (fused?.length) {
-    return <span className="source-stack"><SourceLink event={event} /><span className="source-audiencia"><ClipboardList className="audiencia-source-icon" aria-hidden="true" /><span>Registro de Audiencias</span></span></span>;
+    return <span className="source-stack"><SourceLink event={event} /><span className="source-audiencia">Registro de Audiencias</span></span>;
   }
   return <SourceLink event={event} />;
 }
