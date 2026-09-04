@@ -74,14 +74,16 @@ h1 { margin-block-end: 0.45rem; font-size: clamp(2rem, 3.8vw, 3.4rem); line-heig
 h2 { margin-block-end: 0; font-size: clamp(1.55rem, 2.6vw, 2.25rem); line-height: 1.1; }
 h3 { margin-block-end: 0; font-size: 1rem; font-weight: 400; line-height: 1.2; }
 strong, b { font-weight: 400; }
-.hero-intro { display: grid; max-width: 76ch; gap: 0.45rem; }
-.hero-intro p { margin: 0; color: var(--color-text-secondary); font-size: 0.8125rem; line-height: 1.45; text-wrap: pretty; }
-.hero-intro p + p { color: var(--neutral-600); font-size: 0.75rem; }
-.hero-intro .hero-more { margin-block-start: 0.35rem; }
-.hero-more summary { display: inline-block; cursor: pointer; color: var(--color-accent-solid); font-size: 0.75rem; text-decoration: underline; text-underline-offset: 3px; list-style: none; }
+.hero-intro { display: grid; max-width: 76ch; gap: 0.6rem; }
+.hero-intro p { margin: 0; color: var(--color-text-secondary); font-size: 0.9375rem; line-height: 1.55; text-wrap: pretty; }
+.hero-intro .hero-source { color: var(--neutral-600); font-size: 0.8125rem; }
+.hero-intro .hero-more { margin-block-start: 0.1rem; }
+.hero-more summary { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.7rem; border: 1px solid var(--accent-100); border-radius: 999px; color: var(--color-accent-solid); background: var(--color-accent-soft); font-size: 0.75rem; list-style: none; cursor: pointer; }
 .hero-more summary::-webkit-details-marker { display: none; }
-.hero-more-content { display: grid; gap: 0.5rem; margin-block-start: 0.6rem; padding-inline-start: 1rem; border-inline-start: 2px solid var(--color-border); }
-.hero-more-content p { margin: 0; color: var(--color-text-secondary); font-size: 0.8125rem; line-height: 1.45; text-wrap: pretty; }
+.hero-more summary svg { width: 0.85rem; height: 0.85rem; }
+.hero-more[open] summary svg { transform: rotate(180deg); }
+.hero-more-content { display: grid; gap: 0.55rem; margin-block-start: 0.7rem; padding: 0.8rem 0.9rem; border: 1px solid var(--color-border); border-radius: var(--radius-inner); background: var(--color-bg-surface); }
+.hero-more-content p { margin: 0; color: var(--color-text-secondary); font-size: 0.875rem; line-height: 1.55; text-wrap: pretty; }
 .hero-facts { display: grid; grid-template-columns: repeat(5, minmax(5.5rem, 1fr)); gap: 0.25rem; margin: 0; padding: 0.35rem; border: 1px solid var(--color-border); border-radius: var(--radius-outer); background: rgb(255 255 255 / 0.64); }
 .hero-facts div { min-width: 0; padding: 0.45rem 0.55rem; border-radius: var(--radius-inner); }
 .hero-facts dt { color: var(--color-text-secondary); font-size: 0.6875rem; white-space: nowrap; }
