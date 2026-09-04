@@ -157,7 +157,8 @@ strong, b { font-weight: 400; }
 .result-skeleton { min-height: 3.75rem; border-radius: var(--radius-inner); background: linear-gradient(90deg, var(--neutral-100), #f8f9f7, var(--neutral-100)); background-size: 200% 100%; }
 
 .profile { margin-block-start: 1rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: var(--radius-outer); background: var(--color-bg-surface); box-shadow: var(--shadow-card); }
-.profile-header { display: flex; align-items: start; justify-content: space-between; gap: 1.5rem; }
+.profile-header { display: flex; align-items: baseline; justify-content: space-between; gap: 1.5rem; }
+.profile-header .profile-stats { margin: 0; padding: 0; background: transparent; }
 .profile h2 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
 .profile h2:focus { outline: 0; }
 .profile-description { max-width: 70ch; margin: 0.35rem 0 0; color: var(--color-text-secondary); font-size: 0.8125rem; }
