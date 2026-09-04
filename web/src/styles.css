@@ -138,8 +138,9 @@ strong, b { font-weight: 400; }
 .result-card { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(9rem, 0.8fr) 2rem; gap: 0.75rem; align-items: center; width: 100%; min-height: 3.75rem; padding: 0.6rem 0.7rem; border: 1px solid var(--color-border); border-radius: var(--radius-inner); color: var(--color-text-primary); background: var(--color-bg-page); text-align: start; cursor: pointer; }
 .result-card--selected { border-color: var(--accent-500); background: var(--color-accent-soft); box-shadow: 0 0 0 1px var(--accent-500); }
 .result-main, .result-meta { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
-.result-main strong { font-size: 0.875rem; overflow-wrap: break-word; }
-.result-main > span, .result-meta span { color: var(--color-text-secondary); font-size: 0.75rem; }
+.result-title-row { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.result-title-row strong { flex: 1 1 auto; min-width: 0; font-size: 0.875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.result-main .result-doc, .result-meta span { color: var(--color-text-secondary); font-size: 0.75rem; }
 .result-meta span { display: inline-flex; align-items: center; gap: 0.3rem; }
 .result-meta svg { width: 0.8rem; height: 0.8rem; stroke-width: 1.5; }
 .result-action { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border: 1px solid var(--color-border); border-radius: 50%; color: var(--color-accent-solid); background: var(--color-bg-surface); }
@@ -523,3 +524,34 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .brand-mark, .bar-track span, .heatmap-cell { forced-color-adjust: auto; }
   .result-card, .search-input-wrap, .filters select, .rankings-panel, .ranking-table-wrap { border: 1px solid CanvasText; }
 }
+
+/* Audiencias de interés */
+.audiencias-badge { display: inline-flex; align-items: center; gap: 0.3rem; width: fit-content; max-width: 100%; padding: 0.12rem 0.45rem; border-radius: 999px; color: var(--accent-900); background: var(--accent-50); font-size: 0.66rem; font-weight: 600; line-height: 1.35; white-space: nowrap; }
+.audiencias-badge svg { width: 0.7rem; height: 0.7rem; stroke-width: 2; flex: none; }
+.result-title-row .audiencias-badge { flex: 0 0 auto; }
+.person-chip .audiencias-badge { flex: none; }
+
+/* Renglones de audiencias dentro de la tabla de registros */
+.audiencia-status-icon { flex: 0 0 auto; width: 0.85rem; height: 0.85rem; stroke-width: 2; }
+.audiencia-status-icon--confirmed { color: var(--accent-600); }
+.audiencia-status-icon--likely { color: var(--status-warning-text); }
+.audiencia-status-icon--unconfirmed { color: var(--neutral-400); }
+.audiencia-row--confirmed { background: var(--accent-soft, var(--accent-50)); }
+.audiencia-row--likely { background: var(--status-warning-bg); }
+.audiencia-row--unconfirmed { background: transparent; }
+.audiencia-row--fused { border-inline-start: 3px solid var(--accent-500); }
+.audiencia-source-icon { flex: 0 0 auto; width: 0.8rem; height: 0.8rem; stroke-width: 2; color: var(--accent-700); }
+.source-stack, .source-audiencia { display: inline-flex; align-items: center; gap: 0.3rem; }
+.source-audiencia { color: var(--accent-800); font-size: 0.72rem; }
+.source-stack { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
+.fused-audiencia { display: flex; align-items: center; gap: 0.3rem; margin-block-start: 0.25rem; color: var(--color-text-secondary); font-size: 0.72rem; }
+.fused-audiencia b { color: var(--color-text-primary); font-weight: 600; }
+.audiencia-inline { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--color-text-secondary); font-size: 0.72rem; }
+.audiencia-inline b { color: var(--color-text-primary); font-weight: 600; }
+.audiencia-sep { color: var(--color-text-secondary); }
+
+.records-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; justify-content: flex-end; margin-block-end: 0.6rem; color: var(--color-text-secondary); font-size: 0.7rem; }
+.legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+.legend-row-audiencia { flex: 0 0 auto; width: 1.1rem; height: 0.9rem; border-radius: 0.25rem; }
+.legend-row-audiencia--confirmed { background: var(--accent-50); }
+.legend-row-audiencia--likely { background: var(--status-warning-bg); }

@@ -57,6 +57,7 @@ class AudienciaClassification:
     lugar: str
     date: str
     cr_destination: str  # empty for "likely" matches
+    cr_record_id: str  # record_id of the matched CR event (empty unless confirmed)
     confidence: str  # "high" (confirmed) | "medium" (likely) | "low"
 
 
@@ -91,7 +92,9 @@ def load_cr_events(events_dir: Path) -> list[dict[str, str]]:
                         dt = datetime.fromisoformat(entered.replace("Z", "+00:00"))
                         events.append({
                             "entity_id": eid,
+                            "record_id": event.get("record_id", ""),
                             "date": dt.strftime("%Y-%m-%d"),
+                            "entered_at": event.get("entered_at") or "",
                             "destination": dest.strip(),
                             "canonical_name": event.get("canonical_name", ""),
                         })
@@ -162,6 +165,8 @@ def find_date_matches(
                     "sujeto_nombre": _normalize_sujeto(row.get("sujeto_obligado_nombre", "")),
                     "sujeto_cargo": (row.get("sujeto_obligado_cargo") or "").strip(),
                     "cr_destination": cr["destination"],
+                    "cr_record_id": cr.get("record_id", ""),
+                    "cr_entered_at": cr.get("entered_at", ""),
                 })
                 break  # one match per audiencia row is enough
     return confirmed
@@ -244,6 +249,7 @@ def classify_audiencias(
         # Check if directly confirmed
         if audiencia_id in confirmed_ids:
             cr_dest = confirmed_ids[audiencia_id]["cr_destination"]
+            cr_rec = confirmed_ids[audiencia_id].get("cr_record_id", "")
             classification = AudienciaClassification(
                 audiencia_id=audiencia_id,
                 status="confirmed",
@@ -252,6 +258,7 @@ def classify_audiencias(
                 lugar=lugar,
                 date=fecha,
                 cr_destination=cr_dest,
+                cr_record_id=cr_rec,
                 confidence="high",
             )
             per_entity[eid].append(classification)
@@ -270,6 +277,7 @@ def classify_audiencias(
                 lugar=lugar,
                 date=fecha,
                 cr_destination="",
+                cr_record_id="",
                 confidence="medium",
             )
             per_entity[eid].append(classification)
@@ -285,6 +293,7 @@ def classify_audiencias(
             lugar=lugar,
             date=fecha,
             cr_destination="",
+            cr_record_id="",
             confidence="low",
         )
         per_entity[eid].append(classification)

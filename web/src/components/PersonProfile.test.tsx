@@ -18,7 +18,7 @@ describe("PersonProfile", () => {
     expect(screen.getByRole("heading", {name: "Detalle de movimientos"})).toBeInTheDocument();
     expect(screen.getByRole("button", {name: /Descargar 2 registros de la selección en CSV/i})).toBeInTheDocument();
     expect([...container.querySelectorAll(".profile-stats > span")].map((item) => item.textContent)).toEqual(["2 registros", "Sede: Olivos", "Última aparición: 01 de feb de 2024"]);
-    expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Fecha", "Ingreso", "Egreso", "Persona", "Sede", "Tipo", "Detalle", "Fuente PDF", "Acciones"]);
+    expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Fecha", "Ingreso", "Egreso", "Persona", "Sede", "Tipo", "Detalle", "Fuente", "Acciones"]);
     expect(screen.queryByRole("columnheader", {name: "Calidad"})).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", {name: "Persona"}));
     const rows = screen.getAllByRole("row").slice(1);
@@ -48,5 +48,14 @@ describe("PersonProfile", () => {
     fireEvent.click(screen.getByRole("button", {name: "Copiar detalle"}));
     expect(await screen.findByRole("button", {name: "Copiado"})).toBeInTheDocument();
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("Fuente: Accesos a Olivos 2024"));
+  });
+
+  it("muestra audiencias como filas de la tabla con su fuente", () => {
+    const audiencias = new Map<string, import("../types").AudienciaDetail[]>([["one", [{audiencia_id: "49.435", entity_id: "one", status: "likely", official_name: "MINISTRO X", official_cargo: "Ministro", lugar: "CASA DE GOBIERNO", date: "2024-03-15", cr_destination: "", cr_record_id: ""}]]]);
+    render(<PersonProfile people={[people[0]]} events={[event("1", "one", "PEREZ ANA", "2024-03-10T10:00:00Z")]} audiencias={audiencias} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={vi.fn()} />);
+    expect(screen.getAllByRole("row")).toHaveLength(3);
+    expect(screen.getAllByText("Audiencia")).toHaveLength(1);
+    expect(screen.getByText("Registro de Audiencias")).toBeInTheDocument();
+    expect(screen.getByText(/MINISTRO X/i)).toBeInTheDocument();
   });
 });

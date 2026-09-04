@@ -13,6 +13,7 @@ import {SearchResults} from "./components/SearchResults";
 import {SectionNav} from "./components/SectionNav";
 import {useData} from "./hooks/useData";
 import {useCoincidences} from "./hooks/useCoincidences";
+import {useAudienciasDetails} from "./hooks/useAudienciasDetails";
 import {useSearch} from "./hooks/useSearch";
 import type {AccessEvent, Analytics, ExportFile, Location, Meta, PersonSummary, SearchFilters} from "./types";
 import {fetchGzipJson} from "./utils/fetchGzipJson";
@@ -32,6 +33,7 @@ export default function App() {
   const [selectionHashReady, setSelectionHashReady] = useState(false);
   const [selectionHashError, setSelectionHashError] = useState<string | null>(null);
   const coincidences = useCoincidences(selected);
+  const audiencias = useAudienciasDetails(selected);
   const [events, setEvents] = useState<{data: AccessEvent[]; loading: boolean; error: string | null}>({data: [], loading: false, error: null});
   const selectionKey = selected.map((person) => person.entity_id).sort().join(",");
   useEffect(() => {
@@ -151,7 +153,7 @@ export default function App() {
         <div className="section-heading"><div><h2 id="search-title">Buscá una persona</h2></div><p>Podés seleccionar varias formas del mismo nombre.</p></div>
         {selectionHashError && <div className="notice notice--error" role="alert"><strong>El enlace compartido está incompleto.</strong><span>{selectionHashError}</span></div>}
         <SearchExplorer firstDate={meta.data?.first_date} lastDate={meta.data?.last_date} selectedIds={selectedIds} onToggle={togglePerson} />
-        {selected.length > 0 && <PersonProfile people={selected} events={events.data} loading={events.loading} error={events.error} coincidences={coincidences.data} onRemove={(entityId) => setSelected((current) => current.filter((person) => person.entity_id !== entityId))} onClear={() => setSelected([])} />}
+        {selected.length > 0 && <PersonProfile people={selected} events={events.data} audiencias={audiencias.details} loading={events.loading} error={events.error} coincidences={coincidences.data} onRemove={(entityId) => setSelected((current) => current.filter((person) => person.entity_id !== entityId))} onClear={() => setSelected([])} />}
       </section>
 
       <section className="dashboard-section" id="panorama" aria-labelledby="dashboard-title">

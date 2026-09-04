@@ -27,6 +27,35 @@ export interface PersonSummary {
   years?: number[];
   event_shard: string;
   score?: number;
+  audiencias?: PersonAudiencias;
+  audiencias_cr?: PersonAudienciasCr;
+}
+
+export interface PersonAudiencias {
+  cargos: string[];
+  instituciones: string[];
+  audiencia_count?: number;
+}
+
+export interface PersonAudienciasCr {
+  confirmed_count: number;
+  likely_count: number;
+  total_count: number;
+  has_likely: boolean;
+}
+
+export type AudienciaStatus = "confirmed" | "likely" | "unconfirmed";
+
+export interface AudienciaDetail {
+  audiencia_id: string;
+  entity_id: string;
+  status: AudienciaStatus;
+  official_name: string;
+  official_cargo: string;
+  lugar: string;
+  date: string;
+  cr_destination: string;
+  cr_record_id: string;
 }
 
 export interface SourceLink {
@@ -56,6 +85,8 @@ export interface AccessEvent {
   quality: "high" | "medium" | "low";
   raw_text: string;
   sources: SourceLink[];
+  audiencia?: AudienciaDetail;
+  fused_audiencias?: AudienciaDetail[];
 }
 
 export interface SearchFilters {

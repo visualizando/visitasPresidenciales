@@ -46,4 +46,10 @@ describe("SearchResults", () => {
     render(<SearchResults query="Nadie" results={[]} selectedIds={new Set()} loading phase="broadening" error={null} onToggle={vi.fn()} />);
     expect(screen.getByRole("status")).toHaveTextContent(/búsqueda más amplia/i);
   });
+
+  it("muestra el badge de audiencias cuando la persona aparece en el registro de audiencias", () => {
+    const audienciasPerson: PersonSummary = {...person, audiencias_cr: {confirmed_count: 1, likely_count: 0, total_count: 1, has_likely: false}};
+    render(<SearchResults query="Ana" results={[audienciasPerson]} selectedIds={new Set()} loading={false} phase={null} error={null} onToggle={vi.fn()} />);
+    expect(screen.getByText(/en registro de audiencias/i)).toBeInTheDocument();
+  });
 });

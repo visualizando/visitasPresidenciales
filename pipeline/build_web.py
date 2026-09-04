@@ -46,6 +46,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         "search/document",
         "search/id",
         "events",
+        "audiencias",
         "cooccurrences",
         "analytics",
         "exports",
@@ -175,6 +176,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         event_counts[prefix] = len(rows)
 
     _write_cooccurrences(connection, output / "cooccurrences")
+    _write_audiencias_shards(data_dir, output, people)
     analytics = _build_analytics(connection)
     _write_compact(output / "analytics" / "overview.json", analytics)
     _write_compact(output / "analytics" / "coverage.json", _build_coverage(data_dir, connection))
@@ -289,6 +291,63 @@ def _enrich_people_with_audiencias(data_dir: Path, people: list[dict[str, Any]])
                 "has_likely": len(likely) > 0,
             }
             person["audiencias"]["audiencia_count"] = len(classifications)
+
+
+def _write_audiencias_shards(
+    data_dir: Path, output: Path, people: list[dict[str, Any]]
+) -> None:
+    """Emit per-shard audiencias detail files for the profile section.
+
+    Reads `data/audiencias_cross.json` and groups by entity_id, writing one
+    gzipped JSON shard per `event_shard` (matching the events sharding used
+    by the frontend).  Each entry carries the audiencias that the person had
+    confirmed/likely at Casa Rosada, with official, cargo, lugar and date.
+    """
+    cross_path = data_dir / "audiencias_cross.json"
+    if not cross_path.exists():
+        return
+    cross_data = load_json(cross_path, {})
+    per_entity = cross_data.get("per_entity", {}) or {}
+    if not per_entity:
+        return
+
+    shard_dir = output / "audiencias"
+    shard_dir.mkdir(parents=True, exist_ok=True)
+
+    shards: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(dict)
+    official_counts = cross_data.get("confirmed_count", 0)
+    for person in people:
+        eid = person["entity_id"]
+        rows = per_entity.get(eid)
+        if rows:
+            shard = person["event_shard"]
+            shards[shard][eid] = [
+                {
+                    "audiencia_id": c.get("audiencia_id", ""),
+                    "entity_id": eid,
+                    "status": c.get("status", "unconfirmed"),
+                    "official_name": c.get("official_name", ""),
+                    "official_cargo": c.get("official_cargo", ""),
+                    "lugar": c.get("lugar", ""),
+                    "date": c.get("date", ""),
+                    "cr_destination": c.get("cr_destination", ""),
+                    "cr_record_id": c.get("cr_record_id", ""),
+                }
+                for c in rows
+            ]
+
+    for shard, data in shards.items():
+        _write_gzip_json(shard_dir / f"{shard}.json.gz", data)
+
+    _write_compact(
+        shard_dir / "meta.json",
+        {
+            "version": 1,
+            "confirmed_count": official_counts,
+            "entities": sum(len(rows) for rows in shards.values()),
+            "shards": sorted(shards),
+        },
+    )
 
 
 def _build_analytics(connection: duckdb.DuckDBPyConnection) -> dict[str, Any]:
@@ -1019,6 +1078,10 @@ def _write_empty(output: Path, generated_at: str) -> None:
     _write_compact(output / "analytics" / "coverage.json", _empty_coverage())
     _write_compact(output / "analytics" / "rankings.json", _empty_rankings())
     _write_compact(output / "exports" / "index.json", [])
+    _write_compact(
+        output / "audiencias" / "meta.json",
+        {"version": 1, "confirmed_count": 0, "entities": 0, "shards": []},
+    )
     _write_compact(
         output / "cooccurrences" / "meta.json",
         {
