@@ -508,6 +508,9 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .result-action { grid-column: 2; grid-row: 1 / span 2; }
   .profile-header { flex-direction: column; gap: 0.25rem; }
   .records-heading { align-items: start; flex-direction: column; gap: 0.4rem; }
+  .records-heading-actions { width: 100%; }
+  .records-heading-actions > span { flex: 1 1 100%; }
+  .records-heading-actions .selection-download { flex: 1 1 0; justify-content: center; min-height: 2rem; padding: 0.25rem 0.4rem; font-size: 0.7rem; }
   .dashboard-grid { grid-template-columns: 1fr; }
   .record-detail-fields { grid-template-columns: 1fr; }
   .record-detail-fields > div:nth-child(odd):not(.record-detail-field--wide) { border-inline-end: 0; }

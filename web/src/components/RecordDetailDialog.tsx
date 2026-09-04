@@ -1,6 +1,7 @@
 import {Check, Copy, ExternalLink, X} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 import type {AccessEvent, AudienciaDetail} from "../types";
+import {copyText} from "../utils/clipboard";
 import {locationLabel, titleCase} from "./SearchResults";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("es-AR", {day: "numeric", month: "numeric", year: "numeric"});
@@ -152,23 +153,3 @@ function formatDate(value: string) { return DATE_FORMATTER.format(new Date(value
 function formatTime(value: string) { return TIME_FORMATTER.format(new Date(value)); }
 function recordLabel(event: AccessEvent) { if (event.record_type === "movement") return "Movimiento"; if (event.record_type === "vehicle") return "Vehículo"; return "Visita"; }
 function isPublicUrl(value: string) { return /^https?:\/\//i.test(value); }
-
-async function copyText(value: string) {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(value);
-      return;
-    } catch {
-      // Fall back to a temporary field for browsers that deny Clipboard API access.
-    }
-  }
-  const field = document.createElement("textarea");
-  field.value = value;
-  field.style.position = "fixed";
-  field.style.opacity = "0";
-  document.body.append(field);
-  field.select();
-  const copied = document.execCommand("copy");
-  field.remove();
-  if (!copied) throw new Error("Unable to copy");
-}

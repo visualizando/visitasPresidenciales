@@ -6,6 +6,7 @@ import {locationLabel, titleCase} from "./SearchResults";
 import {comparisonSeries} from "../utils/personColors";
 import {buildSelectedEventsCsv, selectedEventsFilename} from "../utils/selectedEventsCsv";
 import {RecordDetailDialog} from "./RecordDetailDialog";
+import {ShareButton} from "./ShareButton";
 import {buildTimelineRows} from "../utils/mergeAudiencias";
 
 type SortKey = "date" | "entry" | "exit" | "person" | "location" | "type" | "detail";
@@ -88,7 +89,7 @@ export function PersonProfile({people, events, audiencias, loading, error, coinc
 
     {loading && <p role="status">Cargando registros…</p>}
     {error && <div className="notice notice--error" role="alert"><strong>No se pudieron cargar los registros.</strong><span>{error}</span></div>}
-    {!loading && !error && <div className="records-section"><div className="records-heading"><h3>Visitas: a Casa Rosada / Quinta de Olivos según registro - Audiencias: según registro de audiencias</h3><div className="records-heading-actions"><span>{visibleEvents.length.toLocaleString("es-AR")} de {rows.length.toLocaleString("es-AR")} filas</span><button className="selection-download" type="button" onClick={onClear}><Eraser aria-hidden="true" />Limpiar selección</button>{rows.length > 0 && <button className="selection-download" type="button" onClick={downloadSelection} aria-label={`Descargar ${rows.length.toLocaleString("es-AR")} ${rows.length === 1 ? "registro" : "registros"} de la selección en CSV`}><Download aria-hidden="true" />Descargar CSV</button>}</div></div>{rows.length ? <><div className="records-table-wrap"><table className="records-table"><caption className="sr-only">Visitas y audiencias de las personas seleccionadas</caption><thead><tr>
+    {!loading && !error && <div className="records-section"><div className="records-heading"><h3>Visitas: a Casa Rosada / Quinta de Olivos según registro - Audiencias: según registro de audiencias</h3><div className="records-heading-actions"><span>{visibleEvents.length.toLocaleString("es-AR")} de {rows.length.toLocaleString("es-AR")} filas</span><button className="selection-download" type="button" onClick={onClear}><Eraser aria-hidden="true" />Limpiar selección</button>{rows.length > 0 && <button className="selection-download" type="button" onClick={downloadSelection} aria-label={`Descargar ${rows.length.toLocaleString("es-AR")} ${rows.length === 1 ? "registro" : "registros"} de la selección en CSV`}><Download aria-hidden="true" />Descargar CSV</button>}<ShareButton /></div></div>{rows.length ? <><div className="records-table-wrap"><table className="records-table"><caption className="sr-only">Visitas y audiencias de las personas seleccionadas</caption><thead><tr>
       <SortableHeader label="Fecha" column="date" sort={sort} onSort={changeSort} />
       <SortableHeader label="Ingreso" column="entry" sort={sort} onSort={changeSort} />
       <SortableHeader label="Egreso" column="exit" sort={sort} onSort={changeSort} />
