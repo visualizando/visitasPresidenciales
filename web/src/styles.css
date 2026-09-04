@@ -214,6 +214,7 @@ strong, b { font-weight: 400; }
 .evidence-limit { width: 22rem; margin: 0.25rem 0 0; color: var(--color-text-secondary); font-size: 0.6875rem; }
 .records-section { margin-block-start: 0.6rem; }
 .records-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-block-end: 0.4rem; }
+.records-heading h3 { font-size: 0.8125rem; font-weight: 400; }
 .records-heading span { color: var(--color-text-secondary); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 .records-heading-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
 .selection-download { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2.25rem; padding: 0.35rem 0.65rem; border: 1px solid var(--accent-100); border-radius: 0.5rem; color: var(--color-accent-solid); background: var(--color-accent-soft); font-size: 0.75rem; font-weight: 400; cursor: pointer; }
