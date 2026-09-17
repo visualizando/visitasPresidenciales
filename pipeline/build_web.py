@@ -11,6 +11,7 @@ from collections import defaultdict
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote, urljoin
 
 import duckdb
 
@@ -25,13 +26,13 @@ COINCIDENCE_MAX_ANNUAL_DAYS = 80
 CURRENT_PRESIDENCY_START = "2023-01-01"
 
 
-def build_web_data(data_dir: Path, output_dir: Path) -> dict[str, int]:
+def build_web_data(data_dir: Path, output_dir: Path, public_base: str | None = None) -> dict[str, int]:
     partitions = sorted((data_dir / "partitions").rglob("*.parquet"))
     output_parent = output_dir.parent
     output_parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix="web-data-", dir=output_parent))
     try:
-        stats = _build_into(data_dir, partitions, staging)
+        stats = _build_into(data_dir, partitions, staging, public_base)
         _replace_directory(staging, output_dir)
         return stats
     except Exception:
@@ -39,7 +40,17 @@ def build_web_data(data_dir: Path, output_dir: Path) -> dict[str, int]:
         raise
 
 
-def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[str, int]:
+def _public_source_url(path: str, public_base: str) -> str:
+    """Public URL for a source file mirrored under `public_base`.
+
+    Same convention as legacy_import: the tree hosted under the base URL must
+    replicate the source `path` tree, so the frontend can link and download
+    each PDF directly.
+    """
+    return urljoin(public_base.rstrip("/") + "/", quote(path.replace("\\", "/")))
+
+
+def _build_into(data_dir: Path, partitions: list[Path], output: Path, public_base: str | None = None) -> dict[str, int]:
     for directory in (
         "search/name",
         "search/name-fallback",
@@ -172,6 +183,11 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path) -> dict[st
         for row in rows:
             for key in ("occurred_at", "entered_at", "exited_at"):
                 row[key] = _json_datetime(row[key])
+        if public_base:
+            for row in rows:
+                for source in row.get("sources") or []:
+                    if source.get("path"):
+                        source["url"] = _public_source_url(source["path"], public_base)
         _write_gzip_json(output / "events" / f"{prefix}.json.gz", rows)
         event_counts[prefix] = len(rows)
 

@@ -151,6 +151,10 @@ def parser() -> argparse.ArgumentParser:
     build.add_argument(
         "--output", type=Path, default=Path(os.getenv("WEB_DATA_DIR", "web/public/data"))
     )
+    build.add_argument(
+        "--public-base", default=os.getenv("SOURCE_PUBLIC_BASE_URL"),
+        help="Base pública donde están alojados los PDF fuente (misma convención que import-legacy)",
+    )
     scan = subcommands.add_parser("discover", help="Lista los PDF visibles sin descargarlos")
     scan.add_argument("--source", default=os.getenv("SOURCE_BASE_URL"))
     scan.add_argument("--min-year", type=int, default=int(os.getenv("MIN_YEAR", "2023")))
@@ -304,7 +308,7 @@ def main() -> None:
             "entities_with_audiencias_cr": len(cross_result.per_entity),
         }
     elif arguments.command == "build-web":
-        result = build_web_data(arguments.data_dir, arguments.output)
+        result = build_web_data(arguments.data_dir, arguments.output, arguments.public_base)
     elif arguments.command == "import-legacy":
         result = import_legacy_tsv(
             arguments.legacy_dir, arguments.data_dir, arguments.output, arguments.public_base

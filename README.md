@@ -90,6 +90,14 @@ Regenerar índices, analíticas y exportaciones desde las particiones existentes
 uv run accesos build-web --output web/public/data
 ```
 
+Si los PDF fuente están alojados en una carpeta pública del servidor (con el mismo árbol que el `path` de cada fuente), pasar su base para que el sitio linkee y descargue cada PDF directo desde el detalle:
+
+```bash
+uv run accesos build-web --output web/public/data --public-base https://xxxxxx.poderciudadano.org.ar/fuentes
+```
+
+También vale la variable de entorno `SOURCE_PUBLIC_BASE_URL`. Sin esta opción, las fuentes quedan con sus rutas locales y el sitio las muestra como texto sin link.
+
 Levantar la interfaz local:
 
 ```bash

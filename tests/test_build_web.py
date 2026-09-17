@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from pipeline.build_web import _resolved_merge_rows, build_web_data
+from pipeline.build_web import _public_source_url, _resolved_merge_rows, build_web_data
 from pipeline.models import AccessRecord
 from pipeline.storage import write_partition
 
@@ -53,6 +53,39 @@ def test_builds_search_events_analytics_and_csv(tmp_path) -> None:
     assert (output / "exports" / "2023.csv.gz").exists()
     exports = json.loads((output / "exports" / "index.json").read_text(encoding="utf-8"))
     assert exports == [{"year": 2023, "records": 1, "path": "2023.csv.gz"}]
+
+
+def test_public_source_url_quotes_path() -> None:
+    assert _public_source_url("Casa Rosada/2024/10_Octubre 2024.pdf", "https://pdfs.example.org/fuentes/") == "https://pdfs.example.org/fuentes/Casa%20Rosada/2024/10_Octubre%202024.pdf"
+    assert _public_source_url("a\\b.pdf", "https://pdfs.example.org/fuentes") == "https://pdfs.example.org/fuentes/a/b.pdf"
+
+
+def test_build_web_rewrites_source_urls_with_public_base(tmp_path) -> None:
+    data = tmp_path / "data"
+    output = tmp_path / "public" / "data"
+    record = AccessRecord(
+        record_id="rec_1",
+        entity_id="per_1",
+        canonical_name="PEREZ ANA",
+        document_type="DNI",
+        document_number="30123456",
+        location="olivos",
+        record_type="person",
+        source_id="src_1",
+        source_url="local-source:///Casa%20Rosada/2024/10_Octubre%202024.pdf",
+        source_path="Casa Rosada/2024/10_Octubre 2024.pdf",
+        source_page=3,
+        entered_at=datetime(2024, 10, 5, 9, 0),
+        exited_at=datetime(2024, 10, 5, 10, 0),
+        quality="high",
+        raw_text="fila",
+    )
+    write_partition(data / "partitions" / "olivos" / "2024" / "10" / "src.parquet", [record])
+    build_web_data(data, output, public_base="https://pdfs.example.org/fuentes")
+    shard = next((output / "events").glob("*.json.gz"))
+    rows = json.loads(gzip.decompress(shard.read_bytes()))
+    assert rows[0]["sources"][0]["url"] == "https://pdfs.example.org/fuentes/Casa%20Rosada/2024/10_Octubre%202024.pdf"
+    assert rows[0]["sources"][0]["path"] == "Casa Rosada/2024/10_Octubre 2024.pdf"
 
 
 def test_analytics_marks_only_javier_milei_days_at_casa_rosada(tmp_path) -> None:
