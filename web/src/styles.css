@@ -258,6 +258,9 @@ strong, b { font-weight: 400; }
 .record-detail-fields dt { color: var(--color-text-secondary); font-size: 0.6875rem; font-weight: 400; }
 .record-detail-fields dd { margin: 0.12rem 0 0; overflow-wrap: anywhere; font-size: 0.875rem; line-height: 1.4; white-space: pre-wrap; }
 .record-detail-source { margin-block-start: 0.8rem; padding: 0.7rem; border-radius: var(--radius-inner); background: var(--color-bg-subtle); }
+.record-detail-source-links { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.4rem 0 0; }
+.record-detail-source-links a { display: inline-flex; align-items: center; gap: 0.3rem; }
+.record-detail-source-links svg { width: 0.8rem; height: 0.8rem; }
 .record-detail-source strong { font-size: 0.75rem; }
 .record-detail-source p { margin: 0.15rem 0 0.35rem; font-size: 0.8125rem; line-height: 1.45; }
 .record-detail-source a, .record-detail-source small { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; overflow-wrap: anywhere; }

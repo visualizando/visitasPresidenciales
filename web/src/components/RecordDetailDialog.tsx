@@ -1,4 +1,4 @@
-import {Check, Copy, ExternalLink, X} from "lucide-react";
+import {Check, Copy, Download, ExternalLink, X} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 import type {AccessEvent, AudienciaDetail} from "../types";
 import {copyText} from "../utils/clipboard";
@@ -75,7 +75,7 @@ export function RecordDetailDialog({event, onClose}: RecordDetailDialogProps) {
 
       <div className="record-detail-source">
         <strong>Fuente</strong>
-        {source ? <><p>{sourceDescription(event)}</p>{isPublicUrl(source.url) ? <a href={`${source.url}#page=${source.page}`} target="_blank" rel="noreferrer">Ver PDF, página {source.page}<ExternalLink aria-hidden="true" /></a> : <small>{source.path} · página {source.page}</small>}</> : event.audiencia ? <p>Registro de Audiencias de Gestión de Intereses, publicado por el Poder Ejecutivo Nacional.</p> : null}
+        {source ? <><p>{sourceDescription(event)}</p>{isPublicUrl(source.url) ? <p className="record-detail-source-links"><a href={source.url} download={pdfFileName(source)}>Descargar PDF original<Download aria-hidden="true" /></a><a href={`${source.url}#page=${source.page}`} target="_blank" rel="noreferrer">Ver PDF, página {source.page}<ExternalLink aria-hidden="true" /></a></p> : <small>{source.path} · página {source.page}</small>}</> : event.audiencia ? <p>Registro de Audiencias de Gestión de Intereses, publicado por el Poder Ejecutivo Nacional.</p> : null}
       </div>
 
       <footer className="record-detail-actions">
@@ -153,3 +153,8 @@ function formatDate(value: string) { return DATE_FORMATTER.format(new Date(value
 function formatTime(value: string) { return TIME_FORMATTER.format(new Date(value)); }
 function recordLabel(event: AccessEvent) { if (event.record_type === "movement") return "Movimiento"; if (event.record_type === "vehicle") return "Vehículo"; return "Visita"; }
 function isPublicUrl(value: string) { return /^https?:\/\//i.test(value); }
+
+function pdfFileName(source: {url: string; path: string}) {
+  const base = (source.path || source.url).split(/[\\/]/).pop() || "documento.pdf";
+  return /\.pdf$/i.test(base) ? base : `${base}.pdf`;
+}

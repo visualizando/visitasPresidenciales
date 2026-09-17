@@ -44,6 +44,7 @@ describe("PersonProfile", () => {
     expect(screen.getByRole("link", {name: /2024\.pdf · p\. 7/i})).toHaveAttribute("href", "https://example.org/olivos-2024.pdf#page=7");
     fireEvent.click(screen.getByRole("button", {name: /Abrir detalle del registro/i}));
     expect(screen.getByRole("dialog", {name: "Detalle para citar"})).toBeInTheDocument();
+    expect(screen.getByRole("link", {name: /Descargar PDF original/i})).toHaveAttribute("href", "https://example.org/olivos-2024.pdf");
     expect(screen.getByText(/respuesta oficial a un pedido de acceso a la información realizado por Poder Ciudadano/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", {name: "Copiar detalle"}));
     expect(await screen.findByRole("button", {name: "Copiado"})).toBeInTheDocument();
