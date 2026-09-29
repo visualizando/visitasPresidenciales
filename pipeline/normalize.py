@@ -16,6 +16,22 @@ def canonical_name(value: str) -> str:
     return fold_text(value)
 
 
+def normalize_authorizer(value: str | None) -> str | None:
+    """Unify an authorizer name for display, sorting and grouping.
+
+    Folds case/accents, collapses whitespace and sorts tokens so that
+    variants like "PLATEO PABLO" and "Pablo Plateo" become "Pablo Plateo".
+    Returns None when nothing usable remains. Abbreviations that cannot be
+    safely expanded (e.g. "DIR SEG") keep their own group.
+    """
+    if not value:
+        return None
+    tokens = fold_text(value).split()
+    if not tokens:
+        return None
+    return " ".join(sorted(tokens)).title()
+
+
 def normalize_document(value: str | None) -> str | None:
     if not value:
         return None

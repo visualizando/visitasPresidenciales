@@ -16,7 +16,7 @@ from urllib.parse import quote, urljoin
 import duckdb
 
 from pipeline.identity_candidates import write_identity_candidates
-from pipeline.normalize import fold_text
+from pipeline.normalize import fold_text, normalize_authorizer
 from pipeline.storage import load_json, utc_now
 
 COINCIDENCE_MAX_TIME_DIFFERENCE_MINUTES = 15
@@ -183,6 +183,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path, public_bas
         for row in rows:
             for key in ("occurred_at", "entered_at", "exited_at"):
                 row[key] = _json_datetime(row[key])
+            row["authorized_by"] = normalize_authorizer(row.get("authorized_by"))
         if public_base:
             for row in rows:
                 for source in row.get("sources") or []:

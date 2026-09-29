@@ -88,6 +88,34 @@ def test_build_web_rewrites_source_urls_with_public_base(tmp_path) -> None:
     assert rows[0]["sources"][0]["path"] == "Casa Rosada/2024/10_Octubre 2024.pdf"
 
 
+def test_build_web_normalizes_authorizer(tmp_path) -> None:
+    data = tmp_path / "data"
+    output = tmp_path / "public" / "data"
+    record = AccessRecord(
+        record_id="rec_1",
+        entity_id="per_1",
+        canonical_name="PEREZ ANA",
+        document_type="DNI",
+        document_number="30123456",
+        location="olivos",
+        record_type="person",
+        source_id="src_1",
+        source_url="local-source:///olivos/2023/01/01.pdf",
+        source_path="olivos/2023/01/01.pdf",
+        source_page=1,
+        entered_at=datetime(2023, 1, 1, 9, 0),
+        exited_at=datetime(2023, 1, 1, 10, 0),
+        authorized_by="PLATEO  PABLO",
+        quality="high",
+        raw_text="fila",
+    )
+    write_partition(data / "partitions" / "olivos" / "2023" / "01" / "src.parquet", [record])
+    build_web_data(data, output)
+    shard = next((output / "events").glob("*.json.gz"))
+    rows = json.loads(gzip.decompress(shard.read_bytes()))
+    assert rows[0]["authorized_by"] == "Pablo Plateo"
+
+
 def test_analytics_marks_only_javier_milei_days_at_casa_rosada(tmp_path) -> None:
     data = tmp_path / "data"
     output = tmp_path / "public" / "data"
