@@ -18,12 +18,14 @@ describe("PersonProfile", () => {
     expect(screen.getByRole("heading", {name: "Detalle de movimientos"})).toBeInTheDocument();
     expect(screen.getByRole("button", {name: /Descargar 2 registros de la selección en CSV/i})).toBeInTheDocument();
     expect([...container.querySelectorAll(".profile-stats > span")].map((item) => item.textContent)).toEqual(["2 registros", "Sede: Olivos", "Última aparición: 01 de feb de 2024"]);
-    expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Fecha", "Ingreso", "Egreso", "Persona", "Sede", "Tipo", "Detalle", "Fuente", "Acciones"]);
+    expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Fecha", "Ingreso", "Egreso", "Persona", "Sede", "Tipo", "Detalle", "Autorizó", "Fuente", "Acciones"]);
     expect(screen.queryByRole("columnheader", {name: "Calidad"})).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", {name: "Persona"}));
     const rows = screen.getAllByRole("row").slice(1);
     expect(within(rows[0]).getByText("Ana Perez")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", {name: /Persona/i})).toHaveAttribute("aria-sort", "ascending");
+    fireEvent.click(screen.getByRole("button", {name: "Autorizó"}));
+    expect(screen.getByRole("columnheader", {name: /Autorizó/i})).toHaveAttribute("aria-sort", "ascending");
   });
 
   it("muestra tablas largas de forma progresiva", () => {

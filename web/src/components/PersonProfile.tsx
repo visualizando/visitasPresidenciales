@@ -9,7 +9,7 @@ import {RecordDetailDialog} from "./RecordDetailDialog";
 import {ShareButton} from "./ShareButton";
 import {buildTimelineRows} from "../utils/mergeAudiencias";
 
-type SortKey = "date" | "entry" | "exit" | "person" | "location" | "type" | "detail";
+type SortKey = "date" | "entry" | "exit" | "person" | "location" | "type" | "detail" | "authorized";
 type SortDirection = "asc" | "desc";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("es-AR", {day: "2-digit", month: "short", year: "numeric", timeZone: "UTC"});
@@ -97,6 +97,7 @@ export function PersonProfile({people, events, audiencias, loading, error, coinc
       <SortableHeader label="Sede" column="location" sort={sort} onSort={changeSort} />
       <SortableHeader label="Tipo" column="type" sort={sort} onSort={changeSort} />
       <SortableHeader label="Detalle" column="detail" sort={sort} onSort={changeSort} />
+      <SortableHeader label="Autorizó" column="authorized" sort={sort} onSort={changeSort} />
       <th scope="col">Fuente</th>
       <th scope="col"><span className="sr-only">Acciones</span></th>
     </tr></thead><tbody>{visibleEvents.map((event) => <TimelineRow key={event.record_id} event={event} colors={colors} onOpenDetail={openEventDetail} />)}</tbody></table></div>{visibleEvents.length < sortedEvents.length && <button className="text-button records-more" type="button" onClick={() => setEventWindow({peopleKey, count: visibleEventCount + EVENT_PAGE_SIZE})}>Mostrar {Math.min(EVENT_PAGE_SIZE, sortedEvents.length - visibleEvents.length).toLocaleString("es-AR")} más</button>}</> : <p className="selection-empty">No hay eventos publicados para esta selección.</p>}</div>}
@@ -120,6 +121,7 @@ function TimelineRow({event, colors, onOpenDetail}: {event: AccessEvent; colors:
     <td>{isAudiencia ? "Casa Rosada" : locationLabel(event.location)}</td>
     <td><TypeCell event={event} /></td>
     <td className="detail-cell"><AudienciaDetailCell event={event} /></td>
+    <td>{event.authorized_by?.trim() ? event.authorized_by : "—"}</td>
     <td><SourceCell event={event} /></td>
     <td><button className="record-detail-trigger" type="button" onClick={(browserEvent) => onOpenDetail(event, browserEvent.currentTarget)} aria-label={`Abrir detalle del registro de ${titleCase(event.canonical_name)} del ${formatDate(primaryDate(event))}`}><FileText aria-hidden="true" /></button></td>
   </tr>;
@@ -175,6 +177,6 @@ function audienciaDetail(audiencia: {official_name: string; official_cargo: stri
 function formatDate(value: string | null) { return value ? DATE_FORMATTER.format(new Date(value)) : "Sin fecha"; }
 function formatTime(value: string | null) { return value ? TIME_FORMATTER.format(new Date(value)) : "—"; }
 function recordLabel(event: AccessEvent) { if (event.record_type === "movement") return event.direction ? `Movimiento · ${event.direction}` : "Movimiento"; if (event.record_type === "vehicle") return "Vehículo"; if (event.record_type === "visitor") return "Visita"; return "Persona"; }
-function sortValue(event: AccessEvent, key: SortKey) { if (key === "date") return primaryDate(event) ?? ""; if (key === "entry") return entryDate(event) ?? ""; if (key === "exit") return exitDate(event) ?? ""; if (key === "person") return event.canonical_name; if (key === "location") return event.audiencia ? "Casa Rosada" : locationLabel(event.location); if (key === "type") return event.audiencia ? "Audiencia" : recordLabel(event); return event.audiencia ? audienciaDetail(event.audiencia) : eventDetail(event); }
+function sortValue(event: AccessEvent, key: SortKey) { if (key === "date") return primaryDate(event) ?? ""; if (key === "entry") return entryDate(event) ?? ""; if (key === "exit") return exitDate(event) ?? ""; if (key === "person") return event.canonical_name; if (key === "authorized") return event.authorized_by ?? ""; if (key === "location") return event.audiencia ? "Casa Rosada" : locationLabel(event.location); if (key === "type") return event.audiencia ? "Audiencia" : recordLabel(event); return event.audiencia ? audienciaDetail(event.audiencia) : eventDetail(event); }
 function isPublicUrl(value: string) { return /^https?:\/\//i.test(value); }
 function sourceFileName(value: string) { return value.split(/[\\/]/).pop() || "PDF de origen"; }
