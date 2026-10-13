@@ -26,12 +26,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Restaurar datos web generados
+        id: web-data
+        uses: actions/cache@v4
+        with:
+          path: web/public/data
+          key: web-data-v1-${{ runner.os }}-${{ hashFiles('data/partitions/**/*.parquet', 'data/manifest.json', 'data/curation/entity_merges.json', 'data/audiencias*.json', 'pipeline/**/*.py', 'schemas/**', 'pyproject.toml', 'uv.lock') }}
       - uses: astral-sh/setup-uv@v6
+        if: steps.web-data.outputs.cache-hit != 'true'
         with:
           python-version: "3.12"
           enable-cache: true
       - run: uv sync --all-extras
+        if: steps.web-data.outputs.cache-hit != 'true'
       - run: uv run accesos build-web
+        if: steps.web-data.outputs.cache-hit != 'true'
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -51,6 +60,7 @@ jobs:
       - run: node scripts/check-size.mjs
         working-directory: web
       - run: pnpm check:search
+        if: steps.web-data.outputs.cache-hit != 'true'
         working-directory: web
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

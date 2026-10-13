@@ -1,6 +1,7 @@
 name: Validar
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main, master]
@@ -10,14 +11,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Detectar cambios de datos y curación
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [[ "$BASE_SHA" =~ ^0+$ ]]; then
+            echo "data=true" >> "$GITHUB_OUTPUT"
+            echo "curation=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git diff --name-only "$BASE_SHA" HEAD > "$RUNNER_TEMP/changed-files.txt"
+          if grep -Eq '^(data/|pipeline/|tests/|schemas/|pyproject\.toml$|uv\.lock$|\.github/)' "$RUNNER_TEMP/changed-files.txt"; then
+            echo "data=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "data=false" >> "$GITHUB_OUTPUT"
+          fi
+          if grep -Eq '^(web/src/curation/|web/vite\.curation\.config\.ts$|web/package\.json$|web/pnpm-lock\.yaml$|pipeline/curation_ui/)' "$RUNNER_TEMP/changed-files.txt"; then
+            echo "curation=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "curation=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: astral-sh/setup-uv@v6
+        if: steps.changes.outputs.data == 'true'
         with:
           python-version: "3.12"
           enable-cache: true
       - run: uv sync --all-extras
+        if: steps.changes.outputs.data == 'true'
       - run: uv run ruff check .
+        if: steps.changes.outputs.data == 'true'
       - run: uv run pytest --cov=pipeline --cov-report=term-missing
+        if: steps.changes.outputs.data == 'true'
+      - name: Restaurar datos web generados
+        if: steps.changes.outputs.data == 'true'
+        id: web-data
+        uses: actions/cache@v4
+        with:
+          path: web/public/data
+          key: web-data-v1-${{ runner.os }}-${{ hashFiles('data/partitions/**/*.parquet', 'data/manifest.json', 'data/curation/entity_merges.json', 'data/audiencias*.json', 'pipeline/**/*.py', 'schemas/**', 'pyproject.toml', 'uv.lock') }}
       - run: uv run accesos build-web
+        if: steps.changes.outputs.data == 'true' && steps.web-data.outputs.cache-hit != 'true'
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -33,11 +70,16 @@ jobs:
       - run: pnpm build
         working-directory: web
       - run: pnpm build:curation
+        if: steps.changes.outputs.curation == 'true'
         working-directory: web
       - run: git diff --exit-code -- pipeline/curation_ui/static
+        if: steps.changes.outputs.curation == 'true'
       - run: cp -R public/data dist/data
+        if: steps.changes.outputs.data == 'true'
         working-directory: web
       - run: node scripts/check-size.mjs
+        if: steps.changes.outputs.data == 'true'
         working-directory: web
       - run: pnpm check:search
+        if: steps.changes.outputs.data == 'true'
         working-directory: web

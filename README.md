@@ -318,8 +318,8 @@ Los datos personales y documentos visibles reproducen información publicada en 
 
 ## Automatización en GitHub
 
-- `validate.yml` se ejecuta en cada pull request y cada push a `main`: valida Python, frontend, curación, build y límites de tamaño.
-- `deploy-pages.yml` publica GitHub Pages sólo después de una validación exitosa originada por un push.
+- `validate.yml` se ejecuta en cada pull request y cada push a `main`: siempre prueba y compila el frontend. Python y la generación/validación de datos sólo se ejecutan si cambian datos, pipeline, esquemas, pruebas Python, dependencias Python o workflows. El build de curación se comprueba cuando cambia esa interfaz o sus dependencias. La ejecución manual hace la validación completa.
+- `deploy-pages.yml` publica GitHub Pages sólo después de una validación exitosa originada por un push. Reutiliza los datos web generados mediante una caché compartida con la validación, identificada por el contenido de las particiones, manifiesto, unificaciones, audiencias, pipeline y dependencias Python. No usa versiones aproximadas de la caché: si falta la versión exacta, la regenera antes de publicar. Un cambio exclusivamente visual no vuelve a procesar la base mientras exista esa caché.
 - `update-data.yml` se ejecuta el día 8 de cada mes a las 09:00 UTC y también admite ejecución manual.
 
 La actualización mensual comienza la detección automática en 2023, pero conserva toda la base histórica ya incorporada. Si falla una extracción, no se publica una base parcial: se adjunta un diagnóstico y se abre o actualiza un issue.
