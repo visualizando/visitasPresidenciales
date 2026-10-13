@@ -5,6 +5,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 from pipeline.build_web import build_web_data
 from pipeline.discovery import discover, download
@@ -129,8 +130,9 @@ def update_dataset(
             known_hashes.add(sha256)
 
         if mark_missing:
+            source_prefix = _source_url_prefix(source_base_url)
             for path, entry in previous.items():
-                if path not in seen_paths:
+                if path not in seen_paths and _entry_belongs_to_source(entry, source_prefix):
                     entry["status"] = "missing"
         for remote in remote_files:
             if (
@@ -199,3 +201,39 @@ def _needs_download(remote: RemoteFile, old: dict[str, object] | None) -> bool:
     if not known:
         return True
     return any(old.get(key) != value for key, value in known)
+
+
+def _source_url_prefix(source_base_url: str) -> str | None:
+    """Return the URL prefix shared by files discovered from this source.
+
+    The manifest can aggregate files from several roots (local folders, HTTP
+    mirrors, historical imports). ``update`` may only flag a file as missing
+    when it belongs to the root it just scanned, otherwise updating a partial
+    source would spuriously mark every other entry as gone.
+    """
+    local = Path(source_base_url)
+    if local.exists():
+        try:
+            return local.resolve().as_uri()
+        except ValueError:
+            return None
+    parsed = urlparse(source_base_url)
+    scheme = parsed.scheme.lower()
+    if scheme in {"http", "https", "ftp", "ftps"}:
+        return source_base_url.rstrip("/")
+    if scheme == "file":
+        raw = unquote(parsed.path.lstrip("/")) if os.name == "nt" else unquote(parsed.path)
+        try:
+            return Path(raw).resolve().as_uri()
+        except ValueError:
+            return None
+    return None
+
+
+def _entry_belongs_to_source(entry: dict[str, object], prefix: str | None) -> bool:
+    if not prefix:
+        return False
+    url = entry.get("url")
+    if not isinstance(url, str):
+        return False
+    return url == prefix or url.startswith(prefix.rstrip("/") + "/")
