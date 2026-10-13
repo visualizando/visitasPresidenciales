@@ -78,7 +78,7 @@ strong, b { font-weight: 400; }
 .hero-intro p { margin: 0; color: var(--color-text-secondary); font-size: 1rem; line-height: 1.6; text-wrap: pretty; }
 .hero-intro .hero-source { color: var(--neutral-600); font-size: 0.875rem; }
 .hero-intro .hero-more { margin-block-start: 0; }
-.hero-more summary { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border: 1px solid var(--accent-100); border-radius: 999px; color: var(--color-accent-solid); background: var(--color-accent-soft); font-size: 0.875rem; list-style: none; cursor: pointer; }
+.hero-more summary { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-text-secondary); background: var(--color-bg-subtle); font-size: 0.875rem; list-style: none; cursor: pointer; }
 .hero-more summary::-webkit-details-marker { display: none; }
 .hero-more summary svg { width: 0.85rem; height: 0.85rem; }
 .hero-more[open] summary svg { transform: rotate(180deg); }
@@ -88,7 +88,7 @@ strong, b { font-weight: 400; }
 .hero-facts div { min-width: 0; padding: 0.55rem 0.75rem; border-radius: var(--radius-inner); }
 .hero-facts dt { color: var(--color-text-secondary); font-size: 0.75rem; }
 .hero-facts dd { margin: 0; color: var(--color-text-primary); font-size: 1.125rem; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.update-badge { display: flex; align-items: center; gap: 0.5rem; width: fit-content; max-width: 72ch; margin: 1rem 0 0; padding: 0.55rem 0.8rem; border: 1px solid var(--accent-100); border-radius: var(--radius-inner); color: var(--color-text-secondary); background: var(--color-accent-soft); font-size: 0.8125rem; line-height: 1.45; text-align: left; }
+.update-badge { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0; padding: 0.55rem 0.8rem; border: 1px solid var(--accent-100); border-radius: var(--radius-inner); color: var(--color-text-secondary); background: var(--color-accent-soft); font-size: 0.8125rem; line-height: 1.45; text-align: left; }
 .update-badge svg { flex: 0 0 auto; width: 1rem; height: 1rem; margin-block-start: 0.1rem; color: var(--color-accent-solid); }
 
 .section-nav-wrap { position: sticky; inset-block-start: 0; z-index: 20; border-block: 1px solid var(--color-border); background: rgb(241 244 244 / 0.96); box-shadow: 0 4px 14px rgb(0 0 0 / 0.05); backdrop-filter: blur(10px); }
