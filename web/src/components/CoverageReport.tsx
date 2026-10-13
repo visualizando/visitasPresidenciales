@@ -7,7 +7,7 @@ export function CoverageReport({compact = false}: {compact?: boolean}) {
   const coverage = useData<CoverageData>("analytics/coverage.json");
   const data = coverage.data;
   return <>
-    {!compact && <div className="section-heading coverage-heading">
+    {!compact && <div className="section-heading coverage-heading section-heading--stacked">
       <div><p className="eyebrow">Cobertura</p><h2 id="coverage-title">Qué falta y por qué</h2></div>
       <p>Este informe distingue los períodos sin registros de los archivos que no pudieron incorporarse. Un hueco no demuestra que no haya habido accesos.</p>
     </div>}

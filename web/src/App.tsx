@@ -163,15 +163,15 @@ export default function App() {
       </section>
 
       <section className="downloads-section" id="descargas" aria-labelledby="downloads-title">
-        <div className="section-heading"><div><h2 id="downloads-title">Descargar datos</h2></div><p>Compilamos los registros en archivos descargables por año para que sea más fácil reutilizarlos. No son los archivos originales surgidos de los pedidos de acceso a la información pública, sino una versión procesada y unificada de ellos.</p></div>
+        <div className="section-heading section-heading--stacked"><div><h2 id="downloads-title">Descargar datos</h2></div><p>Compilamos los registros en archivos descargables por año para que sea más fácil reutilizarlos. No son los archivos originales surgidos de los pedidos de acceso a la información pública, sino una versión procesada y unificada de ellos.</p></div>
         {exportsData.data?.length ? <div className="download-table-wrap"><table className="download-table"><caption className="sr-only">Archivos de datos disponibles por año</caption><thead><tr><th scope="col">Año</th><th scope="col">Registros</th><th scope="col">Archivo</th></tr></thead><tbody>{[...exportsData.data].sort((left, right) => right.year - left.year).map((file) => <tr key={file.year}><td><strong>{file.year}</strong></td><td>{file.records.toLocaleString("es-AR")}</td><td><a href={new URL(`data/exports/${file.path}`, document.baseURI).href} download>Descargar CSV</a></td></tr>)}</tbody></table></div> : <p className="empty-state">Los CSV aparecerán después de la primera actualización de datos.</p>}
       </section>
 
       <section className="more-section" id="mas" aria-labelledby="more-title">
-        <div className="section-heading"><div><h2 id="more-title">Más información</h2></div></div>
-        <div className="more-disclosures">
-          <details><summary><span><strong>Rankings generales</strong><small>Personas con más días registrados</small></span><ChevronDown aria-hidden="true" /></summary><div className="more-content"><Rankings compact /></div></details>
-          <details><summary><span><strong>Cobertura de los datos</strong><small>Períodos y archivos faltantes</small></span><ChevronDown aria-hidden="true" /></summary><div className="more-content"><CoverageReport compact /></div></details>
+        <div className="section-heading section-heading--stacked"><div><h2 id="more-title">Más información</h2></div><p>Rankings de presencias y un informe de cobertura que detalla qué períodos y archivos faltan, para interpretar mejor los datos publicados.</p></div>
+        <div className="more-panels">
+          <Rankings />
+          <CoverageReport />
         </div>
       </section>
     </main>
