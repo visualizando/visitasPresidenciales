@@ -428,7 +428,10 @@ td:nth-child(n + 3), th:nth-child(n + 3) { font-variant-numeric: tabular-nums; }
 .more-section { max-width: none; background: var(--color-bg-subtle); }
 .more-section > * { max-width: calc(96rem - 2 * var(--space-page)); margin-inline: auto; }
 .more-section > .section-heading { margin-block-end: 1rem; }
-.more-panels { display: grid; gap: 2rem; }
+.more-panels { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+.more-panels > section, .rankings-panel, .coverage-panel { min-width: 0; }
+.ranking-filters > * { min-width: 0; }
+.ranking-filters select { width: 100%; min-width: 0; }
 .more-panels .section-heading h3 { font-size: 1.15rem; font-weight: 500; }
 
 footer { padding: 2.75rem var(--space-page) 3rem; border-block-start: 1px solid var(--color-border); color: var(--color-text-secondary); background: var(--color-bg-page); font-size: 0.8125rem; }
@@ -522,6 +525,8 @@ footer a { color: var(--color-text-primary); text-decoration-color: var(--color-
   .ranking-filters { grid-template-columns: 1fr; }
   .ranking-coverage { grid-column: auto; }
   .coverage-locations { grid-template-columns: 1fr; }
+  .coverage-locations summary { flex-wrap: wrap; gap: 0.25rem 0.75rem; }
+  .coverage-locations summary small { text-align: start; }
   footer { padding-block: 2.25rem; }
   .footer-inner { grid-template-columns: 1fr; gap: 1.25rem; }
   .footer-meta { grid-column: auto; flex-direction: column; align-items: start; }
