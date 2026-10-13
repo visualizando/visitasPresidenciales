@@ -170,8 +170,8 @@ export default function App() {
       <section className="more-section" id="mas" aria-labelledby="more-title">
         <div className="section-heading section-heading--stacked"><div><h2 id="more-title">Más información</h2></div><p>Rankings de presencias y un informe de cobertura que detalla qué períodos y archivos faltan, para interpretar mejor los datos publicados.</p></div>
         <div className="more-panels">
-          <Rankings />
-          <CoverageReport />
+          <div className="more-panel"><Rankings /></div>
+          <div className="more-panel"><CoverageReport /></div>
         </div>
       </section>
     </main>

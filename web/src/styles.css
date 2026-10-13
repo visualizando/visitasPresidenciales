@@ -425,9 +425,11 @@ td:nth-child(n + 3), th:nth-child(n + 3) { font-variant-numeric: tabular-nums; }
 .coverage-clear, .coverage-status { margin: 0.75rem 0 0; color: var(--color-text-secondary); font-size: 0.75rem; }
 .coverage-locations .coverage-clear { padding: 0 0.7rem 0.7rem; }
 
-.more-section { max-width: 96rem; }
+.more-section { max-width: none; background: var(--color-bg-subtle); }
+.more-section > * { max-width: calc(96rem - 2 * var(--space-page)); margin-inline: auto; }
 .more-section > .section-heading { margin-block-end: 1rem; }
-.more-panels { display: grid; gap: 1.75rem; }
+.more-panels { display: grid; gap: 2rem; }
+.more-panels .section-heading h3 { font-size: 1.15rem; font-weight: 500; }
 
 footer { padding: 2.75rem var(--space-page) 3rem; border-block-start: 1px solid var(--color-border); color: var(--color-text-secondary); background: var(--color-bg-page); font-size: 0.8125rem; }
 .footer-inner { display: grid; grid-template-columns: minmax(15rem, 0.7fr) minmax(20rem, 1.3fr) auto; gap: 2rem 3rem; align-items: start; max-width: 96rem; margin-inline: auto; }

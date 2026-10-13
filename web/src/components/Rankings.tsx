@@ -30,7 +30,7 @@ export function Rankings({compact = false}: {compact?: boolean}) {
 
   return <>
     {!compact && <div className="section-heading rankings-heading section-heading--stacked">
-      <div><p className="eyebrow">Rankings</p><h2 id="rankings-title">Quiénes aparecen más días</h2></div>
+      <div><p className="eyebrow">Rankings</p><h3 id="rankings-title">Quiénes aparecen más días</h3></div>
       <p>Contamos una sola presencia por persona, fecha y sede, aunque tenga varias entradas o salidas ese día. No implica una reunión presidencial.</p>
     </div>}
     <div className="rankings-panel">
