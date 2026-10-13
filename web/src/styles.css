@@ -45,7 +45,8 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: auto; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 body { margin: 0; min-width: 20rem; background: var(--color-bg-page); font-size: 0.9375rem; line-height: 1.45; }
 button, input, select { font: inherit; }
 button, a, select { touch-action: manipulation; }
