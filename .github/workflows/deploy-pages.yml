@@ -44,6 +44,8 @@ jobs:
         working-directory: web
       - run: pnpm build
         working-directory: web
+      - run: cp public/og.png dist/og.png
+        working-directory: web
       - run: cp -R public/data dist/data
         working-directory: web
       - run: node scripts/check-size.mjs
