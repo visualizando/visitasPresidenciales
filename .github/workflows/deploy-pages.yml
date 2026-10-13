@@ -44,7 +44,7 @@ jobs:
         working-directory: web
       - run: pnpm build
         working-directory: web
-      - run: cp public/og.png dist/og.png
+      - run: cp public/og.png public/favicon.ico public/favicon-16x16.png public/favicon-32x32.png public/apple-touch-icon.png public/android-chrome-192x192.png public/android-chrome-512x512.png public/site.webmanifest dist/
         working-directory: web
       - run: cp -R public/data dist/data
         working-directory: web
