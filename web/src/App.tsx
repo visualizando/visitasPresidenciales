@@ -1,6 +1,5 @@
 import {ChevronDown, RefreshCw, Search} from "lucide-react";
 import {useDeferredValue, useEffect, useMemo, useState} from "react";
-import poderCiudadanoLogo from "./assets/poder-ciudadano/logo-poder-ciudadano.png";
 import {CalendarChart} from "./components/CalendarChart";
 import {ChartLocationFilter} from "./components/ChartLocationFilter";
 import {ChartPeriodFilter, type ChartPeriod} from "./components/ChartPeriodFilter";
@@ -138,7 +137,7 @@ export default function App() {
     <header className="institutional-header">
       <div className="institutional-strip"><div><span>Quiénes entran</span><a href="https://poderciudadano.org/" target="_blank" rel="noreferrer">poderciudadano.org <span aria-hidden="true">↗</span></a></div></div>
       <div className="site-header">
-        <a className="organization-brand" href="https://poderciudadano.org/" target="_blank" rel="noreferrer" aria-label="Poder Ciudadano, abrir sitio principal"><img src={poderCiudadanoLogo} alt="Poder Ciudadano" /></a>
+        <a className="organization-brand" href="https://poderciudadano.org/" target="_blank" rel="noreferrer" aria-label="Poder Ciudadano, abrir sitio principal"><img src="https://poderciudadano.org/wp-content/themes/theme_poder_ciudadano/images/logo-poder-ciudadano.png" alt="Poder Ciudadano" /></a>
       </div>
     </header>
     <main id="main">
