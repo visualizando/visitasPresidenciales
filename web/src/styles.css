@@ -63,7 +63,7 @@ a { color: var(--color-accent-solid); text-underline-position: from-font; text-d
 .institutional-strip a { color: var(--color-accent-solid); text-decoration: none; }
 .site-header { display: flex; align-items: center; justify-content: space-between; gap: 2rem; max-width: 96rem; margin-inline: auto; padding: 1.15rem var(--space-page); }
 .organization-brand { display: inline-flex; flex: 0 1 auto; }
-.organization-brand img { display: block; width: clamp(10rem, 18vw, 14rem); height: auto; }
+.organization-brand img { display: block; width: clamp(10rem, 18vw, 14rem); height: auto; aspect-ratio: 32 / 9; object-fit: cover; object-position: center; }
 
 main > section { max-width: 96rem; margin-inline: auto; scroll-margin-top: 4.25rem; padding-inline: var(--space-page); }
 .hero { display: grid; gap: 1.5rem; max-width: 72rem; margin-inline: auto; padding-block: 2.25rem 1.75rem; text-align: left; }
