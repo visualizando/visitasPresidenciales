@@ -88,12 +88,6 @@ def import_historical_office(
             changed = True
             continue
 
-        changed = True
-        for old_partition in (
-            partitions_root.rglob(f"{source_id}.parquet") if partitions_root.exists() else []
-        ):
-            old_partition.unlink()
-
         location = "casa-rosada" if "CASA ROSADA" in fold_text(relative) else "olivos"
         suffix = source.suffix.lower()
         status = "active"
@@ -131,6 +125,18 @@ def import_historical_office(
                 quarantine_reason = empty_reason
                 diagnostics[f"quarantined_{empty_reason}"] += 1
 
+        if status == "quarantined" and previous and previous.get("status") == "active":
+            # A broken replacement must not destroy the last usable source.
+            diagnostics["failed_replacements_preserved"] += 1
+            write_json_atomic(
+                data_dir / "quarantine" / f"{source_id}.json",
+                {"path": source_path, "sha256": checksum, "reason": quarantine_reason,
+                 "previous_sha256": previous.get("sha256"), "observed_at": utc_now()},
+            )
+            continue
+
+        changed = True
+        old_partitions = list(partitions_root.rglob(f"{source_id}.parquet")) if partitions_root.exists() else []
         grouped: dict[tuple[int, int], list[AccessRecord]] = defaultdict(list)
         for record in records:
             timestamp = record.occurred_at or record.entered_at or record.exited_at
@@ -141,6 +147,10 @@ def import_historical_office(
             partition = Path(location) / str(year) / f"{month:02d}" / f"{source_id}.parquet"
             write_partition(partitions_root / partition, rows)
             partition_paths.append(partition.as_posix())
+
+        for old_partition in old_partitions:
+            if old_partition.relative_to(partitions_root).as_posix() not in partition_paths:
+                old_partition.unlink()
 
         year, month = _source_period(source)
         manifest["files"][source_path] = {

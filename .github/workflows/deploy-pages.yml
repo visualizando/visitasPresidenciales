@@ -62,9 +62,22 @@ jobs:
       - run: pnpm check:search
         if: steps.web-data.outputs.cache-hit != 'true'
         working-directory: web
+      - name: Evitar publicar una generación anterior
+        id: current
+        run: |
+          latest=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$(git rev-parse HEAD)" = "$latest" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "main avanzó; esta generación no reemplazará la publicación más reciente."
+          fi
       - uses: actions/configure-pages@v5
+        if: steps.current.outputs.publish == 'true'
       - uses: actions/upload-pages-artifact@v3
+        if: steps.current.outputs.publish == 'true'
         with:
           path: web/dist
       - id: deployment
+        if: steps.current.outputs.publish == 'true'
         uses: actions/deploy-pages@v4

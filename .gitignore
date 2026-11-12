@@ -18,3 +18,7 @@ data/staging/
 data/quarantine/*.pdf
 data/Raw/
 old/
+
+archive/
+data/drive/raw/
+.drive-update/

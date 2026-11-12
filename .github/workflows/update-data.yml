@@ -2,12 +2,18 @@ name: Actualizar datos
 
 on:
   schedule:
-    - cron: "0 9 8 * *"
+    - cron: "17 9 8 * *"
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/update-data.yml"
+      - "pipeline/drive_update.py"
+      - "pipeline/drive_sync.py"
 
 permissions:
   contents: write
-  issues: write
+  actions: write
 
 concurrency:
   group: update-data
@@ -15,53 +21,104 @@ concurrency:
 
 jobs:
   update:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     env:
-      SOURCE_BASE_URL: ${{ vars.SOURCE_BASE_URL }}
-      MIN_YEAR: "2023"
+      GOOGLE_DRIVE_API_KEY: ${{ secrets.GOOGLE_DRIVE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
           enable-cache: true
-      - run: uv sync
-      - name: Verificar configuración
-        run: test -n "$SOURCE_BASE_URL" || (echo "Configure la variable SOURCE_BASE_URL" && exit 1)
-      - name: Procesar novedades
-        run: uv run accesos update
-      - name: Actualizar audiencias de gestión de intereses
-        run: uv run accesos update-audiencias
-      - name: Guardar actualización
+      - run: uv sync --all-extras
+      - run: uv run ruff check pipeline tests
+      - run: uv run pytest
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/drive/raw
+          key: drive-raw-v1-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: drive-raw-v1-${{ runner.os }}-
+      - name: Revisar ambos Drives y preparar candidato
+        run: uv run python -m pipeline.drive_update
+      - name: Leer resultado
+        id: result
         run: |
-          if git diff --quiet; then
-            echo "No hay cambios"
+          python - <<'PY'
+          import json, os
+          report = json.load(open('.drive-update/report.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f"data_changed={str(report['data_changed']).lower()}\n")
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('## Revisión de Drive\n\n')
+              for name, value in report['counts'].items():
+                  out.write(f'- {name}: {value}\n')
+              out.write('\nLos errores de extracción conservan la última fuente válida. Ver informe adjunto.\n')
+          PY
+      - name: Construir derivados del candidato
+        if: steps.result.outputs.data_changed == 'true'
+        run: uv run accesos build-web --data-dir .drive-update/data --output web/public/data
+      - uses: pnpm/action-setup@v4
+        if: steps.result.outputs.data_changed == 'true'
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        if: steps.result.outputs.data_changed == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Validar web y presupuestos completos
+        if: steps.result.outputs.data_changed == 'true'
+        working-directory: web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm build
+          cp -R public/data dist/data
+          node scripts/check-size.mjs
+          pnpm check:search
+      - name: Promover candidato validado
+        run: uv run python -m pipeline.drive_update --promote .drive-update/data
+      - name: Guardar cambios de datos y estado
+        id: commit
+        run: |
+          git add data/partitions data/manifest.json data/drive/state.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data web/public/data
-          git commit -m "data: actualizar registros públicos"
-          git push
-      - name: Adjuntar diagnóstico
-        if: failure()
-        uses: actions/upload-artifact@v4
+          git commit -m "data: incorporar novedades de Drive"
+          # Never overwrite a concurrent change to main.
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Guardar derivados para publicación
+        if: steps.result.outputs.data_changed == 'true'
+        uses: actions/cache/save@v4
         with:
-          name: diagnostico-actualizacion
-          path: |
-            data/manifest.json
-            data/quarantine/
-          if-no-files-found: ignore
-      - name: Abrir alerta
-        if: failure()
+          path: web/public/data
+          key: web-data-v1-${{ runner.os }}-${{ hashFiles('data/partitions/**/*.parquet', 'data/manifest.json', 'data/curation/entity_merges.json', 'data/audiencias*.json', 'pipeline/**/*.py', 'schemas/**', 'pyproject.toml', 'uv.lock') }}
+      - name: Publicar datos validados
+        if: steps.result.outputs.data_changed == 'true' && steps.commit.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          title="Falló la actualización mensual de datos"
-          body="La ejecución $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID no publicó cambios. Revisar el artifact de diagnóstico."
-          issue_number=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number')
-          if [ -n "$issue_number" ]; then
-            gh issue comment "$issue_number" --body "$body"
-          else
-            gh issue create --title "$title" --body "$body"
-          fi
+        run: gh workflow run deploy-pages.yml --ref main
+      - name: Conservar originales en caché
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: data/drive/raw
+          key: drive-raw-v1-${{ runner.os }}-${{ github.run_id }}
+      - name: Adjuntar informe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: revision-drive-${{ github.run_id }}
+          path: .drive-update/report.json
+          if-no-files-found: warn
+          retention-days: 90

@@ -1,5 +1,8 @@
 # Explorador de accesos a Olivos y Casa Rosada
 
+> Raíz local: `D:\_DATAVIZ\RosadaOlivos`. GitHub Actions revisa ambos Drives cada mes y agrega novedades validadas. Ver [operación mensual](docs/ACTUALIZACION-MENSUAL.md) y [auditoría inicial](docs/REVISION-Y-PLAN-DRIVE.md).
+
+
 Sitio estático y pipeline reproducible para explorar registros públicos de ingreso a Casa Rosada y la Quinta de Olivos. Los datos fueron obtenidos por [Poder Ciudadano](https://poderciudadano.org/) mediante pedidos periódicos de acceso a la información pública.
 
 El proyecto descarga o incorpora documentos oficiales, extrae sus tablas, normaliza personas y movimientos, conserva una base canónica en Parquet y genera archivos compactos para publicar todo en GitHub Pages, sin backend ni base de datos externa.
@@ -8,12 +11,12 @@ El proyecto descarga o incorpora documentos oficiales, extrae sus tablas, normal
 
 La versión incluida actualmente contiene:
 
-- **2.022.698 registros deduplicados**.
-- **87.080 identidades publicadas**, luego de aplicar las unificaciones curadas.
-- **1.378 fuentes activas**.
-- Registros entre el **8 de enero de 2016** y el **30 de junio de 2026**.
-- CSV anuales disponibles para 2016 y para el período 2018–2026.
-- Aproximadamente **472 MB** de salida estática completa.
+- **2.077.917 registros publicados**.
+- **99.409 identidades publicadas**, luego de aplicar las unificaciones curadas.
+- **4.124 fuentes activas** y **149 fuentes en cuarentena**.
+- Registros entre el **8 de enero de 2016** y el **31 de agosto de 2026**.
+- CSV anuales disponibles para 2016–2026.
+- Aproximadamente **314 MB** de datos web generados (sin la aplicación).
 
 La cobertura no es continua: hay años, meses y archivos sin datos. La propia interfaz incluye un informe que distingue períodos sin una fuente incorporada, archivos vacíos y documentos que no pudieron procesarse. Los PDF escaneados sin una capa de texto utilizable permanecen en cuarentena; OCR todavía no forma parte del proceso automático.
 
@@ -108,6 +111,21 @@ La aplicación queda disponible normalmente en `http://127.0.0.1:5173/`.
 
 ## Actualización de datos
 
+La actualización habitual se ejecuta en GitHub Actions el día **8 de cada mes a las 06:17 de Argentina**. Revisa las dos carpetas de Drive de la ONG, procesa novedades PDF/XLS/XLSX/DOCX y publica después de validar el candidato. También admite ejecución manual desde Actions.
+
+Para preparar un candidato local sin alterar la base:
+
+```powershell
+uv run python -m pipeline.drive_update --work-dir .drive-update
+```
+
+Ver [estado incremental, cuarentena, permisos y publicación](docs/ACTUALIZACION-MENSUAL.md).
+
+### Importador anterior HTTP/FTP/local
+
+Los siguientes comandos se conservan para fuentes adicionales; no son el flujo mensual de Drive.
+
+
 La fuente pública esperada puede organizarse así:
 
 ```text
@@ -160,7 +178,7 @@ Salidas:
 
 El portal expone dos esquemas a lo largo de los años: uno antiguo (2004-2016, columnas `*_sujeto_obligado`, `fecha_hora_audiencia`, `id_audiencia`, etc.) y uno moderno (2016 bis y 2017-2025, con `fecha`, `sujeto_obligado_nombre`, `participantes_json`, etc.). La unificación normaliza el esquema antiguo al moderno y conserva como columnas adicionales los campos antiguos sin equivalente (por ejemplo `id_audiencia`, `estado_audiencia`, `es_persona_juridica`), de modo que no se pierde información.
 
-La actualización mensual del workflow ejecuta `update-audiencias` luego de procesar los PDF de acceso.
+El workflow mensual de Drive se concentra en accesos. La actualización de audiencias se ejecuta por separado con los comandos anteriores.
 
 ### Enriquecimiento de personas desde las audiencias
 
@@ -320,9 +338,9 @@ Los datos personales y documentos visibles reproducen información publicada en 
 
 - `validate.yml` se ejecuta en cada pull request y cada push a `main`: siempre prueba y compila el frontend. Python y la generación/validación de datos sólo se ejecutan si cambian datos, pipeline, esquemas, pruebas Python, dependencias Python o workflows. El build de curación se comprueba cuando cambia esa interfaz o sus dependencias. La ejecución manual hace la validación completa.
 - `deploy-pages.yml` publica GitHub Pages sólo después de una validación exitosa originada por un push. Reutiliza los datos web generados mediante una caché compartida con la validación, identificada por el contenido de las particiones, manifiesto, unificaciones, audiencias, pipeline y dependencias Python. No usa versiones aproximadas de la caché: si falta la versión exacta, la regenera antes de publicar. Un cambio exclusivamente visual no vuelve a procesar la base mientras exista esa caché.
-- `update-data.yml` se ejecuta el día 8 de cada mes a las 09:00 UTC y también admite ejecución manual.
+- `update-data.yml` consulta ambas carpetas de Drive el día 8 de cada mes a las 09:17 UTC y también admite ejecución manual. Después de validar e incorporar los datos, dispara explícitamente la publicación.
 
-La actualización mensual comienza la detección automática en 2023, pero conserva toda la base histórica ya incorporada. Si falla una extracción, no se publica una base parcial: se adjunta un diagnóstico y se abre o actualiza un issue.
+La revisión mensual recorre todos los años. Los errores de extracción conservan la última fuente válida y se incluyen en el informe de cuarentena; los fallos de red o validación impiden promover el candidato. El workflow adjunta un informe a cada ejecución.
 
 Límites comprobados durante CI:
 

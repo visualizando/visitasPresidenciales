@@ -14,6 +14,31 @@ from pipeline.models import RemoteFile
 from pipeline.parsers.positioned import _sanitize_olivos_date
 
 
+def test_broken_replacement_preserves_active_partition(tmp_path, monkeypatch):
+    from pipeline import historical_office_import as module
+    from pipeline.normalize import stable_id
+    from pipeline.storage import load_json, write_json_atomic
+
+    root = tmp_path / "sources"
+    source = root / "Quinta de Olivos" / "2019" / "01 enero.xlsx"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b"broken" * 300)
+    source_path = "raw/" + source.relative_to(root).as_posix()
+    source_id = stable_id("src_", source_path)
+    data = tmp_path / "data"
+    partition = data / "partitions" / "olivos/2019/01" / f"{source_id}.parquet"
+    partition.parent.mkdir(parents=True)
+    partition.write_bytes(b"last-good-output")
+    old = {"source_id": source_id, "status": "active", "sha256": "old", "parser": "old", "partitions": [partition.relative_to(data / "partitions").as_posix()]}
+    write_json_atomic(data / "manifest.json", {"files": {source_path: old}})
+    monkeypatch.setattr(module, "_candidate_files", lambda *_: [source])
+    stats = module.import_historical_office(root, data, tmp_path / "web", rebuild_web=False)
+    assert stats["failed_replacements_preserved"] == 1
+    assert partition.read_bytes() == b"last-good-output"
+    assert load_json(data / "manifest.json", {})["files"][source_path] == old
+    assert (data / "quarantine" / f"{source_id}.json").exists()
+
+
 def test_parses_olivos_rows_with_document_and_times() -> None:
     rows = [
         ["PLANILLA TURNO DEL DIA 08 DE ENERO DE 2016"],
