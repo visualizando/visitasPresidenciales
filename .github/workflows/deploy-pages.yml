@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -75,9 +76,32 @@ jobs:
       - uses: actions/configure-pages@v5
         if: steps.current.outputs.publish == 'true'
       - uses: actions/upload-pages-artifact@v3
+        id: pages-artifact
         if: steps.current.outputs.publish == 'true'
         with:
           path: web/dist
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Esperar disponibilidad del artefacto de publicación
+        if: steps.current.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.pages-artifact.outputs.artifact_id }}
+          ARTIFACT_NAME: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+        shell: bash
+        run: |
+          for attempt in $(seq 1 24); do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=$ARTIFACT_NAME" \
+              --jq '.artifacts[] | select(.expired == false) | .id' | grep -Fxq "$ARTIFACT_ID"; then
+              echo "Artefacto $ARTIFACT_ID disponible para publicar."
+              exit 0
+            fi
+            echo "Esperando disponibilidad del artefacto ($attempt/24)..."
+            sleep 5
+          done
+          echo "::error::GitHub no confirmó la disponibilidad del artefacto $ARTIFACT_ID."
+          exit 1
       - id: deployment
         if: steps.current.outputs.publish == 'true'
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}

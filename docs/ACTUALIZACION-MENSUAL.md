@@ -51,3 +51,7 @@ Las audiencias de gestión de intereses tienen una fuente y un pipeline separado
 ## Validación
 
 Se prueban renombres, idempotencia, reemplazos válidos e inválidos, checksums, archivos vacíos, pérdida de fuentes, Office de años nuevos, deduplicación con historia repartida en particiones de otros años y rollback de la promoción. Los PDF escaneados requieren OCR futuro y permanecen en cuarentena.
+
+## Reintentos de publicación
+
+Cada intento de GitHub Pages usa un nombre de artefacto único y espera hasta dos minutos a que GitHub confirme su disponibilidad. Esto evita confundir archivos de intentos anteriores y desplegar antes de que el archivo subido sea visible. Si GitHub falla, se puede reintentar el workflow de publicación sin volver a importar los datos.
