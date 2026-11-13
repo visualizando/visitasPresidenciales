@@ -24,6 +24,7 @@ import httpx
 from pipeline.drive_sync import (
     DEFAULT_SOURCES,
     EXTENSIONS,
+    DriveRequestError,
     drive_issue_counts,
     fetch_version,
     inventory,
@@ -59,7 +60,6 @@ def scan_sources(data_dir: Path, raw: Path, api_key: str | None) -> list[dict]:
     with httpx.Client(
         follow_redirects=True,
         timeout=180,
-        transport=httpx.HTTPTransport(retries=3),
         headers={"Accept-Language": "en-US"},
     ) as client:
         for location, folder in DEFAULT_SOURCES.items():
@@ -94,8 +94,12 @@ def scan_sources(data_dir: Path, raw: Path, api_key: str | None) -> list[dict]:
 
         with ThreadPoolExecutor(max_workers=4) as pool:
             futures = [pool.submit(fetch, item) for item in pending]
-            for future in as_completed(futures):
-                observations.append(future.result())
+            try:
+                for future in as_completed(futures):
+                    observations.append(future.result())
+            finally:
+                for future in futures:
+                    future.cancel()
     return observations
 
 
@@ -445,9 +449,9 @@ def main():
             observations = scan_sources(
                 args.data_dir, args.raw_dir, os.getenv("GOOGLE_DRIVE_API_KEY")
             )
-        except httpx.HTTPError as error:
+        except DriveRequestError as error:
             raise SystemExit(
-                f"Falló la conexión con Drive ({type(error).__name__}); no se publicaron cambios"
+                f"Falló la conexión con Drive ({error}); no se publicaron cambios"
             ) from None
     report = prepare_update(args.data_dir, args.work_dir, observations)
     print(

@@ -12,8 +12,11 @@ import json
 import os
 import re
 import tempfile
+import time
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
+from random import uniform
 
 import httpx
 from bs4 import BeautifulSoup
@@ -27,6 +30,42 @@ DEFAULT_SOURCES = {
 }
 API = "https://www.googleapis.com/drive/v3/files"
 EXTENSIONS = {".pdf", ".xls", ".xlsx", ".docx"}
+
+
+class DriveRequestError(RuntimeError):
+    """An HTTP failure with context safe to emit in public workflow logs."""
+
+
+def _retry_request[T](operation: Callable[[], T], context: str) -> T:
+    for attempt in range(4):
+        try:
+            return operation()
+        except httpx.HTTPError as error:
+            status = type(error).__name__
+            delay = 2 ** (attempt + 1) + uniform(0, 1)
+            retryable = isinstance(error, (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError))
+            if isinstance(error, httpx.HTTPStatusError):
+                response = error.response
+                code = response.status_code
+                status = f"HTTP {code}"
+                retry_after = response.headers.get("Retry-After", "")
+                retryable = code in {408, 429, 500, 502, 503, 504} or (code == 403 and bool(retry_after))
+                if code == 403 and not retryable and response.is_closed:
+                    try:
+                        errors = response.json()["error"]["errors"]
+                        retryable = any(item.get("reason") in {"rateLimitExceeded", "userRateLimitExceeded"} for item in errors)
+                    except (ValueError, KeyError, TypeError, AttributeError, httpx.ResponseNotRead):
+                        pass
+                if retry_after.isascii() and retry_after.isdecimal():
+                    delay = max(delay, int(retry_after))
+            if attempt == 3 or not retryable or delay > 60:
+                raise DriveRequestError(f"{context}: {status} ({attempt + 1} intento(s))") from None
+            time.sleep(delay)
+    raise AssertionError("Unreachable retry state")
+
+
+def _get(client: httpx.Client, url: str, params: dict, context: str) -> httpx.Response:
+    return _retry_request(lambda: client.get(url, params=params).raise_for_status(), context)
 
 
 def valid_id(value: str) -> str:
@@ -50,8 +89,7 @@ def list_children(client: httpx.Client, folder: str, api_key: str | None) -> lis
             }
             if token:
                 params["pageToken"] = token
-            response = client.get(API, params=params)
-            response.raise_for_status()
+            response = _get(client, API, params, f"listar carpeta {folder} por API")
             payload = response.json()
             if payload.get("incompleteSearch"):
                 raise ValueError("Drive returned an incomplete search")
@@ -62,8 +100,7 @@ def list_children(client: httpx.Client, folder: str, api_key: str | None) -> lis
             if token in seen:
                 raise ValueError("Repeated Drive pagination token")
             seen.add(token)
-    response = client.get(f"https://drive.google.com/drive/folders/{folder}", params={"hl": "en"})
-    response.raise_for_status()
+    response = _get(client, f"https://drive.google.com/drive/folders/{folder}", {"hl": "en"}, f"listar carpeta publica {folder}")
     if "accounts.google.com" in str(response.url):
         raise ValueError("Drive requires authentication")
     soup = BeautifulSoup(response.text, "html.parser")
@@ -138,7 +175,14 @@ def fetch_version(client: httpx.Client, item: dict, raw: Path, *, allow_invalid:
     suffix = Path(item["name"]).suffix.lower()
     if suffix not in EXTENSIONS:
         return {"comparison": "unsupported_format"}
-    directory = raw / valid_id(item["id"])
+    file_id = valid_id(item["id"])
+    return _retry_request(
+        lambda: _download_version(client, item, raw, suffix, allow_invalid), f"descargar archivo {file_id}"
+    )
+
+
+def _download_version(client: httpx.Client, item: dict, raw: Path, suffix: str, allow_invalid: bool) -> dict:
+    directory = raw / item["id"]
     directory.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(dir=directory, suffix=".part")
     partial = Path(temporary)
@@ -245,7 +289,7 @@ def sync_drive(
                                 if item["content_matches"]
                                 else "requires_review"
                             )
-                except (httpx.HTTPError, ValueError, OSError) as error:
+                except (DriveRequestError, ValueError, OSError) as error:
                     # Avoid serializing request URLs that might include credentials.
                     item.update(comparison="download_failed", error_type=type(error).__name__)
     result["generated_at"] = utc_now()

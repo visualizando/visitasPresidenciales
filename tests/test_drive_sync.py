@@ -1,7 +1,14 @@
 import httpx
 import pytest
 
-from pipeline.drive_sync import API, cached_version, fetch_version, inventory, valid_id
+from pipeline.drive_sync import (
+    API,
+    DriveRequestError,
+    cached_version,
+    fetch_version,
+    inventory,
+    valid_id,
+)
 
 
 def test_api_recurses_and_follows_page_tokens():
@@ -122,3 +129,27 @@ def test_listing_preserves_downloaded_inventory(tmp_path, monkeypatch):
     drive_sync.sync_drive("root", tmp_path)
     assert load_json(target, {}) == original
     assert (target.parent / "listing.json").exists()
+
+
+def test_recovers_from_download_rate_limit(tmp_path, monkeypatch):
+    waits = []
+    monkeypatch.setattr("pipeline.drive_sync.time.sleep", waits.append)
+    responses = iter([
+        httpx.Response(429, headers={"Retry-After": "10"}),
+        httpx.Response(200, content=b"%PDF-recovered"),
+    ])
+    with httpx.Client(transport=httpx.MockTransport(lambda _: next(responses))) as client:
+        result = fetch_version(client, {"id": "file", "name": "a.pdf"}, tmp_path)
+    assert waits == [10]
+    assert (tmp_path / result["raw_path"]).read_bytes() == b"%PDF-recovered"
+    assert not list(tmp_path.rglob("*.part"))
+
+
+def test_api_failure_reports_status_without_exposing_key(monkeypatch):
+    monkeypatch.setattr("pipeline.drive_sync.time.sleep", lambda _: pytest.fail("must not retry 401"))
+    with (
+        httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(401))) as client,
+        pytest.raises(DriveRequestError, match="listar carpeta root por API: HTTP 401") as caught,
+    ):
+        inventory(client, "root", "test-secret-key")
+    assert "test-secret-key" not in str(caught.value)
