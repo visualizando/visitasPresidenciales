@@ -15,6 +15,7 @@ from urllib.parse import quote, urljoin
 
 import duckdb
 
+from pipeline.drive_sync import drive_issue_counts
 from pipeline.identity_candidates import write_identity_candidates
 from pipeline.normalize import fold_text, normalize_authorizer
 from pipeline.storage import load_json, utc_now
@@ -478,6 +479,7 @@ def _build_coverage(data_dir: Path, connection: duckdb.DuckDBPyConnection) -> di
         return _empty_coverage(files)
 
     first_date, last_date = boundaries
+    drive_state = load_json(data_dir / "drive" / "state.json", None)
     month_rows = _rows(
         connection,
         f"""
@@ -504,7 +506,7 @@ def _build_coverage(data_dir: Path, connection: duckdb.DuckDBPyConnection) -> di
                 "gaps": [
                     {
                         **gap,
-                        "reason": "No hay registros procesados ni un archivo incorporado para este período en el inventario actual.",
+                        "reason": "La base publicada no tiene registros de esta sede en ese período.",
                     }
                     for gap in gaps
                 ],
@@ -565,6 +567,7 @@ def _build_coverage(data_dir: Path, connection: duckdb.DuckDBPyConnection) -> di
             ),
         },
         "locations": locations,
+        "drive_issues": drive_issue_counts(drive_state) if drive_state is not None else None,
         "file_issues": sorted(
             issues,
             key=lambda item: (

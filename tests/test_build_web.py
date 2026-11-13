@@ -397,12 +397,21 @@ def test_builds_coverage_with_gaps_and_quarantined_files(tmp_path) -> None:
         encoding="utf-8",
     )
 
+    drive = data / "drive"
+    drive.mkdir()
+    (drive / "state.json").write_text(json.dumps({"files": {
+        "empty": {"status": "quarantined", "reason": "ParseFailure: empty_file"},
+        "invalid": {"status": "quarantined", "reason": "ParseFailure: invalid_file"},
+        "imported": {"status": "imported"},
+    }}), encoding="utf-8")
+
     build_web_data(data, output)
 
     coverage = json.loads((output / "analytics" / "coverage.json").read_text(encoding="utf-8"))
     casa = next(item for item in coverage["locations"] if item["location"] == "casa-rosada")
     assert casa["gaps"][0]["start_month"] == "2023-02"
     assert coverage["summary"]["quarantined_files"] == 2
+    assert coverage["drive_issues"] == {"empty_files": 1, "other_files": 1}
     empty = next(item for item in coverage["file_issues"] if item["path"] == "empty.pdf")
     assert "vacío" in empty["reason"]
     damaged = next(item for item in coverage["file_issues"] if item["path"] == "scan.pdf")

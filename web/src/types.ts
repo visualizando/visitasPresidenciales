@@ -212,6 +212,7 @@ export interface CoverageData {
   older_period: {end_date: string; reason: string} | null;
   summary: {active_files: number; quarantined_files: number; missing_files: number; zero_record_files: number};
   locations: CoverageLocation[];
+  drive_issues?: {empty_files: number; other_files: number} | null;
   file_issues: CoverageFileIssue[];
 }
 

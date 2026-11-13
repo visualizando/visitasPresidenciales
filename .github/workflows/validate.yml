@@ -52,7 +52,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: web/public/data
-          key: web-data-v1-${{ runner.os }}-${{ hashFiles('data/partitions/**/*.parquet', 'data/manifest.json', 'data/curation/entity_merges.json', 'data/audiencias*.json', 'pipeline/**/*.py', 'schemas/**', 'pyproject.toml', 'uv.lock') }}
+          key: web-data-v1-${{ runner.os }}-${{ hashFiles('data/partitions/**/*.parquet', 'data/manifest.json', 'data/drive/state.json', 'data/curation/entity_merges.json', 'data/audiencias*.json', 'pipeline/**/*.py', 'schemas/**', 'pyproject.toml', 'uv.lock') }}
       - run: uv run accesos build-web
         if: steps.changes.outputs.data == 'true' && steps.web-data.outputs.cache-hit != 'true'
       - uses: pnpm/action-setup@v4

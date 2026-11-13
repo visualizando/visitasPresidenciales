@@ -21,7 +21,14 @@ from pathlib import Path
 import duckdb
 import httpx
 
-from pipeline.drive_sync import DEFAULT_SOURCES, EXTENSIONS, fetch_version, inventory, valid_id
+from pipeline.drive_sync import (
+    DEFAULT_SOURCES,
+    EXTENSIONS,
+    drive_issue_counts,
+    fetch_version,
+    inventory,
+    valid_id,
+)
 from pipeline.historical_office_import import (
     _empty_source_reason,
     _parse_docx,
@@ -218,6 +225,7 @@ def prepare_update(data_dir: Path, work: Path, observations: list[dict]) -> dict
             shutil.copy2(path, candidate / path.name)
     files = manifest["files"]
     state = load_json(data_dir / STATE, {"version": 1, "files": {}})
+    previous_drive_issues = drive_issue_counts(state)
     known = defaultdict(list)
     for path, entry in files.items():
         if entry.get("sha256"):
@@ -360,6 +368,7 @@ def prepare_update(data_dir: Path, work: Path, observations: list[dict]) -> dict
         "counts": dict(counts),
         "quarantine": failures,
         "data_changed": manifest_changed,
+        "coverage_changed": previous_drive_issues != drive_issue_counts(state),
         "candidate": str(candidate),
         "observed_files": len(observations),
     }

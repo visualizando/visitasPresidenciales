@@ -300,3 +300,9 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def drive_issue_counts(state: dict) -> dict[str, int]:
+    issues = [item for item in state.get("files", {}).values() if item.get("status") == "quarantined"]
+    empty = sum(item.get("reason") == "ParseFailure: empty_file" for item in issues)
+    return {"empty_files": empty, "other_files": len(issues) - empty}

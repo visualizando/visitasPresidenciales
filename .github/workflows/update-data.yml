@@ -52,6 +52,7 @@ jobs:
           report = json.load(open('.drive-update/report.json'))
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write(f"data_changed={str(report['data_changed']).lower()}\n")
+              out.write(f"coverage_changed={str(report['coverage_changed']).lower()}\n")
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
               out.write('## Revisión de Drive\n\n')
               for name, value in report['counts'].items():
@@ -102,9 +103,9 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: web/public/data
-          key: web-data-v1-${{ runner.os }}-${{ hashFiles('data/partitions/**/*.parquet', 'data/manifest.json', 'data/curation/entity_merges.json', 'data/audiencias*.json', 'pipeline/**/*.py', 'schemas/**', 'pyproject.toml', 'uv.lock') }}
+          key: web-data-v1-${{ runner.os }}-${{ hashFiles('data/partitions/**/*.parquet', 'data/manifest.json', 'data/drive/state.json', 'data/curation/entity_merges.json', 'data/audiencias*.json', 'pipeline/**/*.py', 'schemas/**', 'pyproject.toml', 'uv.lock') }}
       - name: Publicar datos validados
-        if: steps.result.outputs.data_changed == 'true' && steps.commit.outputs.changed == 'true'
+        if: steps.commit.outputs.changed == 'true' && (steps.result.outputs.data_changed == 'true' || steps.result.outputs.coverage_changed == 'true')
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy-pages.yml --ref main

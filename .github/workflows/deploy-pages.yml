@@ -32,7 +32,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: web/public/data
-          key: web-data-v1-${{ runner.os }}-${{ hashFiles('data/partitions/**/*.parquet', 'data/manifest.json', 'data/curation/entity_merges.json', 'data/audiencias*.json', 'pipeline/**/*.py', 'schemas/**', 'pyproject.toml', 'uv.lock') }}
+          key: web-data-v1-${{ runner.os }}-${{ hashFiles('data/partitions/**/*.parquet', 'data/manifest.json', 'data/drive/state.json', 'data/curation/entity_merges.json', 'data/audiencias*.json', 'pipeline/**/*.py', 'schemas/**', 'pyproject.toml', 'uv.lock') }}
       - uses: astral-sh/setup-uv@v6
         if: steps.web-data.outputs.cache-hit != 'true'
         with:
