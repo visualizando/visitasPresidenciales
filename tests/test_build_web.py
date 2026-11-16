@@ -87,6 +87,19 @@ def test_build_web_rewrites_source_urls_with_public_base(tmp_path) -> None:
     assert rows[0]["sources"][0]["url"] == "https://pdfs.example.org/fuentes/Casa%20Rosada/2024/10_Octubre%202024.pdf"
     assert rows[0]["sources"][0]["path"] == "Casa Rosada/2024/10_Octubre 2024.pdf"
 
+    (data / "manifest.json").write_text(json.dumps({"files": {
+        record.source_path: {"source_id": "src_1", "status": "active", "location": "olivos", "sha256": "current"},
+    }}), encoding="utf-8")
+    (data / "drive").mkdir()
+    (data / "drive" / "state.json").write_text(json.dumps({"files": {
+        "folder/a-old": {"id": "a-old", "location": "olivos", "sha256": "old", "status": "linked", "legacy_paths": [record.source_path]},
+        "folder/b-original": {"id": "b-original", "location": "olivos", "sha256": "current", "status": "linked", "legacy_paths": [record.source_path]},
+    }}), encoding="utf-8")
+    build_web_data(data, output)
+    rows = json.loads(gzip.decompress(shard.read_bytes()))
+    assert rows[0]["sources"][0]["drive_url"] == "https://drive.google.com/file/d/b-original/view"
+
+
 
 def test_build_web_normalizes_authorizer(tmp_path) -> None:
     data = tmp_path / "data"

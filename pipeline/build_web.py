@@ -15,7 +15,7 @@ from urllib.parse import quote, urljoin
 
 import duckdb
 
-from pipeline.drive_sync import drive_issue_counts
+from pipeline.drive_sync import drive_issue_counts, verified_source_links
 from pipeline.identity_candidates import write_identity_candidates
 from pipeline.normalize import fold_text, normalize_authorizer
 from pipeline.storage import load_json, utc_now
@@ -167,6 +167,9 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path, public_bas
     for key, values in id_shards.items():
         _write_gzip_json(output / "search" / "id" / f"{key}.json.gz", list(values.values()))
 
+    source_manifest = load_json(data_dir / "manifest.json", {"files": {}})
+    drive_state = load_json(data_dir / "drive" / "state.json", None)
+    source_links = verified_source_links(drive_state or {}, source_manifest["files"])
     event_counts: dict[str, int] = {}
     for prefix in sorted({_entity_shard(person["entity_id"]) for person in people}):
         rows = _rows(
@@ -174,7 +177,7 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path, public_bas
             """
             SELECT
               r.*,
-              (SELECT list(struct_pack(url := s.source_url, path := s.source_path, page := s.source_page))
+              (SELECT list(struct_pack(url := s.source_url, path := s.source_path, page := s.source_page, id := s.source_id))
                FROM merged_records s WHERE s.record_id = r.record_id) AS sources
             FROM records r WHERE substr(md5(entity_id), 1, 2) = ?
             ORDER BY coalesce(occurred_at, entered_at, exited_at) DESC NULLS LAST
@@ -185,11 +188,15 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path, public_bas
             for key in ("occurred_at", "entered_at", "exited_at"):
                 row[key] = _json_datetime(row[key])
             row["authorized_by"] = normalize_authorizer(row.get("authorized_by"))
-        if public_base:
-            for row in rows:
-                for source in row.get("sources") or []:
-                    if source.get("path"):
-                        source["url"] = _public_source_url(source["path"], public_base)
+            for source in row.get("sources") or []:
+                drive_url = source_links.get(source.pop("id"))
+                if drive_url:
+                    source["drive_url"] = drive_url
+                if drive_state is not None and (source.get("url") or "").startswith("https://drive.google.com/file/d/"):
+                    # The URL stored in an older partition may now serve a different version.
+                    source["url"] = drive_url or ""
+                elif public_base and source.get("path"):
+                    source["url"] = _public_source_url(source["path"], public_base)
         _write_gzip_json(output / "events" / f"{prefix}.json.gz", rows)
         event_counts[prefix] = len(rows)
 
@@ -215,7 +222,6 @@ def _build_into(data_dir: Path, partitions: list[Path], output: Path, public_bas
     }
     _write_compact(output / "search" / "meta.json", search_meta)
     record_count = connection.execute("SELECT count(*) FROM records").fetchone()[0]
-    source_manifest = load_json(data_dir / "manifest.json", {"files": {}})
     active_sources = [
         item for item in source_manifest.get("files", {}).values() if item.get("status") == "active"
     ]

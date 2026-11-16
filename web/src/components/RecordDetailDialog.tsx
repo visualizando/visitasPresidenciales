@@ -17,7 +17,8 @@ export function RecordDetailDialog({event, onClose}: RecordDetailDialogProps) {
   const copiedTimer = useRef<number | null>(null);
   const [copyStatus, setCopyStatus] = useState<"copied" | "error" | null>(null);
   const citation = useMemo(() => buildRecordCitation(event), [event]);
-  const source = event.sources?.[0];
+  const source = event.sources?.find((item) => item.drive_url) ?? event.sources?.[0];
+  const isPdf = /\.pdf$/i.test(source?.path ?? "");
   const audiencias = event.audiencia ? [event.audiencia] : event.fused_audiencias ?? [];
 
   useEffect(() => {
@@ -75,7 +76,16 @@ export function RecordDetailDialog({event, onClose}: RecordDetailDialogProps) {
 
       <div className="record-detail-source">
         <strong>Fuente</strong>
-        {source ? <><p>{sourceDescription(event)}</p>{isPublicUrl(source.url) ? <p className="record-detail-source-links"><a href={source.url} download={pdfFileName(source)}>Descargar PDF original<Download aria-hidden="true" /></a><a href={`${source.url}#page=${source.page}`} target="_blank" rel="noreferrer">Ver PDF, página {source.page}<ExternalLink aria-hidden="true" /></a></p> : <small>{source.path} · página {source.page}</small>}</> : event.audiencia ? <p>Registro de Audiencias de Gestión de Intereses, publicado por el Poder Ejecutivo Nacional.</p> : null}
+        {source ? <>
+          <p>{sourceDescription(event)}</p>
+          <small>{source.path.split(/[\\/]/).pop()}{isPdf && ` · página ${source.page}`}</small>
+          {source.drive_url ? <p className="record-detail-source-links">
+            <a href={source.drive_url} target="_blank" rel="noreferrer">Abrir archivo original en Google Drive<ExternalLink aria-hidden="true" /></a>
+          </p> : isPublicUrl(source.url) && <p className="record-detail-source-links">
+            {isPdf && <a href={source.url} download={pdfFileName(source)}>Descargar PDF original<Download aria-hidden="true" /></a>}
+            <a href={isPdf ? `${source.url}#page=${source.page}` : source.url} target="_blank" rel="noreferrer">{isPdf ? `Ver PDF, página ${source.page}` : "Ver archivo original"}<ExternalLink aria-hidden="true" /></a>
+          </p>}
+        </> : event.audiencia ? <p>Registro de Audiencias de Gestión de Intereses, publicado por el Poder Ejecutivo Nacional.</p> : null}
       </div>
 
       <footer className="record-detail-actions">
@@ -92,7 +102,8 @@ function DetailRow({label, value, wide = false}: {label: string; value: string |
 }
 
 export function buildRecordCitation(event: AccessEvent) {
-  const source = event.sources?.[0];
+  const source = event.sources?.find((item) => item.drive_url) ?? event.sources?.[0];
+  const isPdf = /\.pdf$/i.test(source?.path ?? "");
   const audiencias = event.audiencia ? [event.audiencia] : event.fused_audiencias ?? [];
   const lines = [
     `${event.audiencia ? "Audiencia" : recordLabel(event)}: ${visitDescription(event)}`,
@@ -106,7 +117,8 @@ export function buildRecordCitation(event: AccessEvent) {
     event.raw_text?.trim() ? `Observaciones: ${event.raw_text.trim()}` : null,
     ...audiencias.map((item) => `${audienciaStatusLabel(item.status)}: ${titleCase(item.official_name)}${item.official_cargo ? `, ${item.official_cargo}` : ""}${item.lugar ? ` (${item.lugar})` : ""}`),
     `Fuente: ${source ? sourceDescription(event) : "Registro de Audiencias de Gestión de Intereses"}`,
-    source ? `Archivo: ${source.path}, página ${source.page}${isPublicUrl(source.url) ? ` — ${source.url}#page=${source.page}` : ""}` : null,
+    source ? `Archivo: ${source.path}${isPdf ? `, página ${source.page}` : ""}` : null,
+    source?.drive_url ?? (source && isPublicUrl(source.url) ? (isPdf ? `${source.url}#page=${source.page}` : source.url) : null),
   ];
   return lines.filter(Boolean).join("\n");
 }

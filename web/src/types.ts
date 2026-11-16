@@ -59,6 +59,7 @@ export interface AudienciaDetail {
 }
 
 export interface SourceLink {
+  drive_url?: string;
   url: string;
   path: string;
   page: number;

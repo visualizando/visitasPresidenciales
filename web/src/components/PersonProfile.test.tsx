@@ -53,6 +53,23 @@ describe("PersonProfile", () => {
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("Fuente: Accesos a Olivos 2024"));
   });
 
+  it("enlaza la planilla verificada en el detalle y en la cita", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {value: {writeText}, configurable: true});
+    const driveUrl = "https://drive.google.com/file/d/original/view";
+    const detailed = {...event("detail", "one", "PEREZ ANA", "2024-05-24T08:33:00Z"), sources: [
+      {url: "local-source:///archivo.pdf", path: "archivo.pdf", page: 2},
+      {url: driveUrl, drive_url: driveUrl, path: "registros.xlsx", page: 1},
+    ]} satisfies AccessEvent;
+    render(<PersonProfile people={[people[0]]} events={[detailed]} loading={false} error={null} coincidences={[]} onRemove={vi.fn()} onClear={vi.fn()} />);
+    expect(screen.getByRole("link", {name: "registros.xlsx"})).toHaveAttribute("href", driveUrl);
+    fireEvent.click(screen.getByRole("button", {name: /Abrir detalle del registro/i}));
+    expect(screen.getByRole("link", {name: "Abrir archivo original en Google Drive"})).toHaveAttribute("href", driveUrl);
+    fireEvent.click(screen.getByRole("button", {name: "Copiar detalle"}));
+    expect(await screen.findByRole("button", {name: "Copiado"})).toBeInTheDocument();
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining(`Archivo: registros.xlsx\n${driveUrl}`));
+  });
+
   it("muestra audiencias como filas de la tabla con su fuente", () => {
     const audiencias = new Map<string, import("../types").AudienciaDetail[]>([["one", [{audiencia_id: "49.435", entity_id: "one", status: "likely", official_name: "MINISTRO X", official_cargo: "Ministro", lugar: "CASA DE GOBIERNO", date: "2024-03-15", cr_destination: "", cr_record_id: ""}]]]);
     const onClear = vi.fn();

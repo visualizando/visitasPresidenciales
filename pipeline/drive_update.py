@@ -29,6 +29,7 @@ from pipeline.drive_sync import (
     fetch_version,
     inventory,
     valid_id,
+    verified_source_links,
 )
 from pipeline.historical_office_import import (
     _empty_source_reason,
@@ -230,6 +231,7 @@ def prepare_update(data_dir: Path, work: Path, observations: list[dict]) -> dict
     files = manifest["files"]
     state = load_json(data_dir / STATE, {"version": 1, "files": {}})
     previous_drive_issues = drive_issue_counts(state)
+    previous_source_links = verified_source_links(state, files)
     known = defaultdict(list)
     for path, entry in files.items():
         if entry.get("sha256"):
@@ -296,6 +298,9 @@ def prepare_update(data_dir: Path, work: Path, observations: list[dict]) -> dict
                         "reason": "ambiguous_legacy_replacement",
                     }
                 )
+                state["files"][key] = {
+                    **old_state, **metadata, "status": "quarantined", "reason": "ambiguous_legacy_replacement"
+                }
                 counts["quarantined"] += 1
                 continue
         previous = files.get(manifest_path)
@@ -373,6 +378,7 @@ def prepare_update(data_dir: Path, work: Path, observations: list[dict]) -> dict
         "quarantine": failures,
         "data_changed": manifest_changed,
         "coverage_changed": previous_drive_issues != drive_issue_counts(state),
+        "source_links_changed": previous_source_links != verified_source_links(state, files),
         "candidate": str(candidate),
         "observed_files": len(observations),
     }

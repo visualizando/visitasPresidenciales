@@ -350,3 +350,25 @@ def drive_issue_counts(state: dict) -> dict[str, int]:
     issues = [item for item in state.get("files", {}).values() if item.get("status") == "quarantined"]
     empty = sum(item.get("reason") == "ParseFailure: empty_file" for item in issues)
     return {"empty_files": empty, "other_files": len(issues) - empty}
+
+
+def verified_source_links(state: dict, manifest_files: dict) -> dict[str, str]:
+    """Map active source IDs to byte-identical documents observed in Drive."""
+    links = {}
+    for _, item in sorted(state.get("files", {}).items()):
+        status = item.get("status")
+        if status == "linked":
+            paths = item.get("legacy_paths", [])
+        elif status == "imported":
+            paths = [item.get("manifest_path")]
+        else:
+            continue
+        checksum = item.get("sha256")
+        if not checksum:
+            continue
+        for path in paths:
+            entry = manifest_files.get(path, {})
+            if (entry.get("status") == "active" and entry.get("location") == item.get("location")
+                    and entry.get("sha256") == checksum):
+                links.setdefault(entry["source_id"], f"https://drive.google.com/file/d/{valid_id(item['id'])}/view")
+    return links

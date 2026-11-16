@@ -162,11 +162,13 @@ function SourceCell({event}: {event: AccessEvent}) {
 }
 
 function SourceLink({event}: {event: AccessEvent}) {
-  const source = event.sources?.[0];
+  const source = event.sources?.find((item) => item.drive_url) ?? event.sources?.[0];
   if (!source) return <span>—</span>;
   const filename = sourceFileName(source.path || source.url);
-  const label = <><House className="type-icon" aria-hidden="true" /><span className="source-file-name">{filename}</span><span>· p. {source.page}</span></>;
-  return isPublicUrl(source.url) ? <a className="source-link" href={`${source.url}#page=${source.page}`} target="_blank" rel="noreferrer" title={`Abrir ${filename}, página ${source.page}`}>{label}<ExternalLink aria-hidden="true" /></a> : <span className="source-local" title={`${filename} · enlace público no disponible`}>{label}</span>;
+  const isPdf = /\.pdf$/i.test(filename);
+  const label = <><House className="type-icon" aria-hidden="true" /><span className="source-file-name">{filename}</span>{isPdf && <span>· p. {source.page}</span>}</>;
+  if (source.drive_url) return <a className="source-link" href={source.drive_url} target="_blank" rel="noreferrer" title={`Abrir ${filename} en Google Drive`}>{label}<ExternalLink aria-hidden="true" /></a>;
+  return isPublicUrl(source.url) ? <a className="source-link" href={isPdf ? `${source.url}#page=${source.page}` : source.url} target="_blank" rel="noreferrer" title={`Abrir ${filename}, página ${source.page}`}>{label}<ExternalLink aria-hidden="true" /></a> : <span className="source-local" title={`${filename} · enlace público no disponible`}>{label}</span>;
 }
 
 function primaryDate(event: AccessEvent) { return event.occurred_at ?? event.entered_at ?? event.exited_at; }
