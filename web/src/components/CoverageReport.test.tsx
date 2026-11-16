@@ -4,7 +4,7 @@ import {CoverageReport} from "./CoverageReport";
 
 afterEach(() => vi.restoreAllMocks());
 
-test("muestra los períodos sin registros y explica archivos en cuarentena", async () => {
+test("muestra los períodos sin registros y explica por qué faltan datos", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ok: true, json: async () => ({
     version: 1,
     first_date: "2023-01-01",
@@ -16,6 +16,7 @@ test("muestra los períodos sin registros y explica archivos en cuarentena", asy
   })}));
   render(<CoverageReport />);
   expect(await screen.findByText("Qué falta y por qué")).toBeInTheDocument();
-  expect(screen.getByText("feb 2023")).toBeInTheDocument();
-  expect(screen.getByText(/Archivos sin registros o con problemas/)).toBeInTheDocument();
+  expect(await screen.findByText("febrero de 2023")).toBeInTheDocument();
+  expect(screen.getByText(/no recibimos respuesta/)).toBeInTheDocument();
+  expect(screen.queryByText(/escaneado\.pdf/)).not.toBeInTheDocument();
 });
